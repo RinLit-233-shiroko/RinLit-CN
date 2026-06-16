@@ -25,13 +25,12 @@ const fields = [
 
   <!-- 卡片滚动容器: 填满页面宽度, 无视父级 padding -->
   <div class="fields-scroll mt-10 overflow-x-auto" data-count={fields.length}>
-    <div class="fields-cards flex gap-4" style="width: max-content; padding-left: max(24px, calc((100vw - 1152px) / 2)); padding-right: max(24px, calc((100vw - 1152px) / 2));">
+    <div class="fields-cards flex gap-4">
       {fields.map((field, i) => (
         <a
           href={field.href}
           class="fields-card group relative flex shrink-0 flex-col justify-end overflow-hidden rounded-3xl"
           data-card={i}
-          style="width: min(100vw, 1200px); height: 700px;"
         >
           <!-- 背景图占位 (fill) -->
           <div class="absolute inset-0 bg-neutral-300" data-bg />
@@ -45,7 +44,7 @@ const fields = [
               {field.name}
             </span>
 
-            <Button variant="default" icon="external-link" flat class="!h-12 !w-12 !px-0" />
+            <Button variant="default" flat icon="external-link" flat class="!h-12 !w-12 !px-0" />
           </div>
         </a>
       ))}
@@ -59,30 +58,47 @@ const fields = [
 </section>
 
 <script>
-  // 翻页器切换时, 滚动卡片容器到对应卡片左对齐
-  // 监听 #fields (section), 因为 .apc 的 change 事件 bubbles 到这里
+  // 翻页器 ↔ 卡片滚动 双向同步
   function syncFieldsCards() {
     const section = document.querySelector<HTMLElement>('#fields');
     const scrollContainer = document.querySelector<HTMLElement>('.fields-scroll');
     if (!section || !scrollContainer) return;
 
     const cardEls = Array.from(scrollContainer.querySelectorAll<HTMLElement>('.fields-card'));
-    const cardsInner = document.querySelector<HTMLElement>('.fields-cards');
 
+    // 翻页器 change → 滚动卡片 (只操作 .fields-scroll, 不影响页面滚动)
     section.addEventListener('change', ((e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!detail || typeof detail.index !== 'number') return;
-      const { index } = detail;
-      const target = cardEls[index];
-      if (!target || !cardsInner) return;
-
-      // 滚动到卡片位置, 减去内层 padding-left 使其左对齐
-      const paddingLeft = parseFloat(getComputedStyle(cardsInner).paddingLeft);
+      const target = cardEls[detail.index];
+      if (!target) return;
+      const snapLeft = parseFloat(getComputedStyle(scrollContainer).scrollPaddingLeft) || 0;
       scrollContainer.scrollTo({
-        left: target.offsetLeft - paddingLeft,
+        left: target.offsetLeft - snapLeft,
         behavior: 'smooth',
       });
     }) as EventListener);
+
+    // 滚动结束后同步翻页器 (scroll-snap 已对齐, 只需判断当前是哪张卡)
+    scrollContainer.addEventListener('scrollend', () => {
+      const snapLeft = parseFloat(getComputedStyle(scrollContainer).scrollPaddingLeft) || 0;
+      const scrollLeft = scrollContainer.scrollLeft;
+      let nearestIndex = 0;
+      let nearestDist = Infinity;
+      cardEls.forEach((card, i) => {
+        const dist = Math.abs(card.offsetLeft - snapLeft - scrollLeft);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestIndex = i;
+        }
+      });
+      section.querySelector<HTMLElement>('.apc')?.dispatchEvent(
+        new CustomEvent('apc:command', {
+          bubbles: true,
+          detail: { command: 'goto', index: nearestIndex },
+        }),
+      );
+    });
   }
 
   syncFieldsCards();
@@ -90,16 +106,47 @@ const fields = [
 </script>
 
 <style>
-  /* 滚动容器: 隐藏滚动条 */
+  /* ======== 滚动容器 ======== */
   .fields-scroll {
     scrollbar-width: none;
     -ms-overflow-style: none;
+    scroll-snap-type: x mandatory;
+    --side-pad: max(24px, calc((100vw - 1152px) / 2));
+    scroll-padding-left: var(--side-pad);
   }
   .fields-scroll::-webkit-scrollbar {
     display: none;
   }
 
-  /* 标题字体: Plus Jakarta Sans 粗体 40px */
+  /* ======== 卡片轨道: 按内容撑开, 左右对齐标题区 ======== */
+  .fields-cards {
+    width: max-content;
+    padding-left: var(--side-pad);
+    padding-right: var(--side-pad);
+  }
+
+  /* ======== 单张卡片: 宽度 = 视口 - 两侧 padding, 上限 1200px ======== */
+  .fields-card {
+    width: min(100vw - var(--side-pad) * 2, 1200px);
+    height: 700px;
+    scroll-snap-align: start;
+  }
+
+  /* Tablet: 高度 520px */
+  @media (max-width: 1024px) {
+    .fields-card {
+      height: 520px;
+    }
+  }
+
+  /* Phone: 高度 420px */
+  @media (max-width: 640px) {
+    .fields-card {
+      height: 420px;
+    }
+  }
+
+  /* ======== 标题字体: Plus Jakarta Sans 粗体 40px ======== */
   .fields-card__title {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 700;
@@ -107,7 +154,7 @@ const fields = [
     color: #ffffff;
   }
 
-  /* 底部渐变遮罩: 深灰 alpha50% → 黑透明 (由下到上) */
+  /* ======== 底部渐变遮罩: 深灰 alpha50% → 黑透明 (由下到上) ======== */
   .fields-card__overlay {
     position: absolute;
     bottom: 0;

@@ -1,0 +1,302 @@
+---
+// Figma: NavigationBar — Desktop (Light) / Mobile
+//
+// 结构: [Logo 46x46]  [Nav 导航标签]
+// 容器样式与 Button 一致: rounded-24, 渐变边框, 阴影, 模糊
+//
+// Desktop: fixed top center
+// Mobile:  fixed bottom, full-width
+
+import NavButton from '../NavButton.astro';
+import Button from '../Button.astro';
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = '/' } = Astro.props;
+
+const navItems = [
+  { label: '领域', href: '/fields',    icon: 'map' },
+  { label: '收藏', href: '/gallery',   icon: 'photo' },
+  { label: '随笔', href: '/writing',   icon: 'pencil' },
+  { label: '我',   href: '/me',        icon: 'badge' },
+];
+
+const isActive = (href: string) => {
+  if (href === '/') return currentPath === '/';
+  return currentPath.startsWith(href);
+};
+---
+
+<header class="nav-header">
+  <!-- ======== 左侧: Logo pill ======== -->
+  <a href="/" class="nav-pill nav-pill--logo" aria-label="RinLit Home">
+    <img
+      class="nav-pill__logo-img nav-pill__logo--light"
+      src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
+      alt="RinLit"
+    />
+    <img
+      class="nav-pill__logo-img nav-pill__logo--dark"
+      src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
+      alt="RinLit"
+    />
+  </a>
+
+  <!-- ======== 右侧: Nav pill ======== -->
+  <nav class="nav-pill nav-pill--nav">
+    {navItems.map((item) => (
+      <NavButton
+        href={item.href}
+        active={isActive(item.href)}
+        icon={item.icon}
+      >
+        {item.label}
+      </NavButton>
+    ))}
+  </nav>
+
+  <!-- ======== Toolbar: PC端 nav 右侧 / 移动端右上角 ======== -->
+  <div class="toolbar" aria-label="工具栏">
+    <!-- 颜色模式 -->
+    <Button variant="default" icon="theme" class="theme-toggle" id="theme-toggle" aria-label="Color Mode">
+    </Button>
+    <!-- 菜单 -->
+     <Button variant="default" icon="menu-2" class="menu" aria-label="Menu">
+    </Button>
+  </div>
+</header>
+
+<style>
+  /* ======== Header 定位 ======== */
+  .nav-header {
+    position: fixed;
+    top: 24px;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  /* ======== 通用 pill 样式 (Button 同款) ======== */
+  .nav-pill {
+    position: relative;
+    z-index: 0;
+    border-radius: 24px;
+    box-shadow: 0 8px 12px var(--pill-shadow);
+    backdrop-filter: blur(6px);
+    background: var(--pill-bg);
+    flex-shrink: 0;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  /* 渐变边框 45° (与 Button 一致) */
+  .nav-pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 24px;
+    padding: 2px;
+    background: var(--border-gradient);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* ======== Logo pill: 46×46, 内含 40×40 ======== */
+  .nav-pill--logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    text-decoration: none;
+    overflow: hidden;
+  }
+
+  .nav-pill__logo-img {
+    width: 40px;
+    height: 40px;
+    display: block;
+  }
+
+  /* Logo 切换: 由全局 --logo-*-display 变量驱动 */
+  .nav-pill__logo--light { display: var(--logo-light-display); }
+  .nav-pill__logo--dark { display: var(--logo-dark-display); }
+
+  /* ======== Nav pill: 高 46, padding 6/8, gap 8 ======== */
+  .nav-pill--nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 46px;
+    padding: 6px 6px;
+    margin-left: auto;
+  }
+
+  /* ==========================================================
+     Mobile: 整体固定在底部，两端对齐
+     ========================================================== */
+  @media (max-width: 768px) {
+    .nav-header {
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: none;
+      padding: 0 36px 32px 36px;
+      gap: 12px;
+    }
+
+    .nav-pill {
+      border-radius: 9999px;
+    }
+
+    .nav-pill::before {
+      border-radius: 9999px;
+    }
+
+    /* Logo pill: 72×72, logo 48×48 */
+    .nav-pill--logo {
+      width: 72px;
+      height: 72px;
+    }
+
+    .nav-pill__logo-img {
+      width: 48px;
+      height: 48px;
+    }
+
+    /* Nav pill: 高 72, padding 8，内容自适应不拉伸 */
+    .nav-pill--nav {
+      height: 72px;
+      padding: 8px;
+      gap: 6px;
+      justify-content: space-around;
+    }
+  }
+
+  /* ===== 超窄屏等比缩小 (≤474px) ===== */
+  @media (max-width: 474px) {
+    .nav-header {
+      --scale: calc(max(266px, 100vw) / 474px);
+      padding: 0 calc(36px * var(--scale)) calc(32px * var(--scale));
+      gap: calc(12px * var(--scale));
+    }
+
+    .nav-pill--logo {
+      width: calc(72px * var(--scale));
+      height: calc(72px * var(--scale));
+    }
+
+    .nav-pill__logo-img {
+      width: calc(48px * var(--scale));
+      height: calc(48px * var(--scale));
+    }
+
+    .nav-pill--nav {
+      height: calc(72px * var(--scale));
+      padding: calc(8px * var(--scale));
+      gap: calc(6px * var(--scale));
+    }
+  }
+
+  /* ======== Toolbar ======== */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+
+  .toolbar :global(.btn) {
+    width: 46px;
+    height: 46px;
+    box-shadow: 0 8px 12px var(--pill-shadow);
+  }
+
+  /* Mobile: 固定在右上角 */
+  @media (max-width: 768px) {
+    .toolbar {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 60;
+    }
+  }
+</style>
+
+<script is:inline>
+  // ======== 暗色模式切换逻辑 ========
+  // 注意: 该脚本随 Header 在每次 View Transition 后重新执行,
+  // 因此必须保证:
+  //   1. 初始化 (读取 theme) 幂等
+  //   2. 点击监听只绑定一次 (用 data 标记防止重复绑定)
+  //   3. 同步系统偏好变化 (仅当用户尚未手动选择时)
+  //   4. astro:after-swap 恢复主题 (防止 View Transitions 导航时重置)
+
+  (function () {
+    var root = document.documentElement;
+    var KEY = 'rinlit:theme';
+
+    function apply(mode) {
+      root.classList.toggle('dark', mode === 'dark');
+      root.classList.toggle('light', mode === 'light');
+      root.style.colorScheme = mode;
+    }
+
+    // 从 localStorage 读取并应用当前主题 (幂等, 可安全多次调用)
+    function restore() {
+      var saved = localStorage.getItem(KEY);
+      if (saved) { apply(saved); return; }
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      apply(prefersDark ? 'dark' : 'light');
+    }
+
+    // 初始化
+    if (!root.dataset.themeReady) { restore(); }
+
+    // View Transitions 导航后恢复主题 — 防止 DOM swap 导致状态丢失
+    if (!root.dataset.themeSwapBound) {
+      root.dataset.themeSwapBound = '1';
+      document.addEventListener('astro:after-swap', restore);
+    }
+
+    // 跟随系统变化 (仅当用户未手动选择时) — data-theme-media-bound 防止重复绑定
+    if (!root.dataset.themeMediaBound) {
+      root.dataset.themeMediaBound = '1';
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        if (localStorage.getItem(KEY)) return; // 已有手动选择, 不覆盖
+        apply(e.matches ? 'dark' : 'light');
+      });
+    }
+
+    // 点击切换: 用 data-theme-bound 标记确保每页只绑定一次
+    if (!root.dataset.themeBound) {
+      root.dataset.themeBound = '1';
+      document.addEventListener('click', function (e) {
+        var target = e.target.closest('#theme-toggle');
+        if (!target) return;
+        var next = root.classList.contains('dark') ? 'light' : 'dark';
+        apply(next);
+        localStorage.setItem(KEY, next);
+      });
+    }
+
+    // 标记本次初始化已完成
+    root.dataset.themeReady = '1';
+  })();
+</script>

@@ -1,0 +1,146 @@
+---
+// Figma: Button 组件 — 精确参数
+//
+// 所有变体共用 45° 渐变边框 (135°), 1px:
+//   0%    → #FFFFFF 100%
+//   46%   → transparent
+//   56%   → transparent
+//   100%  → #FFFFFF 100%
+//
+// 背景填充:
+//   Primary:      primary-500 @ 60%, 白字
+//   Default 浅色: #FBFAFF @ 60%, neutral-500 字
+//   Default 深色: #C2BFD0 @ 30%, white/70 字
+//
+// 阴影: #4B4B4B @ 6%, y=8, blur=12
+// 背景模糊: 6px
+
+import { getIcon } from '../utils/icons';
+
+interface Props {
+  variant?: 'primary' | 'default' | 'dark';
+  href?: string;
+  icon?: string;
+  id?: string;
+  class?: string;
+}
+
+const {
+  variant = 'default',
+  href,
+  icon = '',
+  id = '',
+  class: className = '',
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+
+const isIconOnly = !Astro.slots.has('default');
+
+const base =
+  `inline-flex items-center justify-center h-10 px-6 font-cjk text-btn-cjk relative transition-all duration-200 cursor-pointer select-none ${
+    isIconOnly ? 'w-10 !px-0' : ''
+  }`;
+
+// theme 模式：同时渲染 sun + moon，由 CSS 变量切换显隐
+const isThemeToggle = icon === 'theme';
+const svgHtml = isThemeToggle ? null : getIcon(icon, 18);
+---
+
+<Tag id={id} href={href} class={`${base} btn btn-${variant} ${className}`}>
+  {(svgHtml || isThemeToggle) && (
+    <span class="btn__icon">
+      {isThemeToggle ? (
+        <>
+          <span class="icon-sun" set:html={getIcon('sun', 18)} />
+          <span class="icon-moon" set:html={getIcon('moon', 18)} />
+        </>
+      ) : (
+        <span set:html={svgHtml} />
+      )}
+    </span>
+  )}
+  {!isIconOnly && <span class="btn__text"><slot /></span>}
+</Tag>
+
+<style>
+  /* ======== 所有变体共用的基础样式 ======== */
+  .btn {
+    border-radius: 24px;
+    box-shadow: 0 8px 12px var(--pill-shadow);
+    backdrop-filter: blur(6px);
+    border: none;                            /* 不用原生 border */
+    position: relative;
+    z-index: 0;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  }
+
+  /* ======== 渐变边框：用 ::before 伪元素绘制 ======== */
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 24px;
+    padding: 2px;
+    background: var(--border-gradient);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* ======== 图标样式 ======== */
+  .btn__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    position: relative;
+  }
+
+  .btn__icon :global(svg) {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+
+  /* 图标切换: 由全局 --icon-*-display 变量驱动 */
+  .icon-sun { display: var(--icon-sun-display); }
+  .icon-moon { display: var(--icon-moon-display); }
+
+  .btn__text {
+    display: inline;
+  }
+
+  /* ======== 各变体背景 + 文字 ======== */
+  .btn-primary {
+    background: rgba(140, 126, 205, 0.6);   /* primary-500 @ 60% */
+    color: #ffffff;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { background: rgba(140, 126, 205, 0.8); }
+
+  .btn-default {
+    background: var(--pill-bg);
+    color: var(--text-strong);
+  }
+  .btn-default:hover {
+    color: var(--color-dark);
+    background: #EEEEEE99;
+  }
+  .btn-default:active { background: #DDDDDDCC; }
+
+  .btn-dark {
+    background: rgba(194, 191, 208, 0.3);   /* #C2BFD0 @ 30% */
+    color: #ffffff;
+  }
+  .btn-dark:hover { color: #ffffff; }
+  .btn-dark:active { background: rgba(194, 191, 208, 0.5); }  /* #C2BFD0 @ ~80% of original range */
+</style>

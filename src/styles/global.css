@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ==============================================
+     Light 模式 (默认)
+     所有 CSS 变量在此定义，.dark 下按需覆盖
+     ============================================== */
+  :root {
+    /* ---------- Primary 色阶 ---------- */
+    --color-primary-100: #ede9fc;
+    --color-primary-200: #dcd3fa;
+    --color-primary-300: #c4b8f0;
+    --color-primary-400: #ac9fe1;
+    --color-primary-500: #8c7ecd;
+    --color-primary-600: #695cb0;
+    --color-primary-700: #4b3f93;
+    --color-primary-800: #312876;
+    --color-primary-900: #1f1862;
+
+    /* ---------- Secondary 色阶 ---------- */
+    --color-secondary-100: #ede9fc;
+    --color-secondary-200: #efebf7;
+    --color-secondary-300: #e9e5f3;
+    --color-secondary-400: #cfc5e6;
+    --color-secondary-500: #a497c7;
+    --color-secondary-600: #3e2d72;
+    --color-secondary-700: #3b2c57;
+    --color-secondary-800: #201a3b;
+    --color-secondary-900: #1a1533;
+
+    /* ---------- Tertiary 色阶 ---------- */
+    --color-tertiary-100: #ede9fc;
+    --color-tertiary-200: #efeff8;
+    --color-tertiary-300: #eaeaf4;
+    --color-tertiary-400: #d1d1e8;
+    --color-tertiary-500: #aaaacc;
+    --color-tertiary-600: #413563;
+    --color-tertiary-700: #2f284e;
+    --color-tertiary-800: #1d1d3d;
+    --color-tertiary-900: #181834;
+
+    /* ---------- Neutral 色阶 ---------- */
+    --color-neutral-100: #fbfafb;
+    --color-neutral-200: #f5f4f8;
+    --color-neutral-300: #f1f0f5;
+    --color-neutral-400: #e1dfea;
+    --color-neutral-500: #c2bfd0;
+    --color-neutral-600: #423c65;
+    --color-neutral-700: #322e50;
+    --color-neutral-800: #25213e;
+    --color-neutral-900: #24232d;
+
+    /* ---------- Brand / General ---------- */
+    --color-general-primary: #8c7ecd;
+    --color-general-secondary: #aaaacc;
+    --color-general-tertiary: #c2a5eb;
+    --color-general-neutral: #fbfafb;
+
+    /* ---------- Surface ---------- */
+    --color-light: #ffffff;
+    --color-dark: #1d1c22;
+    --color-surface-dark: #101216;
+
+    /* ---------- Text ---------- */
+    --color-text-dark: #ffffff;
+    --color-text-light: #000000;
+
+    /* ---------- Logo ---------- */
+    --color-logo-light: #1d1c22;
+    --color-logo-dark: #ffffff;
+
+    /* ---------- Gradients ---------- */
+    --gradient-video-cover: radial-gradient(circle at 39% 0%, rgb(194 165 235) 0%, rgb(170 170 204) 100%);
+
+    /* ---------- 语义化 Token ---------- */
+    --bg: #ffffff;
+    --bg-elevated: #fbfaff;
+    --bg-muted: #f1f0f5;
+    --bg-pill: rgba(251, 250, 255, 0.6);
+    --text: #2b2a33;
+    --text-strong: #1d1c22;
+    --text-muted: #6b687d;
+    --border: rgba(29, 28, 34, 0.08);
+    --border-strong: rgba(29, 28, 34, 0.14);
+    --shadow: rgba(75, 75, 75, 0.06);
+    --border-gradient: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0) 46%,
+      rgba(255, 255, 255, 0) 56%,
+      rgba(255, 255, 255, 1) 100%
+    );
+
+    /* ---------- Logo / Icon 显示切换 ---------- */
+    --logo-light-display: block;
+    --logo-dark-display: none;
+    --icon-sun-display: block;
+    --icon-moon-display: none;
+
+    /* ---------- Footer ---------- */
+    --footer-bg: var(--color-neutral-400);
+
+    /* ---------- 统一 Pill / Button 背景材质 ---------- */
+    --pill-bg: rgba(251, 250, 255, 0.6);
+    --pill-shadow: rgba(0, 0, 0, 0.08);
+
+    color-scheme: light;
+    font-family: 'Sarasa SC', Geist, ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-synthesis: none;
+    text-rendering: geometricPrecision;
+  }
+
+  /* ==============================================
+     Dark 模式 — 唯一的暗色覆盖入口
+     通过 JS 切换 <html>.dark 类触发
+     ============================================== */
+  :root.dark {
+    /* Neutral 色阶翻转: 浅阶→深底, 深阶→浅面 */
+    --color-neutral-100: #1d1d3d;
+    --color-neutral-200: #25213e;
+    --color-neutral-300: #322e50;
+    --color-neutral-400: #423c65;
+    --color-neutral-500: #a39fbf;
+    --color-neutral-600: #c2bfd0;
+    --color-neutral-700: #e1dfea;
+    --color-neutral-800: #f5f4f8;
+    --color-neutral-900: #fbfafb;
+
+    /* Primary: 提亮主色以在深底上保持可读 */
+    --color-primary-600: #ac9fe1;
+
+    /* Surface: 底色/字色互换 */
+    --color-light: #101216;
+    --color-dark: #ffffff;
+    --color-text-dark: #ffffff;
+    --color-logo-light: #ffffff;
+
+    /* 语义 Token */
+    --bg: #101216;
+    --bg-elevated: #181834;
+    --bg-muted: #25213e;
+    --bg-pill: rgba(31, 24, 98, 0.18);
+    --text: #e7e6f0;
+    --text-strong: #ffffff;
+    --text-muted: #a39fbf;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --shadow: rgba(0, 0, 0, 0.32);
+    --border-gradient: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0) 46%,
+      rgba(255, 255, 255, 0) 56%,
+      rgba(255, 255, 255, 0.22) 100%
+    );
+
+    /* Logo / Icon 显示切换 — 暗色反转 */
+    --logo-light-display: none;
+    --logo-dark-display: block;
+    --icon-sun-display: none;
+    --icon-moon-display: block;
+
+    /* Footer — 暗色下翻转 */
+    --footer-bg: var(--color-neutral-800);
+
+    /* Pill / Button — 暗色下统一使用 neutral-500 @ 30% */
+    --pill-bg: rgba(194, 191, 208, 0.3);
+    /* 阴影与亮模式一致 */
+
+    color-scheme: dark;
+  }
+
+  /* ---------- 全局基础样式 ---------- */
+  html {
+    background: var(--bg);
+    color: var(--text);
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    text-wrap: pretty;
+    color: var(--text);
+    background: var(--bg);
+  }
+}

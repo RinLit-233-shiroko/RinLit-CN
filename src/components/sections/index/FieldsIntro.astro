@@ -1,0 +1,68 @@
+---
+// Figma: FieldsIntro — 深色背景 + 高卡片
+// 背景: 深色（接近 neutral-900 或更深）
+// 标题: "Explorer the fields." 浅色文字
+// 3 张高卡片: 深灰填充, borderRadius 24px, 名称在底部左侧, OpenButton 圆形在右下角
+// AutoPlayControl: PauseButton + PageIndicator 居中
+
+const fields = [
+  { name: 'Software', href: '/fields/software' },
+  { name: 'Design',   href: '/fields/design' },
+  { name: 'Lab',      href: '/fields/experiment' },
+];
+---
+
+<section id="fields" class="bg-light py-24 transition-colors duration-300">
+  <div class="mx-auto max-w-6xl px-6">
+    <!-- 标题: Explorer the fields. — 浅色文字 -->
+    <h2 class="text-title-large font-sans font-bold tracking-tight text-dark">
+      Explorer the fields.
+    </h2>
+
+    <!-- 3 张高卡片 -->
+    <div class="mt-10 grid gap-5 md:grid-cols-3">
+      {fields.map((field) => (
+        <a
+          href={field.href}
+          class="group relative flex flex-col justify-end overflow-hidden rounded-3xl bg-neutral-200 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+          style="aspect-ratio: 3/4"
+        >
+          <!-- 底部内容区 -->
+          <div class="flex items-center justify-between">
+            <span class="text-subtitle font-sans font-semibold text-neutral-600">
+              {field.name}
+            </span>
+
+            <!-- OpenButton: 圆形按钮 -->
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-500/10 transition-colors group-hover:bg-primary-500">
+              <svg class="h-3.5 w-3.5 text-primary-400 transition-colors group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <!-- AutoPlayControl: PauseButton + PageIndicator 居中 -->
+    <div class="mt-8 flex items-center justify-center gap-3">
+      <!-- PauseButton -->
+      <button class="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 transition-colors hover:bg-neutral-300">
+        <svg class="h-3 w-3 text-neutral-500" fill="currentColor" viewBox="0 0 24 24">
+          <rect x="6" y="4" width="4" height="16" rx="1" />
+          <rect x="14" y="4" width="4" height="16" rx="1" />
+        </svg>
+      </button>
+      <!-- PageIndicator pill -->
+      <div class="flex items-center gap-1.5 rounded-full bg-neutral-200 px-3 py-1.5">
+        {fields.map((_, i) => (
+          <span
+            class={`h-1 rounded-full transition-all ${
+              i === 0 ? 'w-4 bg-primary-500' : 'w-1 bg-neutral-300'
+            }`}
+          ></span>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

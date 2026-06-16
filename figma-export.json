@@ -1,0 +1,332 @@
+{
+  "styles": {
+    "colors": [
+      {
+        "name": "light",
+        "token": "light",
+        "type": "solid"
+      },
+      {
+        "name": "dark",
+        "token": "dark",
+        "type": "solid"
+      },
+      {
+        "name": "general/primary",
+        "token": "general-primary",
+        "type": "solid"
+      },
+      {
+        "name": "general/secondary",
+        "token": "general-secondary",
+        "type": "solid"
+      },
+      {
+        "name": "general/tertiary",
+        "token": "general-tertiary",
+        "type": "solid"
+      },
+      {
+        "name": "general/neutral",
+        "token": "general-neutral",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/100",
+        "token": "neutral-100",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/200",
+        "token": "neutral-200",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/300",
+        "token": "neutral-300",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/400",
+        "token": "neutral-400",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/500",
+        "token": "neutral-500",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/600",
+        "token": "neutral-600",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/700",
+        "token": "neutral-700",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/800",
+        "token": "neutral-800",
+        "type": "solid"
+      },
+      {
+        "name": "neutral/900",
+        "token": "neutral-900",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/100",
+        "token": "tertiary-100",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/200",
+        "token": "tertiary-200",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/300",
+        "token": "tertiary-300",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/400",
+        "token": "tertiary-400",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/500",
+        "token": "tertiary-500",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/600",
+        "token": "tertiary-600",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/700",
+        "token": "tertiary-700",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/800",
+        "token": "tertiary-800",
+        "type": "solid"
+      },
+      {
+        "name": "tertiary/900",
+        "token": "tertiary-900",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/100",
+        "token": "secondary-100",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/200",
+        "token": "secondary-200",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/300",
+        "token": "secondary-300",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/400",
+        "token": "secondary-400",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/500",
+        "token": "secondary-500",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/600",
+        "token": "secondary-600",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/700",
+        "token": "secondary-700",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/800",
+        "token": "secondary-800",
+        "type": "solid"
+      },
+      {
+        "name": "secondary/900",
+        "token": "secondary-900",
+        "type": "solid"
+      },
+      {
+        "name": "primary/100",
+        "token": "primary-100",
+        "type": "solid"
+      },
+      {
+        "name": "primary/200",
+        "token": "primary-200",
+        "type": "solid"
+      },
+      {
+        "name": "primary/300",
+        "token": "primary-300",
+        "type": "solid"
+      },
+      {
+        "name": "primary/400",
+        "token": "primary-400",
+        "type": "solid"
+      },
+      {
+        "name": "primary/500",
+        "token": "primary-500",
+        "type": "solid"
+      },
+      {
+        "name": "primary/600",
+        "token": "primary-600",
+        "type": "solid"
+      },
+      {
+        "name": "primary/700",
+        "token": "primary-700",
+        "type": "solid"
+      },
+      {
+        "name": "primary/800",
+        "token": "primary-800",
+        "type": "solid"
+      },
+      {
+        "name": "primary/900",
+        "token": "primary-900",
+        "type": "solid"
+      },
+      {
+        "name": "logo/light",
+        "token": "logo-light",
+        "type": "solid"
+      },
+      {
+        "name": "logo/dark",
+        "token": "logo-dark",
+        "type": "solid"
+      }
+    ],
+    "textStyles": [
+      {
+        "name": "Caption",
+        "token": "caption",
+        "type": "text",
+        "fontFamily": "Geist",
+        "fontWeight": "400",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "letterSpacing": "0%"
+      },
+      {
+        "name": "Body",
+        "token": "body",
+        "type": "text",
+        "fontFamily": "Geist",
+        "fontWeight": "400",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "letterSpacing": "0%"
+      },
+      {
+        "name": "Body Strong",
+        "token": "body-strong",
+        "type": "text",
+        "description": "WinUI 2: Base",
+        "fontFamily": "Geist",
+        "fontWeight": "600",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "letterSpacing": "0%"
+      },
+      {
+        "name": "Body Large",
+        "token": "body-large",
+        "type": "text",
+        "fontFamily": "Geist",
+        "fontWeight": "400",
+        "fontSize": "18px",
+        "lineHeight": "24px",
+        "letterSpacing": "0%"
+      },
+      {
+        "name": "Body Large Strong",
+        "token": "body-large-strong",
+        "type": "text",
+        "fontFamily": "Geist",
+        "fontWeight": "600",
+        "fontSize": "18px",
+        "lineHeight": "24px",
+        "letterSpacing": "0%"
+      },
+      {
+        "name": "Subtitle",
+        "token": "subtitle",
+        "type": "text",
+        "fontFamily": "Geist",
+        "fontWeight": "600",
+        "fontSize": "20px",
+        "lineHeight": "28px",
+        "letterSpacing": "0%"
+      },
+      {
+        "name": "Title",
+        "token": "title",
+        "type": "text",
+        "fontFamily": "Geist",
+        "fontWeight": "600",
+        "fontSize": "28px",
+        "lineHeight": "36px",
+        "letterSpacing": "0px"
+      },
+      {
+        "name": "Title Large",
+        "token": "title-large",
+        "type": "text",
+        "description": "WinUI 2: Subheader",
+        "fontFamily": "Geist",
+        "fontWeight": "700",
+        "fontSize": "40px",
+        "lineHeight": "52px",
+        "letterSpacing": "0px"
+      },
+      {
+        "name": "Display",
+        "token": "display",
+        "type": "text",
+        "description": "WinUI 2: Header",
+        "fontFamily": "Geist",
+        "fontWeight": "700",
+        "fontSize": "68px",
+        "lineHeight": "92px",
+        "letterSpacing": "0px"
+      }
+    ],
+    "effectStyles": [],
+    "gridStyles": []
+  },
+  "collections": {},
+  "metadata": {
+    "exportDate": "2026-06-09T14:52:56.617Z",
+    "figmaFileKey": "unknown",
+    "fileName": "RinLit",
+    "pluginVersion": "1.0.0",
+    "collectionsFound": 1,
+    "collectionsExported": 0
+  }
+}

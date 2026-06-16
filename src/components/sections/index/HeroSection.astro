@@ -1,0 +1,653 @@
+---
+import Button from '../../Button.astro';
+
+const artifacts = [
+  {
+    label: 'Software Artifact',
+    className: 'artifact--class',
+    href: '/fields/software',
+  },
+  {
+    label: 'Design Artifact',
+    className: 'artifact--rinui',
+    href: '/fields/design',
+  },
+  {
+    label: 'Gallery Artifact',
+    className: 'artifact--pbi',
+    href: '/gallery',
+  },
+  {
+    label: 'Lab Artifact',
+    className: 'artifact--lab',
+    href: '/fields/experiment',
+  },
+  {
+    label: 'Writing Artifact',
+    className: 'artifact--notes',
+    href: '/writing',
+  },
+];
+
+---
+
+<section class="hero-shell" aria-label="RinLit overview">
+  <div class="hero-atmosphere" aria-hidden="true"></div>
+  <div class="hero-sheen" aria-hidden="true"></div>
+
+  <div class="hero-content">
+    <div class="hero-copy">
+      <h1>
+        <span class="hero-title-desktop">
+          Building software,<br />
+          design systems,<br />
+          and experimental ideas.
+        </span>
+        <span class="hero-title-mobile">
+          Building ,<br />
+          design ,<br />
+          and experiment.
+        </span>
+      </h1>
+    </div>
+
+    <div class="hero-actions" aria-label="Primary links">
+      <Button variant="default" href="/fields">项目</Button>
+      <Button variant="primary" href="/me">关于我</Button>
+    </div>
+  </div>
+
+  <div class="hero-horizon" aria-hidden="true">
+    <img
+      src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
+      alt=""
+      class="hero-mark hero-mark--light"
+      loading="eager"
+    />
+    <img
+      src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
+      alt=""
+      class="hero-mark hero-mark--dark"
+      loading="eager"
+    />
+  </div>
+
+  <!-- 地平线中心光晕：放在 stage-wrap 前面，被地面遮挡 -->
+  <div class="hero-logo-glow" aria-hidden="true"></div>
+
+  <div class="stage-wrap">
+    <div class="artifact-grid" aria-label="Featured project artifacts">
+      {artifacts.map((item) => (
+        <a href={item.href} class={`artifact ${item.className}`} aria-label={item.label}>
+          <span>{item.label}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <a class="scroll-cue" href="#fields" aria-label="Scroll to content">
+    <span aria-hidden="true"></span>
+    <b>SCROLL</b>
+  </a>
+</section>
+
+<style>
+  /* Hero 主题变量 — 亮色默认 */
+  :global(:root) {
+    --hero-shell-bg: radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.98) 0 22%, rgba(255, 255, 255, 0) 42%), radial-gradient(circle at 61% 40%, rgba(190, 146, 244, 0.24), rgba(190, 146, 244, 0) 28%), linear-gradient(180deg, #fbf9ff 0%, #f8f5fb 54%, #cfd2e2 54.1%, #aaaec4 100%);
+    --hero-shell-color: #10162f;
+    --hero-shell-bg-mobile: radial-gradient(circle at 44% 27%, rgba(255, 255, 255, 0.98) 0 22%, rgba(255, 255, 255, 0) 46%), radial-gradient(circle at 57% 43%, rgba(178, 132, 243, 0.26), rgba(178, 132, 243, 0) 32%), linear-gradient(180deg, #fbf9ff 0%, #f8f5fb 54%, #cbd0e2 54.1%, #a7acc2 100%);
+  }
+
+  /* Hero 主题变量 — 暗色 */
+  :global(:root.dark) {
+    --hero-shell-bg: radial-gradient(circle at 30% 18%, rgba(50, 40, 90, 0.28) 0 22%, rgba(50, 40, 90, 0) 46%), radial-gradient(circle at 61% 40%, rgba(30, 24, 70, 0.38), rgba(30, 24, 70, 0) 32%), linear-gradient(180deg, #050507 0%, #08080d 54%, #0c0c14 54.1%, #101018 100%);
+    --hero-shell-color: #f4f2fb;
+    --hero-shell-bg-mobile: radial-gradient(circle at 44% 27%, rgba(50, 40, 90, 0.28) 0 22%, rgba(50, 40, 90, 0) 46%), radial-gradient(circle at 57% 43%, rgba(30, 24, 70, 0.38), rgba(30, 24, 70, 0) 32%), linear-gradient(180deg, #050507 0%, #08080d 54%, #0c0c14 54.1%, #101018 100%);
+  }
+
+  /* ===== 暗色 — 装饰元素覆盖 ===== */
+
+  /* 大气光晕: 去掉亮色的暖橙, 改为深邃的紫蓝色调 */
+  :global(:root.dark) .hero-atmosphere {
+    background:
+      radial-gradient(circle at 15% 0%, rgba(74, 60, 140, 0.4), transparent 31%),
+      radial-gradient(circle at 86% 5%, rgba(31, 24, 98, 0.5), transparent 34%),
+      radial-gradient(circle at 79% 69%, rgba(49, 40, 118, 0.36), transparent 27%);
+    filter: blur(34px);
+  }
+
+  /* 光泽层: 降低亮度, 避免在深底上发灰 */
+  :global(:root.dark) .hero-sheen {
+    opacity: 0.18;
+  }
+
+  /* 地平线: 紫色微光取代纯白 */
+  :global(:root.dark) .hero-horizon::before {
+    background: rgba(172, 159, 225, 0.55);
+    box-shadow: 0 0 42px rgba(140, 126, 205, 0.45);
+  }
+
+  /* 地平线中心光晕: 暗色下淡紫光, 向上扩散, 强度收敛 */
+  :global(:root.dark) .hero-logo-glow {
+    width: min(960px, 105vw);
+    height: 300px;
+    background: radial-gradient(
+      ellipse 42% 100% at 50% 100%,
+      rgba(170, 155, 210, 0.38) 0%,
+      rgba(150, 135, 195, 0.16) 28%,
+      rgba(130, 115, 180, 0) 64%
+    );
+    filter: blur(14px);
+  }
+
+  /* Logo 标记: 柔化阴影 */
+  :global(:root.dark) .hero-mark {
+    filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 16px rgba(140, 126, 205, 0.18)) saturate(1.15);
+  }
+
+  /* Artifact 网格容器背景: 玻璃质感中性灰 */
+  :global(:root.dark) .artifact-grid::before {
+    background:
+      linear-gradient(120deg, rgba(90, 90, 100, 0.22), rgba(160, 160, 170, 0.05) 48%, rgba(60, 60, 70, 0.24)),
+      linear-gradient(180deg, rgba(130, 130, 140, 0.08), rgba(16, 16, 22, 0.22));
+    box-shadow:
+      0 34px 68px rgba(0, 0, 0, 0.36),
+      inset 0 1px 0 rgba(170, 170, 180, 0.12);
+  }
+
+  /* Artifact 卡片: 紫色玻璃材质取代白色 */
+  :global(:root.dark) .artifact {
+    background: linear-gradient(180deg, rgba(140, 126, 205, 0.18), rgba(74, 60, 140, 0.08));
+    border: 2px solid rgba(172, 159, 225, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(172, 159, 225, 0.22),
+      0 14px 38px rgba(0, 0, 0, 0.24);
+  }
+
+  /* 高光扫过 */
+  :global(:root.dark) .artifact::before {
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(197, 188, 240, 0.28), rgba(255, 255, 255, 0));
+  }
+
+  /* Hover: 紫色辉光 */
+  :global(:root.dark) .artifact:hover {
+    background: linear-gradient(180deg, rgba(140, 126, 205, 0.3), rgba(74, 60, 140, 0.16));
+    box-shadow:
+      inset 0 1px 0 rgba(172, 159, 225, 0.36),
+      0 18px 44px rgba(0, 0, 0, 0.3),
+      0 0 28px rgba(140, 126, 205, 0.24);
+  }
+
+  /* 标题: 柔和提亮 */
+  :global(:root.dark) .hero-copy h1 {
+    text-shadow: 0 2px 30px rgba(74, 60, 140, 0.35);
+  }
+
+  .hero-shell {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    background: var(--hero-shell-bg);
+    color: var(--hero-shell-color);
+    isolation: isolate;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .hero-atmosphere,
+  .hero-sheen {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .hero-atmosphere {
+    z-index: -2;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(176, 157, 224, 0.28), transparent 31%),
+      radial-gradient(circle at 86% 5%, rgba(255, 238, 220, 0.75), transparent 34%),
+      radial-gradient(circle at 79% 69%, rgba(146, 139, 207, 0.3), transparent 27%);
+    filter: blur(28px);
+  }
+
+  .hero-sheen {
+    z-index: 1;
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.34) 50%, rgba(255, 255, 255, 0) 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0) 48%, rgba(255, 255, 255, 0.3) 51%, rgba(255, 255, 255, 0) 61%);
+    opacity: 0.78;
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 32px;
+    width: min(1216px, calc(100% - 48px));
+    margin: 0 auto;
+    padding-top: clamp(142px, 18vh, 208px);
+  }
+
+  .hero-copy {
+    max-width: 760px;
+  }
+
+  .hero-copy h1 {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', Geist, ui-sans-serif, system-ui, sans-serif;
+    font-size: clamp(48px, 5.15vw, 64px);
+    line-height: 1.14;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .hero-title-mobile {
+    display: none;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
+  }
+
+  .hero-horizon {
+    --mark-size: clamp(116px, 8.8vw, 144px);
+    position: absolute;
+    z-index: 20;
+    left: 50%;
+    top: calc(54vh - var(--mark-size));
+    width: 220px;
+    height: var(--mark-size);
+    transform: translateX(-50%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .hero-horizon::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 100vw;
+    height: 1px;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 0 42px rgba(168, 120, 244, 0.34);
+  }
+
+  .hero-logo-glow {
+    /* 底部锚定地平线(54vh = 距底部46vh), 向上照亮天空 */
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    bottom: 46vh;
+    width: min(900px, 100vw);
+    height: 360px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 45% 100% at 50% 100%,
+      rgba(190, 170, 230, 0.55) 0%,
+      rgba(180, 160, 220, 0.24) 26%,
+      rgba(160, 140, 200, 0) 62%
+    );
+    filter: blur(12px);
+  }
+
+  .hero-mark {
+    position: relative;
+    width: var(--mark-size);
+    height: auto;
+    margin-bottom: calc(var(--mark-size) * -0.2);
+    filter: drop-shadow(0 18px 22px rgba(89, 62, 151, 0.25)) saturate(1.1);
+  }
+
+  /* Logo 在两种主题间切换 — 由全局 --logo-*-display 变量驱动 */
+  .hero-mark--light { display: var(--logo-light-display); }
+  .hero-mark--dark { display: var(--logo-dark-display); }
+
+  .stage-wrap {
+    position: absolute;
+    z-index: 5;
+    inset: calc(54vh - 1px) 0 0;
+    height: 46vh;
+
+    min-height: 0;
+    perspective: 320px;
+    perspective-origin: 50% 0%;
+    pointer-events: none;
+  }
+
+  .artifact-grid {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: dense;
+    grid-auto-rows: clamp(34px, 5.2vh, 58px);
+    gap: clamp(18px, 1.15vw, 24px);
+    width: min(820px, 64vw);
+    height: 72vh;
+    padding: clamp(48px, 5vw, 128px) clamp(32px, 3vw, 72px);
+
+    transform: translateX(-50%) rotateX(70deg) scale(0.52);
+    transform-origin: 50% 0%;
+    transform-style: preserve-3d;
+    pointer-events: none;
+  }
+
+  .artifact-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 20px;
+    background:
+      linear-gradient(120deg, rgba(116, 112, 144, 0.22), rgba(255, 255, 255, 0.06) 48%, rgba(94, 91, 120, 0.22)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(74, 72, 96, 0.1));
+    box-shadow:
+      0 34px 68px rgba(54, 52, 76, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .artifact {
+    position: relative;
+    z-index: 2;
+    display: block;
+    width: auto;
+    height: auto;
+    border-radius: 18px;
+    color: rgba(255, 255, 255, 0);
+    text-decoration: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.12));
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.32),
+      0 14px 38px rgba(80, 77, 108, 0.08);
+    pointer-events: auto;
+    overflow: hidden;
+    transition:
+      transform 220ms ease,
+      box-shadow 220ms ease,
+      background 220ms ease,
+      opacity 220ms ease;
+  }
+
+  .artifact::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0));
+    opacity: 0;
+    transform: translateX(-45%);
+    transition:
+      opacity 220ms ease,
+      transform 420ms ease;
+  }
+
+  .artifact span {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition: color 180ms ease;
+  }
+
+  .artifact:hover {
+    transform: translateY(-6px);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.18));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.46),
+      0 18px 44px rgba(98, 73, 159, 0.14),
+      0 0 24px rgba(183, 141, 245, 0.14);
+  }
+
+  .artifact:hover::before {
+    opacity: 1;
+    transform: translateX(45%);
+  }
+
+  .artifact:hover span,
+  .artifact:focus-visible span {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .artifact:active {
+    transform: translateY(2px);
+    box-shadow:
+      inset 0 2px 8px rgba(77, 70, 111, 0.12),
+      0 8px 26px rgba(98, 73, 159, 0.1);
+  }
+
+  .artifact:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.72);
+    outline-offset: 4px;
+  }
+
+  .artifact--class {
+    grid-column: 1;
+    grid-row: span 3;
+  }
+
+  .artifact--rinui {
+    grid-column: 2;
+    grid-row: span 2;
+  }
+
+  .artifact--pbi {
+    grid-column: 1;
+    grid-row: span 4;
+  }
+
+  .artifact--lab {
+    grid-column: 2;
+    grid-row: span 3;
+  }
+
+  .artifact--notes {
+    grid-column: 2;
+    grid-row: span 4;
+  }
+
+  .scroll-cue {
+    position: absolute;
+    z-index: 6;
+    left: 50%;
+    bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.92);
+    text-decoration: none;
+  }
+
+  .scroll-cue span {
+    width: 22px;
+    height: 34px;
+    border: 2px solid currentColor;
+    border-radius: 999px;
+    opacity: 0.92;
+  }
+
+  .scroll-cue b {
+    font-family: 'Plus Jakarta Sans', Geist, ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0.42em;
+    font-weight: 700;
+  }
+
+  @media (max-width: 1024px) {
+    .hero-content {
+      padding-top: 138px;
+    }
+
+    .artifact span {
+      font-size: 10px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-shell {
+      min-height: 100svh;
+      background: var(--hero-shell-bg-mobile);
+    }
+
+    .hero-content {
+      display: block;
+      width: min(100% - 40px, 520px);
+      padding-top: 112px;
+      text-align: left;
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(40px, 11vw, 54px);
+    }
+
+    .hero-title-desktop {
+      display: none;
+    }
+
+    .hero-title-mobile {
+      display: inline;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 24px;
+    }
+
+    .hero-horizon {
+      --mark-size: 106px;
+      top: calc(54vh - var(--mark-size));
+      width: 180px;
+    }
+
+    .stage-wrap {
+      inset: calc(54vh - 1px) 0 0;
+      height: 46vh;
+      perspective: 280px;
+      perspective-origin: 50% 0%;
+    }
+
+    .artifact-grid {
+      top: 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: clamp(28px, 5vh, 44px);
+      gap: clamp(10px, 2vw, 16px);
+      width: min(640px, 82vw);
+      height: 68vh;
+      padding: clamp(32px, 4vw, 56px) clamp(20px, 3vw, 36px);
+      transform: translateX(-50%) rotateX(76deg) scale(0.58);
+    }
+
+    .artifact {
+      border-radius: 14px;
+    }
+
+    .artifact--class {
+      grid-column: 1;
+      grid-row: span 3;
+    }
+
+    .artifact--rinui {
+      grid-column: 2;
+      grid-row: span 2;
+    }
+
+    .artifact--pbi {
+      grid-column: 1;
+      grid-row: span 4;
+    }
+
+    .artifact--lab {
+      grid-column: 2;
+      grid-row: span 3;
+    }
+
+    .artifact--notes {
+      grid-column: 2;
+      grid-row: span 4;
+    }
+
+    .scroll-cue {
+      bottom: 128px;
+      gap: 12px;
+    }
+
+    .scroll-cue span {
+      width: 18px;
+      height: 28px;
+      border-width: 1px;
+    }
+
+    .scroll-cue b {
+      font-size: 11px;
+      letter-spacing: 0.36em;
+    }
+  }
+
+  @media (max-width: 474px) {
+    .hero-content {
+      width: calc(100% - 32px);
+      padding-top: 96px;
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(35px, 10.8vw, 42px);
+    }
+
+    .hero-actions :global(.btn) {
+      height: 38px;
+      padding-inline: 20px;
+      font-size: 15px;
+    }
+
+    .hero-horizon {
+      --mark-size: 92px;
+      top: calc(54vh - var(--mark-size));
+    }
+
+    .stage-wrap {
+      inset: calc(54vh - 1px) 0 0;
+      perspective: 240px;
+    }
+
+    .artifact-grid {
+      transform: translateX(-50%) rotateX(77deg) scale(0.5);
+      grid-auto-rows: clamp(26px, 4.8vh, 40px);
+      gap: 16px;
+      padding: clamp(64px, 10vw, 128px) clamp(32px, 5vw, 64px);
+    }
+
+    .artifact span {
+      font-size: 9px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .artifact {
+      transition: none;
+    }
+  }
+</style>

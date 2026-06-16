@@ -1,0 +1,41 @@
+---
+// Figma: GalleryEntry — 浅色底 + 垂直堆叠
+// 背景: 白色/浅色 (light)
+// 标题 "Gallery" 居中, 副标题居中, 按钮居中
+// 下方: 一个大的浅灰色矩形区域（瀑布流预览）
+
+import Button from '../../Button.astro';
+---
+
+<section class="bg-light py-24 transition-colors duration-300">
+  <div class="mx-auto max-w-6xl px-6">
+    <!-- 居中内容区 -->
+    <div class="mx-auto max-w-2xl text-center">
+      <!-- Gallery 标题 -->
+      <h2 class="text-title-large font-sans font-bold tracking-tight text-dark">
+        Gallery
+      </h2>
+      <!-- 副标题 -->
+      <p class="mt-3 text-body-large text-neutral-600">
+        我的收藏、想法或小作品 - 原RinHub
+      </p>
+      <!-- 按钮 -->
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <Button variant="primary" href="/gallery">投稿</Button>
+        <Button variant="default" href="/gallery">前往</Button>
+      </div>
+    </div>
+
+    <!-- 大预览区：单个全宽浅灰矩形 -->
+    <div class="gallery-preview mt-12 w-full rounded-2xl shadow-sm" style="aspect-ratio: 1440/520">
+      <!-- 瀑布流占位 -->
+    </div>
+  </div>
+</section>
+
+<style>
+  .gallery-preview {
+    background: var(--bg-muted);
+    transition: background-color 0.25s ease;
+  }
+</style>

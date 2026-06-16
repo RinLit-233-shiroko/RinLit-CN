@@ -1,0 +1,105 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  // 使用 class 策略：手动切换 <html> 上的 .dark 类来驱动暗色模式
+  // 这样可以与 localStorage 持久化 + 用户手动切换配合，而不依赖系统偏好
+  darkMode: 'class',
+  content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+  theme: {
+    extend: {
+      colors: {
+        light: 'var(--color-light)',
+        dark: 'var(--color-dark)',
+        surface: {
+          dark: 'var(--color-surface-dark)',
+        },
+        text: {
+          dark: 'var(--color-text-dark)',
+        },
+        brand: {
+          primary: 'var(--color-general-primary)',
+          secondary: 'var(--color-general-secondary)',
+          tertiary: 'var(--color-general-tertiary)',
+          neutral: 'var(--color-general-neutral)',
+        },
+        primary: {
+          100: 'var(--color-primary-100)',
+          200: 'var(--color-primary-200)',
+          300: 'var(--color-primary-300)',
+          400: 'var(--color-primary-400)',
+          500: 'var(--color-primary-500)',
+          600: 'var(--color-primary-600)',
+          700: 'var(--color-primary-700)',
+          800: 'var(--color-primary-800)',
+          900: 'var(--color-primary-900)',
+        },
+        secondary: {
+          100: 'var(--color-secondary-100)',
+          200: 'var(--color-secondary-200)',
+          300: 'var(--color-secondary-300)',
+          400: 'var(--color-secondary-400)',
+          500: 'var(--color-secondary-500)',
+          600: 'var(--color-secondary-600)',
+          700: 'var(--color-secondary-700)',
+          800: 'var(--color-secondary-800)',
+          900: 'var(--color-secondary-900)',
+        },
+        tertiary: {
+          100: 'var(--color-tertiary-100)',
+          200: 'var(--color-tertiary-200)',
+          300: 'var(--color-tertiary-300)',
+          400: 'var(--color-tertiary-400)',
+          500: 'var(--color-tertiary-500)',
+          600: 'var(--color-tertiary-600)',
+          700: 'var(--color-tertiary-700)',
+          800: 'var(--color-tertiary-800)',
+          900: 'var(--color-tertiary-900)',
+        },
+        neutral: {
+          100: 'var(--color-neutral-100)',
+          200: 'var(--color-neutral-200)',
+          300: 'var(--color-neutral-300)',
+          400: 'var(--color-neutral-400)',
+          500: 'var(--color-neutral-500)',
+          600: 'var(--color-neutral-600)',
+          700: 'var(--color-neutral-700)',
+          800: 'var(--color-neutral-800)',
+          900: 'var(--color-neutral-900)',
+        },
+        logo: {
+          light: 'var(--color-logo-light)',
+          dark: 'var(--color-logo-dark)',
+        },
+      },
+      fontFamily: {
+        sans: ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        cjk: ['Sarasa SC', 'Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        jakarta: ['Plus Jakarta Sans', 'Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        caption: ['12px', { lineHeight: '16px', fontWeight: '400' }],
+        body: ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        'body-large': ['18px', { lineHeight: '24px', fontWeight: '400' }],
+        subtitle: ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        title: ['28px', { lineHeight: '36px', fontWeight: '600' }],
+        'title-large': ['40px', { lineHeight: '52px', fontWeight: '700' }],
+        display: ['68px', { lineHeight: '92px', fontWeight: '700' }],
+        hero: ['64px', { lineHeight: '1.1', fontWeight: '800' }],
+        'hero-mobile': ['48px', { lineHeight: '1.1', fontWeight: '800' }],
+        'section-label': ['16px', { letterSpacing: '0.25em', fontWeight: '600' }],
+        'btn-cjk': ['17px', { fontWeight: '700' }],
+      },
+      spacing: {
+        figma: '96px',
+        section: '64px',
+        content: '32px',
+        module: '16px',
+      },
+      borderRadius: {
+        figma: '5px',
+        pill: '24px',
+      },
+    },
+  },
+  plugins: [],
+};

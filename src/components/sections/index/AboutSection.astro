@@ -1,0 +1,58 @@
+---
+// Figma: About — 深色背景 + 垂直居中 + Business Card
+// 背景: 深色 (neutral-900)
+// 内容全部居中:
+//   "About" 标题 (浅色)
+//   "了解我" 副标题
+//   "了解更多" 按钮 — primary 样式 (紫色填充)
+// Business Card: 白色矩形, RinLit R Logo 居中
+
+import Button from '../../Button.astro';
+---
+
+<section class="bg-light py-24 transition-colors duration-300">
+  <div class="mx-auto max-w-6xl px-6">
+    <!-- 居中文字区 -->
+    <div class="mx-auto max-w-2xl text-center">
+      <!-- About 标题 -->
+      <h2 class="text-title-large font-sans font-bold tracking-tight text-dark">
+        About
+      </h2>
+      <!-- 了解我 -->
+      <p class="mt-3 text-body-large text-neutral-500">
+        了解我
+      </p>
+      <!-- 了解更多按钮: PRIMARY 样式 -->
+      <div class="mt-8">
+        <Button variant="primary" href="/me">了解更多</Button>
+      </div>
+    </div>
+
+    <!-- Business Card: 白色矩形 + Logo 居中 -->
+    <div class="business-card mx-auto mt-16 max-w-md overflow-hidden rounded-3xl p-16 shadow-lg">
+      <div class="flex items-center justify-center">
+        <img
+          src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
+          alt="RinLit"
+          class="bc-logo bc-logo--light h-28 w-auto opacity-90"
+        />
+        <img
+          src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
+          alt="RinLit"
+          class="bc-logo bc-logo--dark h-28 w-auto opacity-90"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .business-card {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .bc-logo--light { display: var(--logo-light-display); }
+  .bc-logo--dark { display: var(--logo-dark-display); }
+</style>

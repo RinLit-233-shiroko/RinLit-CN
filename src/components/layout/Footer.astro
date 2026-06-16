@@ -1,0 +1,81 @@
+---
+// Figma: Footer 组件
+// Default (Light 模式): fills neutral/400 (#E1DFEA)
+// Dark 模式:           fills neutral/800 (#25213E)
+//
+// 实现说明: 由于站点使用全局 .dark 类切换, Footer 不再依赖 variant
+// 静态选色, 而是用 CSS 在 .dark 下覆盖背景与文字色, 保证与切换一致。
+
+interface Props {
+  variant?: 'default' | 'dark';
+}
+
+const { variant = 'default' } = Astro.props;
+---
+
+<footer class="site-footer">
+  <div class="mx-auto max-w-6xl px-6">
+    <div class="flex flex-col items-center gap-6">
+      <!-- Logo (浅/暗色各一张, 用 .dark 类切换) -->
+      <img
+        class="footer-logo footer-logo--light"
+        src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=True.png"
+        alt="RinLit"
+      />
+      <img
+        class="footer-logo footer-logo--dark"
+        src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=True.png"
+        alt="RinLit"
+      />
+
+      <!-- Nav -->
+      <nav class="flex flex-wrap justify-center gap-6 text-body">
+        <a href="/fields" class="footer-link">领域</a>
+        <a href="/gallery" class="footer-link">收藏</a>
+        <a href="/writing" class="footer-link">随笔</a>
+        <a href="/me" class="footer-link">我</a>
+      </nav>
+
+      <!-- Copyright -->
+      <p class="footer-copy text-caption">
+        &copy; {new Date().getFullYear()} RinLit. All rights reserved.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--footer-bg);
+    color: var(--text);
+    padding-top: 48px;
+    padding-bottom: 112px;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  @media (min-width: 769px) {
+    .site-footer {
+      padding-bottom: 48px;
+    }
+  }
+
+  .footer-logo {
+    height: 32px;
+    width: auto;
+  }
+  .footer-logo--light { display: var(--logo-light-display); }
+  .footer-logo--dark { display: var(--logo-dark-display); }
+
+  .footer-link {
+    color: inherit;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+  .footer-link:hover {
+    opacity: 0.7;
+  }
+
+  .footer-copy {
+    opacity: 0.5;
+  }
+</style>

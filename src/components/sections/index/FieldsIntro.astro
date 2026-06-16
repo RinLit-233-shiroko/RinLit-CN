@@ -2,8 +2,11 @@
 // Figma: FieldsIntro — 深色背景 + 高卡片
 // 背景: 深色（接近 neutral-900 或更深）
 // 标题: "Explorer the fields." 浅色文字
-// 3 张高卡片: 深灰填充, borderRadius 24px, 名称在底部左侧, OpenButton 圆形在右下角
+// 3 张高卡片横排, 背景图填充, 底部渐变遮罩 + 标题/按钮
 // AutoPlayControl: PauseButton + PageIndicator 居中
+
+import AutoPlayController from '../../AutoPlayController.astro';
+import Button from '../../Button.astro';
 
 const fields = [
   { name: 'Software', href: '/fields/software' },
@@ -13,56 +16,110 @@ const fields = [
 ---
 
 <section id="fields" class="bg-light py-24 transition-colors duration-300">
+  <!-- 标题区: 受 max-w-6xl 约束 -->
   <div class="mx-auto max-w-6xl px-6">
-    <!-- 标题: Explorer the fields. — 浅色文字 -->
     <h2 class="text-title-large font-sans font-bold tracking-tight text-dark">
       Explorer the fields.
     </h2>
+  </div>
 
-    <!-- 3 张高卡片 -->
-    <div class="mt-10 grid gap-5 md:grid-cols-3">
-      {fields.map((field) => (
+  <!-- 卡片滚动容器: 填满页面宽度, 无视父级 padding -->
+  <div class="fields-scroll mt-10 overflow-x-auto" data-count={fields.length}>
+    <div class="fields-cards flex gap-4" style="width: max-content; padding-left: max(24px, calc((100vw - 1152px) / 2)); padding-right: max(24px, calc((100vw - 1152px) / 2));">
+      {fields.map((field, i) => (
         <a
           href={field.href}
-          class="group relative flex flex-col justify-end overflow-hidden rounded-3xl bg-neutral-200 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          style="aspect-ratio: 3/4"
+          class="fields-card group relative flex shrink-0 flex-col justify-end overflow-hidden rounded-3xl"
+          data-card={i}
+          style="width: min(100vw, 1200px); height: 700px;"
         >
-          <!-- 底部内容区 -->
-          <div class="flex items-center justify-between">
-            <span class="text-subtitle font-sans font-semibold text-neutral-600">
+          <!-- 背景图占位 (fill) -->
+          <div class="absolute inset-0 bg-neutral-300" data-bg />
+
+          <!-- 底部渐变遮罩伪元素 (在文字按钮下方) -->
+          <div class="fields-card__overlay" />
+
+          <!-- 底部内容区: 标题 + 按钮 -->
+          <div class="relative z-10 mb-[42px] flex items-center justify-between px-[46px]">
+            <span class="fields-card__title">
               {field.name}
             </span>
 
-            <!-- OpenButton: 圆形按钮 -->
-            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-500/10 transition-colors group-hover:bg-primary-500">
-              <svg class="h-3.5 w-3.5 text-primary-400 transition-colors group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </div>
+            <Button variant="default" icon="external-link" flat class="!h-12 !w-12 !px-0" />
           </div>
         </a>
       ))}
     </div>
+  </div>
 
-    <!-- AutoPlayControl: PauseButton + PageIndicator 居中 -->
-    <div class="mt-8 flex items-center justify-center gap-3">
-      <!-- PauseButton -->
-      <button class="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 transition-colors hover:bg-neutral-300">
-        <svg class="h-3 w-3 text-neutral-500" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="6" y="4" width="4" height="16" rx="1" />
-          <rect x="14" y="4" width="4" height="16" rx="1" />
-        </svg>
-      </button>
-      <!-- PageIndicator pill -->
-      <div class="flex items-center gap-1.5 rounded-full bg-neutral-200 px-3 py-1.5">
-        {fields.map((_, i) => (
-          <span
-            class={`h-1 rounded-full transition-all ${
-              i === 0 ? 'w-4 bg-primary-500' : 'w-1 bg-neutral-300'
-            }`}
-          ></span>
-        ))}
-      </div>
-    </div>
+  <!-- AutoPlayControl: PauseButton + PageIndicator 居中 -->
+  <div class="mt-8 flex items-center justify-center">
+    <AutoPlayController count={fields.length} duration={5000} autoplay={true} />
   </div>
 </section>
+
+<script>
+  // 翻页器切换时, 滚动卡片容器到对应卡片左对齐
+  // 监听 #fields (section), 因为 .apc 的 change 事件 bubbles 到这里
+  function syncFieldsCards() {
+    const section = document.querySelector<HTMLElement>('#fields');
+    const scrollContainer = document.querySelector<HTMLElement>('.fields-scroll');
+    if (!section || !scrollContainer) return;
+
+    const cardEls = Array.from(scrollContainer.querySelectorAll<HTMLElement>('.fields-card'));
+    const cardsInner = document.querySelector<HTMLElement>('.fields-cards');
+
+    section.addEventListener('change', ((e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || typeof detail.index !== 'number') return;
+      const { index } = detail;
+      const target = cardEls[index];
+      if (!target || !cardsInner) return;
+
+      // 滚动到卡片位置, 减去内层 padding-left 使其左对齐
+      const paddingLeft = parseFloat(getComputedStyle(cardsInner).paddingLeft);
+      scrollContainer.scrollTo({
+        left: target.offsetLeft - paddingLeft,
+        behavior: 'smooth',
+      });
+    }) as EventListener);
+  }
+
+  syncFieldsCards();
+  document.addEventListener('astro:page-load', syncFieldsCards);
+</script>
+
+<style>
+  /* 滚动容器: 隐藏滚动条 */
+  .fields-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .fields-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 标题字体: Plus Jakarta Sans 粗体 40px */
+  .fields-card__title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 40px;
+    color: #ffffff;
+  }
+
+  /* 底部渐变遮罩: 深灰 alpha50% → 黑透明 (由下到上) */
+  .fields-card__overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    height: calc(46px + 48px + 42px); /* padding + button-height + margin-bottom */
+    background: linear-gradient(
+      to top,
+      rgba(64, 64, 64, 0.5),
+      rgba(0, 0, 0, 0)
+    );
+    pointer-events: none;
+  }
+</style>

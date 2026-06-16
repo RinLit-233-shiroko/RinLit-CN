@@ -1,0 +1,522 @@
+---
+// AutoPlayController — 轮播控制器
+//
+// 由两部分组成，各自独立 Pill 背景（同 Button.astro 的 default 变体）:
+//   1. 暂停/播放按钮 — 46x46 正方形, 仅显示 player-play / player-pause 图标
+//   2. 页面指示点 — Grid 等分列宽, 每格居中放置填充物;
+//      非当前页: 8x8 圆点; 当前页: 46x8 进度条, 走完自动切下一页
+//
+// 设计原则:
+//   - 控件本身不持有"上方显示板块"的内容, 只负责状态: 当前页 + 是否自动播放
+//   - 父级通过监听自定义事件 `change` 获取 { index, playing } 状态
+//   - 进度由 requestAnimationFrame 逐帧写入当前页的 --apc-progress (0→1),
+//     CSS 用 transform: scaleX(var(--apc-progress)) 渲染进度条;
+//     暂停即冻结 progress, 恢复即继续, 无需重启 CSS 动画。
+
+import { getIcon } from '../utils/icons';
+
+interface Props {
+  /** 总页数 */
+  count?: number;
+  /** 初始页索引 (0-based) */
+  initial?: number;
+  /** 每页停留时长 (ms) */
+  duration?: number;
+  /** 初始是否自动播放 */
+  autoplay?: boolean;
+  /** 唯一 id, 用于多实例隔离 (默认自动生成) */
+  id?: string;
+  class?: string;
+}
+
+const {
+  count = 3,
+  initial = 0,
+  duration = 5000,
+  autoplay = true,
+  id,
+  class: className = '',
+} = Astro.props;
+
+// 实例 id: 用于隔离多个控制器的 DOM 选择器与 CSS 变量作用域
+const uid = id ?? `apc-${Math.random().toString(36).slice(2, 9)}`;
+const safeInitial = Math.min(Math.max(initial, 0), Math.max(count - 1, 0));
+
+const playIcon = getIcon('player-play', 20, 'filled');
+const pauseIcon = getIcon('player-pause', 20, 'filled');
+---
+
+<div
+  class={`apc ${className}`}
+  id={uid}
+  role="group"
+  aria-label="轮播控制器"
+  data-count={count}
+  data-duration={duration}
+  data-playing={autoplay ? 'true' : 'false'}
+  data-index={safeInitial}
+>
+  <!-- ===== 1. 暂停 / 播放按钮 (独立 Pill) ===== -->
+  <div class="apc__pill apc__pill--toggle">
+    <button
+      type="button"
+      class="apc__toggle"
+      aria-label="暂停自动播放"
+      aria-pressed={autoplay ? 'true' : 'false'}
+    >
+      <span class="apc__icon apc__icon--pause" set:html={pauseIcon} aria-hidden="true"></span>
+      <span class="apc__icon apc__icon--play" set:html={playIcon} aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <!-- ===== 2. 页面指示器 (独立 Pill, flex 等分保证间距相等) ===== -->
+  <div class="apc__pill apc__pill--indicator" style={`--apc-count: ${count}`}>
+    <ul class="apc__list" role="tablist" aria-label="选择页面">
+      {Array.from({ length: count }).map((_, i) => (
+        <li>
+          <button
+            type="button"
+            class="apc__dot"
+            role="tab"
+            aria-selected={i === safeInitial ? 'true' : 'false'}
+            aria-label={`第 ${i + 1} 页`}
+            data-dot={i}
+          >
+            <span class="apc__dot-fill" aria-hidden="true"></span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     容器 — 透明底, 仅负责 flex 布局 + 间距
+     ============================================================ */
+  .apc {
+    position: relative;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ============================================================
+     Pill 公共样式 — 与 Button.astro default 变体一致:
+     - 背景: var(--pill-bg)
+     - 阴影: 0 8px 12px var(--pill-shadow)
+     - 背景模糊: 6px
+     - 渐变边框 via ::before
+     ============================================================ */
+  .apc__pill {
+    position: relative;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 24px;
+    background: var(--pill-bg);
+    box-shadow: 0 8px 12px var(--pill-shadow);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: none;
+    transition: background-color 0.25s ease;
+  }
+
+  /* 渐变边框 — 与 Button.astro 相同的 ::before mask 技巧 */
+  .apc__pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 24px;
+    padding: 2px;
+    background: var(--border-gradient);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ---- 播放/暂停按钮的 Pill (46x46 正方形) ---- */
+  .apc__pill--toggle {
+    width: 46px;
+    height: 46px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .apc__pill--toggle::before {
+    border-radius: 50%;
+  }
+
+  /* ---- 指示器的 Pill: 与播放按钮等高(46px), 固定宽度不随内容变化 ---- */
+  .apc__pill--indicator {
+    height: 46px;
+    padding: 0 12px;
+    border-radius: 24px;
+  }
+
+  .apc__list {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 4px;
+  }
+
+  .apc__list li {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ============================================================
+     1. 暂停 / 播放按钮
+     ============================================================ */
+  .apc__toggle {
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #AAA;
+    /* color: var(--text-strong); */
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .apc__toggle:hover {
+    background: var(--border-strong);
+  }
+
+  .apc__toggle:active {
+    opacity: 0.7;
+  }
+
+  .apc__toggle:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+
+  /* 两个图标叠放, 由 data-playing 切换显隐 */
+  .apc__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    transition: opacity 0.15s ease;
+  }
+
+  .apc__icon :global(svg) {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+
+  /* 默认 (playing=true): 显示 pause 图标 */
+  .apc__icon--pause { opacity: 1; }
+  .apc__icon--play  { opacity: 0; }
+
+  /* 暂停态 (playing=false): 切换为 play 图标 */
+  .apc[data-playing='false'] .apc__icon--pause { opacity: 0; }
+  .apc[data-playing='false'] .apc__icon--play  { opacity: 1; }
+
+  /* ============================================================
+     2. 页面指示点 (li 固定 46px 宽, flex 居中)
+     ============================================================ */
+
+  /* 每个 dot: 点击区域, 由父级 li 居中 */
+  .apc__dot {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .apc__dot:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 1px;
+  }
+
+  /* 填充: 默认 8x8 圆角矩形 (neutral) */
+  .apc__dot-fill {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border-strong);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.3s ease;
+    transform-origin: left center;
+    flex-shrink: 0;
+  }
+
+  /* 当前页: 46x8 进度条容器, 内部 scaleX 表进度 */
+  .apc__dot[aria-selected='true'] .apc__dot-fill {
+    width: 46px;
+    height: 8px;
+    background: var(--border-strong);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 进度层: CSS Animation 驱动, JS 只需控制 play/pause + 重启。
+     animation-duration 由内联 style --apc-duration 传入,
+     animationend 事件触发切下一页。 */
+  .apc__dot[aria-selected='true'] .apc__dot-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #AAA;
+    border-radius: inherit;
+    transform-origin: left center;
+    animation: apc-progress var(--apc-duration, 5000ms) linear forwards;
+  }
+  /* :global(:root.dark) .apc__dot[aria-selected='true'] .apc__dot-fill::after {
+    background: var(--color-text-dark);
+  } */
+
+  /* 暂停态冻结动画 */
+  .apc[data-playing='false'] .apc__dot[aria-selected='true'] .apc__dot-fill::after {
+    animation-play-state: paused;
+  }
+
+  @keyframes apc-progress {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+
+  /* ============================================================
+     可访问性: 尊重用户减少动效偏好 — 跳过动画直接填满
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    .apc__dot[aria-selected='true'] .apc__dot-fill::after {
+      animation: none;
+      transform: scaleX(1);
+    }
+  }
+</style>
+
+<script>
+  type ControllerState = {
+    index: number;
+    playing: boolean;
+  };
+
+  /**
+   * AutoPlayController 实例逻辑
+   *
+   * 进度驱动: 纯 CSS @keyframes apc-progress 负责从 0→1 的 scaleX 动画,
+   *           JS 只负责三件事:
+   *             1. 暂停/播放 → 切换 data-playing (CSS 自动处理 animation-play-state)
+   *             2. 动画结束 → 监听 animationend 事件切下一页
+   *             3. 跳转/重启 → 移除再添加 ::after 元素触发动画重新开始
+   */
+  function initController(root: HTMLElement) {
+    const toggle = root.querySelector<HTMLButtonElement>('.apc__toggle');
+    const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('.apc__dot'));
+    const count = Number(root.dataset.count) || dots.length;
+    const duration = Number(root.dataset.duration) || 5000;
+
+    // 尊重用户减少动效偏好: 不监听 animationend, 手动定时切页
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let index = Math.min(Math.max(Number(root.dataset.index) || 0, 0), count - 1);
+    let playing = root.dataset.playing === 'true';
+    let hoverPaused = false;
+    let autoAdvanceTimer: ReturnType<typeof setTimeout> | undefined;
+
+    /** 获取当前页的 fill 元素 */
+    function currentFill(): HTMLElement | null {
+      return dots[index]?.querySelector<HTMLElement>('.apc__dot-fill') ?? null;
+    }
+
+    /** 重启当前页的进度动画 */
+    function restartProgress() {
+      const fill = currentFill();
+      if (!fill) return;
+      // 写入 duration 到 CSS 变量
+      fill.style.setProperty('--apc-duration', `${duration}ms`);
+      // 通过 Web Animations API 控制 ::after 伪元素的动画
+      const animations = fill.getAnimations({ subtree: true });
+      animations.forEach((a) => {
+        try {
+          a.cancel();
+          a.play();
+          // 暂停态下立即冻结, 与 CSS data-playing 保持一致
+          if (!playing) a.pause();
+        } catch {
+          /* 忽略未启动的动画 */
+        }
+      });
+    }
+
+    /** 启动自动推进定时器 (仅 reducedMotion 模式) */
+    function startAutoTimer() {
+      stopAutoTimer();
+      if (!reducedMotion) return;
+      autoAdvanceTimer = setTimeout(() => {
+        if (playing && !hoverPaused) advance();
+      }, duration);
+    }
+
+    function stopAutoTimer() {
+      if (autoAdvanceTimer !== undefined) {
+        clearTimeout(autoAdvanceTimer);
+        autoAdvanceTimer = undefined;
+      }
+    }
+
+    /** 切到下一页 */
+    function advance() {
+      index = (index + 1) % count;
+      render();
+    }
+
+    /** 同步 DOM 到当前 state, 并广播 change 事件 */
+    function render() {
+      root.dataset.playing = String(playing);
+      root.dataset.index = String(index);
+
+      if (toggle) {
+        toggle.setAttribute('aria-pressed', String(playing));
+        toggle.setAttribute('aria-label', playing ? '暂停自动播放' : '开始自动播放');
+      }
+
+      dots.forEach((dot, i) => {
+        const isCurrent = i === index;
+        dot.setAttribute('aria-selected', String(isCurrent));
+        dot.dataset.passed = i < index ? 'true' : 'false';
+      });
+
+      // 当前页: 重启进度动画
+      restartProgress();
+
+      // reducedMotion 下启动手动定时器
+      if (playing && !hoverPaused) startAutoTimer();
+
+      root.dispatchEvent(
+        new CustomEvent<ControllerState>('change', {
+          bubbles: true,
+          detail: { index, playing },
+        })
+      );
+    }
+
+    function setPlaying(next: boolean) {
+      if (playing === next) return;
+      playing = next;
+      render();
+    }
+
+    /** 跳转到指定页 */
+    function goTo(target: number) {
+      const clamped = ((target % count) + count) % count;
+      if (clamped === index) return;
+      index = clamped;
+      render();
+    }
+
+    // ===== 事件绑定 =====
+    toggle?.addEventListener('click', () => setPlaying(!playing));
+
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        if (i === index) {
+          // 点击当前页: 重启进度
+          render();
+        } else {
+          goTo(i);
+        }
+      });
+    });
+
+    // 进度条动画结束时自动切下一页 (非 reducedMotion)
+    if (!reducedMotion) {
+      dots.forEach((dot) => {
+        dot.querySelector<HTMLElement>('.apc__dot-fill')?.addEventListener('animationend', (e) => {
+          // 只响应 ::after (progress) 的动画结束
+          if (
+            (e as AnimationEvent).pseudoElement === '::after' &&
+            playing &&
+            !hoverPaused &&
+            dot === dots[index] // 关键: 只响应当前 dot 的 animationend, 避免旧页伪元素消失时触发
+          ) {
+            advance();
+          }
+        });
+      });
+    }
+
+    // 鼠标悬停暂停 (可通过 data-apc-hover-pause="false" 关闭)
+    if (root.dataset.apcHoverPause !== 'false') {
+      root.addEventListener('mouseenter', () => {
+        hoverPaused = true;
+        stopAutoTimer();
+      });
+      root.addEventListener('mouseleave', () => {
+        hoverPaused = false;
+        if (playing) startAutoTimer();
+      });
+    }
+
+    // 标签页隐藏时暂停, 可见时恢复
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopAutoTimer();
+      } else if (playing && !hoverPaused) {
+        startAutoTimer();
+      }
+    });
+
+    // 命令 API: { command: 'play'|'pause'|'goto'|'next'|'prev', index? }
+    root.addEventListener('apc:command', ((e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      const { command, index: target } = detail;
+      if (command === 'play') setPlaying(true);
+      else if (command === 'pause') setPlaying(false);
+      else if (command === 'goto' && typeof target === 'number') goTo(target);
+      else if (command === 'next') goTo(index + 1);
+      else if (command === 'prev') goTo(index - 1);
+    }) as EventListener);
+
+    // ===== 初始化 =====
+    render();
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLElement>('.apc').forEach((root) => {
+      if (root.dataset.apcReady === 'true') return;
+      root.dataset.apcReady = 'true';
+      initController(root);
+    });
+  }
+
+  // Astro view transitions / 首次加载均覆盖
+  initAll();
+  document.addEventListener('astro:page-load', initAll);
+</script>

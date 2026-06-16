@@ -21,6 +21,8 @@ package-lock.json
 .pnpm-store
 .vscode-test/
 .claude
+.trae
+.codex
 
 # do not commit .env files or any files that end with `.env`
 *.env

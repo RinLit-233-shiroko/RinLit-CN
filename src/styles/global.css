@@ -98,8 +98,8 @@
     /* ---------- Logo / Icon 显示切换 ---------- */
     --logo-light-display: block;
     --logo-dark-display: none;
-    --icon-sun-display: block;
-    --icon-moon-display: none;
+    .theme-icon--sun { display: inline-flex; }
+    .theme-icon--moon { display: none; }
 
     /* ---------- Footer ---------- */
     --footer-bg: var(--color-neutral-400);
@@ -162,8 +162,8 @@
     /* Logo / Icon 显示切换 — 暗色反转 */
     --logo-light-display: none;
     --logo-dark-display: block;
-    --icon-sun-display: none;
-    --icon-moon-display: block;
+    .theme-icon--sun { display: none; }
+    .theme-icon--moon { display: inline-flex; }
 
     /* Footer — 暗色下翻转 */
     --footer-bg: var(--color-neutral-800);

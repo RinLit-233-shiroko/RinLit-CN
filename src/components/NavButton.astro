@@ -50,10 +50,14 @@ const svgHtml = getIcon(icon, 24);
     color: var(--text);
     background: transparent;
     border: none;
-    cursor: pointer;
     text-decoration: none;
     transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
     user-select: none;
+
+    -webkit-user-drag: none;
+    user-drag: none;
+
+    cursor: default;
   }
 
   .nav-btn:hover {

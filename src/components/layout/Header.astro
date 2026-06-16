@@ -7,6 +7,7 @@
 // Desktop: fixed top center
 // Mobile:  fixed bottom, full-width
 
+import { getIcon } from '../../utils/icons';
 import NavButton from '../NavButton.astro';
 import Button from '../Button.astro';
 
@@ -60,7 +61,9 @@ const isActive = (href: string) => {
   <!-- ======== Toolbar: PC端 nav 右侧 / 移动端右上角 ======== -->
   <div class="toolbar" aria-label="工具栏">
     <!-- 颜色模式 -->
-    <Button variant="default" icon="theme" class="theme-toggle" id="theme-toggle" aria-label="Color Mode">
+    <Button variant="default" class="theme-toggle" id="theme-toggle" aria-label="Color Mode">
+      <span class="theme-icon theme-icon--sun" set:html={getIcon('sun', 18)} />
+      <span class="theme-icon theme-icon--moon" set:html={getIcon('moon', 18)} />
     </Button>
     <!-- 菜单 -->
      <Button variant="default" icon="menu-2" class="menu" aria-label="Menu">
@@ -236,6 +239,21 @@ const isActive = (href: string) => {
       right: 20px;
       z-index: 60;
     }
+  }
+
+  /* ======== 主题切换图标 ======== */
+  .theme-icon {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .theme-icon :global(svg) {
+    width: 18px;
+    height: 18px;
+    display: block;
   }
 </style>
 

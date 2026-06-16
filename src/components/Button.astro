@@ -23,6 +23,7 @@ interface Props {
   icon?: string;
   id?: string;
   class?: string;
+  flat?: boolean;
 }
 
 const {
@@ -31,6 +32,7 @@ const {
   icon = '',
   id = '',
   class: className = '',
+  flat = false,
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
@@ -42,22 +44,13 @@ const base =
     isIconOnly ? 'w-10 !px-0' : ''
   }`;
 
-// theme 模式：同时渲染 sun + moon，由 CSS 变量切换显隐
-const isThemeToggle = icon === 'theme';
-const svgHtml = isThemeToggle ? null : getIcon(icon, 18);
+const svgHtml = getIcon(icon, 18);
 ---
 
-<Tag id={id} href={href} class={`${base} btn btn-${variant} ${className}`}>
-  {(svgHtml || isThemeToggle) && (
+<Tag id={id} href={href} class={`${base} btn btn-${variant} ${flat ? 'btn--flat' : ''} ${className}`}>
+  {svgHtml && (
     <span class="btn__icon">
-      {isThemeToggle ? (
-        <>
-          <span class="icon-sun" set:html={getIcon('sun', 18)} />
-          <span class="icon-moon" set:html={getIcon('moon', 18)} />
-        </>
-      ) : (
-        <span set:html={svgHtml} />
-      )}
+      <span set:html={svgHtml} />
     </span>
   )}
   {!isIconOnly && <span class="btn__text"><slot /></span>}
@@ -73,6 +66,11 @@ const svgHtml = isThemeToggle ? null : getIcon(icon, 18);
     position: relative;
     z-index: 0;
     transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+
+    -webkit-user-drag: none;
+    user-drag: none;
+
+    cursor: default;
   }
 
   /* ======== 渐变边框：用 ::before 伪元素绘制 ======== */
@@ -111,10 +109,6 @@ const svgHtml = isThemeToggle ? null : getIcon(icon, 18);
     display: block;
   }
 
-  /* 图标切换: 由全局 --icon-*-display 变量驱动 */
-  .icon-sun { display: var(--icon-sun-display); }
-  .icon-moon { display: var(--icon-moon-display); }
-
   .btn__text {
     display: inline;
   }
@@ -143,4 +137,23 @@ const svgHtml = isThemeToggle ? null : getIcon(icon, 18);
   }
   .btn-dark:hover { color: #ffffff; }
   .btn-dark:active { background: rgba(194, 191, 208, 0.5); }  /* #C2BFD0 @ ~80% of original range */
+
+  /* ======== flat 变体: 去阴影 + 背景透明度减半 ======== */
+  .btn--flat {
+    box-shadow: 0 2px 6px var(--shadow);
+    /* box-shadow: none; */
+  }
+
+  .btn--flat.btn-primary { background: rgba(140, 126, 205, 0.6); }
+  .btn--flat.btn-primary:hover { background: rgba(140, 126, 205, 0.9); }
+  .btn--flat.btn-primary:active { background: rgba(140, 126, 205, 0.6); }
+
+  :global(:root.dark) .btn--flat.btn-default { background: rgba(194, 191, 208, 0.3); }
+  .btn--flat.btn-default { background: rgba(241, 240, 245, 0.836); }
+  .btn--flat.btn-default:hover { background: rgba(210, 209, 214, 0.4); }
+  .btn--flat.btn-default:active { background: rgba(251, 250, 255, 1); }
+
+  .btn--flat.btn-dark { background: rgba(194, 191, 208, 0.15); }
+  .btn--flat.btn-dark:hover { background: rgba(194, 191, 208, 0.25); }
+  .btn--flat.btn-dark:active { background: rgba(194, 191, 208, 0.35); }
 </style>

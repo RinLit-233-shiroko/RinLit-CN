@@ -32,7 +32,7 @@ const isActive = (href: string) => {
 
 <header class="nav-header">
   <!-- ======== 左侧: Logo pill ======== -->
-  <a href="/" class="nav-pill nav-pill--logo" aria-label="RinLit Home">
+  <Button href="/" variant="default" class="nav-pill--logo">
     <img
       class="nav-pill__logo-img nav-pill__logo--light"
       src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
@@ -43,7 +43,7 @@ const isActive = (href: string) => {
       src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
       alt="RinLit"
     />
-  </a>
+  </Button>
 
   <!-- ======== 右侧: Nav pill ======== -->
   <nav class="nav-pill nav-pill--nav">
@@ -120,13 +120,11 @@ const isActive = (href: string) => {
   }
 
   /* ======== Logo pill: 46×46, 内含 40×40 ======== */
-  .nav-pill--logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
-    height: 46px;
-    text-decoration: none;
+  /* Button 已提供 pill 基础样式, 这里只覆盖尺寸 */
+  :global(.nav-pill--logo) {
+    width: 46px !important;
+    height: 46px !important;
+    padding: 0 !important;
     overflow: hidden;
   }
 
@@ -173,9 +171,10 @@ const isActive = (href: string) => {
     }
 
     /* Logo pill: 72×72, logo 48×48 */
-    .nav-pill--logo {
-      width: 72px;
-      height: 72px;
+    :global(.nav-pill--logo) {
+      width: 72px !important;
+      height: 72px !important;
+      --btn-radius: 9999px;
     }
 
     .nav-pill__logo-img {
@@ -200,9 +199,9 @@ const isActive = (href: string) => {
       gap: calc(12px * var(--scale));
     }
 
-    .nav-pill--logo {
-      width: calc(72px * var(--scale));
-      height: calc(72px * var(--scale));
+    :global(.nav-pill--logo) {
+      width: calc(72px * var(--scale)) !important;
+      height: calc(72px * var(--scale)) !important;
     }
 
     .nav-pill__logo-img {

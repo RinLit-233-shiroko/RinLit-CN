@@ -29,21 +29,32 @@ const isActive = (href: string) => {
   return currentPath.startsWith(href);
 };
 ---
-
 <header class="nav-header">
-  <!-- ======== 左侧: Logo pill ======== -->
-  <a href="/" class="nav-pill nav-pill--logo" aria-label="RinLit Home">
-    <img
-      class="nav-pill__logo-img nav-pill__logo--light"
-      src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
-      alt="RinLit"
+  <!-- ======== 左侧: Logo pill (含桌面端返回按钮) ======== -->
+  <div class="nav-pill nav-pill--logo-group">
+    <!-- 桌面端返回按钮 (icon-only NavButton) -->
+    <NavButton
+      icon="chevron-left"
+      href="javascript:history.back()"
+      class="back-btn back-btn--desktop"
+      id="back-btn-desktop"
+      aria-label="返回"
     />
-    <img
-      class="nav-pill__logo-img nav-pill__logo--dark"
-      src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
-      alt="RinLit"
-    />
-  </a>
+    <span class="nav-pill__separator"></span>
+    <!-- Logo -->
+    <a href="/" class="nav-pill__logo-link" aria-label="RinLit Home">
+      <img
+        class="nav-pill__logo-img nav-pill__logo--light"
+        src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
+        alt="RinLit"
+      />
+      <img
+        class="nav-pill__logo-img nav-pill__logo--dark"
+        src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
+        alt="RinLit"
+      />
+    </a>
+  </div>
 
   <!-- ======== 右侧: Nav pill ======== -->
   <nav class="nav-pill nav-pill--nav">
@@ -58,16 +69,21 @@ const isActive = (href: string) => {
     ))}
   </nav>
 
-  <!-- ======== Toolbar: PC端 nav 右侧 / 移动端右上角 ======== -->
-  <div class="toolbar" aria-label="工具栏">
-    <!-- 颜色模式 -->
-    <Button variant="default" class="theme-toggle" id="theme-toggle" aria-label="Color Mode">
-      <span class="theme-icon theme-icon--sun" set:html={getIcon('sun', 18)} />
-      <span class="theme-icon theme-icon--moon" set:html={getIcon('moon', 18)} />
-    </Button>
-    <!-- 菜单 -->
-     <Button variant="default" icon="menu-2" class="menu" aria-label="Menu">
-    </Button>
+  <!-- ======== 顶部工具栏: 桌面端正常排列 / 移动端固定顶部两端 ======== -->
+  <div class="top-bar">
+    <!-- 移动端返回按钮 -->
+    <Button variant="default" icon="chevron-left" class="back-btn back-btn--mobile" id="back-btn-mobile" aria-label="返回" />
+    <!-- 工具按钮组 -->
+    <div class="toolbar" aria-label="工具栏">
+      <!-- 颜色模式 -->
+      <Button variant="default" class="theme-toggle" id="theme-toggle" aria-label="Color Mode">
+        <span class="theme-icon theme-icon--sun" set:html={getIcon('sun', 18)} />
+        <span class="theme-icon theme-icon--moon" set:html={getIcon('moon', 18)} />
+      </Button>
+      <!-- 菜单 -->
+       <Button variant="default" icon="menu-2" class="menu" aria-label="Menu">
+      </Button>
+    </div>
   </div>
 </header>
 
@@ -94,7 +110,7 @@ const isActive = (href: string) => {
     z-index: 0;
     border-radius: 24px;
     box-shadow: 0 8px 12px var(--pill-shadow);
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(3px);
     background: var(--pill-bg);
     flex-shrink: 0;
     transition: background-color 0.25s ease, box-shadow 0.25s ease;
@@ -119,13 +135,29 @@ const isActive = (href: string) => {
     mask-composite: exclude;
   }
 
-  /* ======== Logo pill: 46×46, 内含 40×40 ======== */
-  .nav-pill--logo {
+  /* ======== Logo group pill: 包含返回按钮 + Logo，隐藏时为46×46正方形 ======== */
+  .nav-pill--logo-group {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 46px;
     height: 46px;
+    width: 46px;
+    padding: 6px 0;
+    gap: 3px;
+  }
+
+  /* 当返回按钮可见时，撑开宽度并恢复横向 padding（仅桌面端） */
+  @media (min-width: 769px) {
+    .nav-pill--logo-group:has(.back-btn--desktop.is-visible) {
+      width: fit-content;
+      padding: 6px 6px;
+    }
+  }
+
+  .nav-pill__logo-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-decoration: none;
     overflow: hidden;
   }
@@ -173,7 +205,14 @@ const isActive = (href: string) => {
     }
 
     /* Logo pill: 72×72, logo 48×48 */
-    .nav-pill--logo {
+    .nav-pill--logo-group {
+      width: 72px;
+      height: 72px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    .nav-pill__logo-link {
       width: 72px;
       height: 72px;
     }
@@ -200,7 +239,12 @@ const isActive = (href: string) => {
       gap: calc(12px * var(--scale));
     }
 
-    .nav-pill--logo {
+    .nav-pill--logo-group {
+      width: calc(72px * var(--scale));
+      height: calc(72px * var(--scale));
+    }
+
+    .nav-pill__logo-link {
       width: calc(72px * var(--scale));
       height: calc(72px * var(--scale));
     }
@@ -217,7 +261,57 @@ const isActive = (href: string) => {
     }
   }
 
-  /* ======== Toolbar ======== */
+  /* ======== 返回按钮及分隔线显隐控制 ======== */
+
+  /* 【核心修复】：只要没有 .is-visible 类名，就用 !important 绝对压制组件自带的 inline-flex 等原子样式 */
+  :global(.back-btn--desktop):not(.is-visible),
+  :global(.back-btn--mobile):not(.is-visible) {
+    display: none !important;
+  }
+
+  /* 分隔线默认隐藏 */
+  .nav-pill__separator {
+    display: none;
+  }
+
+  /* 宽屏/桌面端 (≥769px) 的响应式规则 */
+  @media (min-width: 769px) {
+    /* 当 JS 判定通过、打上 .is-visible 标签时，桌面端返回键才允许显示 */
+    :global(.back-btn--desktop).is-visible {
+      display: flex;
+    }
+    /* 紧跟在可见返回键后面的分隔线也同步显示 */
+    :global(.back-btn--desktop).is-visible + .nav-pill__separator {
+      display: block;
+    }
+    /* 桌面端无论何时都绝对不准显示移动端按钮 */
+    :global(.back-btn--mobile) {
+      display: none !important;
+    }
+  }
+
+  /* 窄屏/移动端 (≤768px) 的响应式规则 */
+  @media (max-width: 768px) {
+    /* 当 JS 判定通过、打上 .is-visible 标签时，移动端返回键才允许显示 */
+    :global(.back-btn--mobile).is-visible {
+      display: flex;
+    }
+    /* 移动端任何时候都绝对不准显示桌面端的组件 */
+    :global(.back-btn--desktop),
+    .nav-pill__separator {
+      display: none !important;
+    }
+  }
+
+  /* ======== Top Bar: 桌面端正常 / 移动端固定顶部两端 ======== */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+
+  /* ======== Toolbar: 桌面端内联排列 / 移动端固定右上角 ======== */
   .toolbar {
     display: flex;
     align-items: center;
@@ -225,14 +319,23 @@ const isActive = (href: string) => {
     gap: 8px;
   }
 
-  .toolbar :global(.btn) {
+  .top-bar :global(.btn) {
     width: 46px;
     height: 46px;
     box-shadow: 0 8px 12px var(--pill-shadow);
   }
 
-  /* Mobile: 固定在右上角 */
+  /* Mobile: top-bar 固定顶部，返回按钮左、工具栏右 */
   @media (max-width: 768px) {
+    .top-bar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      z-index: 60;
+      justify-content: space-between;
+    }
+
     .toolbar {
       position: fixed;
       top: 20px;
@@ -317,4 +420,52 @@ const isActive = (href: string) => {
     // 标记本次初始化已完成
     root.dataset.themeReady = '1';
   })();
+</script>
+
+<script>
+  // 1. 每次页面加载或路由切换完成时，精准刷新按钮的【显隐状态】
+  document.addEventListener('astro:page-load', () => {
+    const desktopBtn = document.getElementById('back-btn-desktop');
+    const mobileBtn = document.getElementById('back-btn-mobile');
+    
+    if (!desktopBtn || !mobileBtn) return;
+
+    // 核心逻辑：用 sessionStorage 维护导航栈，回退时自动截断
+    // 首页 / 新标签打开 → 不显示；从站内点击进入 → 显示；退回首页 → 消失
+    const isIndex = window.location.pathname === '/' || window.location.pathname === '/index';
+    const currentPage = window.location.pathname;
+
+    let navStack = JSON.parse(sessionStorage.getItem('nav-stack') || '[]');
+    const stackIndex = navStack.indexOf(currentPage);
+
+    if (stackIndex !== -1) {
+      // 后退到栈中已有页面 → 截断栈
+      navStack = navStack.slice(0, stackIndex + 1);
+    } else {
+      // 前进到新页面 → 入栈
+      navStack.push(currentPage);
+    }
+    sessionStorage.setItem('nav-stack', JSON.stringify(navStack));
+
+    const hasHistory = navStack.length > 1;
+    const shouldShow = hasHistory && !isIndex;
+    
+
+    // 【纯净修正】：仅仅切换类名，绝不染指具体样式，把控制权还给 CSS
+    desktopBtn.classList.toggle('is-visible', shouldShow);
+    mobileBtn.classList.toggle('is-visible', shouldShow);
+  });
+
+  // 2. 全局只需绑定一次点击事件
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('#back-btn-desktop, #back-btn-mobile');
+    if (!target) return;
+
+    e.preventDefault();
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
+  });
 </script>

@@ -15,25 +15,30 @@ interface Props {
   href?: string;
   icon?: string;
   class?: string;
+  id?: string;
 }
 
-const { active = false, href, icon = '', class: className = '' } = Astro.props;
+const { active = false, href, icon = '', class: className = '', id } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
 
 const svgHtml = getIcon(icon, 24);
+
+// 纯图标模式：没有插槽内容时隐藏文字
+const isIconOnly = !Astro.slots.has('default');
 ---
 
 <Tag
+  id={id}
   href={href}
-  class={`nav-btn ${active ? 'nav-btn--active' : ''} ${className}`}
+  class={`nav-btn ${active ? 'nav-btn--active' : ''} ${isIconOnly ? 'nav-btn--icon-only' : ''} ${className}`}
 >
   {
     svgHtml && (
       <span class="nav-btn__icon" set:html={svgHtml} />
     )
   }
-  <span class="nav-btn__label"><slot /></span>
+  {!isIconOnly && <span class="nav-btn__label"><slot /></span>}
 </Tag>
 
 <style>
@@ -85,6 +90,17 @@ const svgHtml = getIcon(icon, 24);
     width: 24px;
     height: 24px;
     display: block;
+  }
+
+  /* ======== 纯图标模式：显示图标，隐藏文字，固定尺寸 ======== */
+  .nav-btn--icon-only {
+    width: 34px;
+    padding: 6px;
+    justify-content: center;
+  }
+
+  .nav-btn--icon-only .nav-btn__icon {
+    display: inline-flex;
   }
 
   .nav-btn__label {

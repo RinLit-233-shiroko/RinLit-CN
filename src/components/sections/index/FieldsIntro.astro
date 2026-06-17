@@ -44,7 +44,7 @@ const fields = [
               {field.name}
             </span>
 
-            <Button variant="default" flat icon="external-link" flat class="!h-12 !w-12 !px-0" />
+            <Button variant="default" flat icon="external-link" class="linkBtn" />
           </div>
         </a>
       ))}
@@ -132,26 +132,41 @@ const fields = [
     scroll-snap-align: start;
   }
 
-  /* Tablet: 高度 520px */
-  @media (max-width: 1024px) {
-    .fields-card {
-      height: 520px;
-    }
-  }
-
-  /* Phone: 高度 420px */
-  @media (max-width: 640px) {
-    .fields-card {
-      height: 420px;
-    }
-  }
-
   /* ======== 标题字体: Plus Jakarta Sans 粗体 40px ======== */
   .fields-card__title {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 700;
     font-size: 40px;
     color: #ffffff;
+  }
+
+  /* ======== 链接按钮: 默认 48×48, phone 36×36 ======== */
+  :global(.linkBtn) {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Tablet: 高度 460px */
+  @media (max-width: 1024px) {
+    .fields-card {
+      height: 460px;
+    }
+  }
+
+  /* Phone: 高度 400px */
+  @media (max-width: 640px) {
+    .fields-card {
+      height: 400px;
+    }
+
+    .fields-card__title {
+      font-size: 32px;
+    }
+
+    :global(.linkBtn) {
+      width: 42px;
+      height: 42px ;
+    }
   }
 
   /* ======== 底部渐变遮罩: 深灰 alpha50% → 黑透明 (由下到上) ======== */

@@ -183,8 +183,6 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     document.addEventListener('pointerdown', function (e) {
       var pill = $(e.target, '.pill');
       if (!pill) return;
-      // 菜单内的 press 动画会干扰子菜单，跳过
-      if ($(e.target, '.menu-item')) return;
       var glow = pill.querySelector('.pill__glow');
       if (!glow) return;
       if (pill.classList.contains('pill--dragging')) return;

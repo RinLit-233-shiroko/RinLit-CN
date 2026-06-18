@@ -428,6 +428,16 @@ const isActive = (href: string) => {
           }
 
           var inside = $(e.target, '#settings-menu');
+          // 子菜单被移到 body 下，也需要检测
+          if (!inside) {
+            var bodySubs = document.querySelectorAll('body > .menu--sub');
+            for (var i = 0; i < bodySubs.length; i++) {
+              if (bodySubs[i].contains(e.target)) {
+                inside = bodySubs[i];
+                break;
+              }
+            }
+          }
           if (!inside) {
             var dd2 = document.getElementById('settings-menu');
             closeDropdowns(dd2);

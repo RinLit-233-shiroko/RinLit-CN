@@ -107,10 +107,6 @@ const role = roleMap[type];
     // ---- 子菜单定时器隔离 Map ----
     var submenuTimers = new Map();
 
-    // ---- 触屏检测 ----
-    var isTouch = 'ontouchstart' in window;
-    var canHover = !isTouch && window.matchMedia('(hover: hover)').matches;
-
     // ==========================================================
     // 子菜单操作（移入 body → fixed 定位，避开父级 transform 影响）
     // ==========================================================
@@ -268,63 +264,6 @@ const role = roleMap[type];
     }
 
     // ==========================================================
-    // 级联 hover（仅桌面）
-    // ==========================================================
-
-    if (canHover) {
-      document.addEventListener('mouseover', function (e) {
-        if (!e.target || !e.target.nodeType) return;
-        var item = $(e.target, '.menu-item--has-submenu');
-        if (!item) return;
-        var wrapper = item.closest('.menu-item__wrapper');
-        if (!wrapper) return;
-        var sub = getSub(wrapper);
-        if (!sub) return;
-
-        if (submenuTimers.has(sub)) {
-          clearTimeout(submenuTimers.get(sub));
-          submenuTimers.delete(sub);
-        }
-
-        // 关闭同层级其他子菜单
-        var parent = wrapper.parentElement;
-        if (parent) {
-          var siblings = parent.querySelectorAll(':scope > .menu-item__wrapper');
-          for (var i = 0; i < siblings.length; i++) {
-            var sib = siblings[i];
-            if (sib !== wrapper) {
-              var sibSub = getSub(sib);
-              if (sibSub) closeSubmenu(sibSub);
-            }
-          }
-        }
-
-        if (!sub.classList.contains('is-open')) {
-          openSubmenu(sub, wrapper);
-        }
-      });
-
-      document.addEventListener('mouseout', function (e) {
-        if (!e.target || !e.target.nodeType) return;
-        var item = $(e.target, '.menu-item--has-submenu');
-        if (!item) return;
-        var wrapper = item.closest('.menu-item__wrapper');
-        if (!wrapper) return;
-        var sub = getSub(wrapper);
-        if (!sub) return;
-
-        var toElement = e.relatedTarget;
-        if (toElement) {
-          if (wrapper.contains(toElement) || sub.contains(toElement)) return;
-        }
-        if (e.buttons > 0) return;
-
-        var timer = setTimeout(function () { closeSubmenu(sub); }, 180);
-        submenuTimers.set(sub, timer);
-      });
-    }
-
-    // ==========================================================
     // click: 子菜单 / radio / checkbox
     // ==========================================================
 
@@ -334,8 +273,7 @@ const role = roleMap[type];
       if (plainItem.disabled || plainItem.matches('.menu-item--disabled')) return;
 
       if (plainItem.matches('.menu-item--has-submenu')) {
-        if (canHover) return;
-        // 移动端 toggle（互斥：打开前关闭同级其他子菜单）
+        // toggle（互斥：打开前关闭同级其他子菜单）
         var wrapper = plainItem.closest('.menu-item__wrapper');
         if (!wrapper) return;
         var sub = getSub(wrapper);
@@ -508,7 +446,5 @@ const role = roleMap[type];
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(closeAllMenus, 100);
     });
-
-    window.addEventListener('scroll', closeAllMenus, true);
   })();
 </script>

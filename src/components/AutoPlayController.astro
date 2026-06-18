@@ -13,6 +13,7 @@
 //     CSS 用 transform: scaleX(var(--apc-progress)) 渲染进度条;
 //     暂停即冻结 progress, 恢复即继续, 无需重启 CSS 动画。
 
+import Pill from './Pill.astro';
 import { getIcon } from '../utils/icons';
 
 interface Props {
@@ -57,7 +58,7 @@ const pauseIcon = getIcon('player-pause', 20, 'filled');
   data-index={safeInitial}
 >
   <!-- ===== 1. 暂停 / 播放按钮 (独立 Pill) ===== -->
-  <div class="apc__pill apc__pill--toggle">
+  <Pill class="apc__pill apc__pill--toggle">
     <button
       type="button"
       class="apc__toggle"
@@ -67,10 +68,10 @@ const pauseIcon = getIcon('player-pause', 20, 'filled');
       <span class="apc__icon apc__icon--pause" set:html={pauseIcon} aria-hidden="true"></span>
       <span class="apc__icon apc__icon--play" set:html={playIcon} aria-hidden="true"></span>
     </button>
-  </div>
+  </Pill>
 
   <!-- ===== 2. 页面指示器 (独立 Pill, flex 等分保证间距相等) ===== -->
-  <div class="apc__pill apc__pill--indicator" style={`--apc-count: ${count}`}>
+  <Pill class="apc__pill apc__pill--indicator" style={`--apc-count: ${count}`}>
     <ul class="apc__list" role="tablist" aria-label="选择页面">
       {Array.from({ length: count }).map((_, i) => (
         <li>
@@ -87,7 +88,7 @@ const pauseIcon = getIcon('player-pause', 20, 'filled');
         </li>
       ))}
     </ul>
-  </div>
+  </Pill>
 </div>
 
 <style>
@@ -103,64 +104,26 @@ const pauseIcon = getIcon('player-pause', 20, 'filled');
   }
 
   /* ============================================================
-     Pill 公共样式 — 与 Button.astro default 变体一致:
-     - 背景: var(--pill-bg)
-     - 阴影: 0 8px 12px var(--pill-shadow)
-     - 背景模糊: 6px
-     - 渐变边框 via ::before
+     Pill 布局定制 — 背景/阴影/边框由 Pill 组件提供
      ============================================================ */
-  .apc__pill {
-    position: relative;
-    z-index: 0;
+  :global(.apc__pill) {
     display: inline-flex;
     align-items: center;
-    border-radius: 24px;
-    background: var(--pill-bg);
-    box-shadow: 0 8px 12px var(--pill-shadow);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: none;
-    transition: background-color 0.25s ease;
   }
 
-  /* 渐变边框 — 与 Button.astro 相同的 ::before mask 技巧 */
-  .apc__pill::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: 24px;
-    padding: 2px;
-    background: var(--border-gradient);
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  /* ---- 播放/暂停按钮的 Pill (46x46 正方形) ---- */
-  .apc__pill--toggle {
+  /* ---- 播放/暂停按钮的 Pill (46x46 正方形) — global 以绕过 Astro 作用域隔离 ---- */
+  :global(.apc__pill--toggle) {
+    --pill-radius: 50%;
     width: 46px;
     height: 46px;
     justify-content: center;
     padding: 0;
-    border-radius: 50%;
   }
 
-  .apc__pill--toggle::before {
-    border-radius: 50%;
-  }
-
-  /* ---- 指示器的 Pill: 与播放按钮等高(46px), 固定宽度不随内容变化 ---- */
-  .apc__pill--indicator {
+  /* ---- 指示器的 Pill: 与播放按钮等高(46px) ---- */
+  :global(.apc__pill--indicator) {
     height: 46px;
     padding: 0 12px;
-    border-radius: 24px;
   }
 
   .apc__list {

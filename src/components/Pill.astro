@@ -1,0 +1,229 @@
+---
+// Figma: Pill — 可复用的胶囊背景控件
+//
+// 封装 45° 渐变边框、阴影、背景模糊 等通用 Pill 样式。
+// 宽高/内边距/布局 由宿主组件用 class 或 slot 内容自行控制。
+//
+// Props:
+//   primary  — true 时使用主题主色背景
+//   flat     — true 时阴影变浅
+//   class    — 附加 CSS 类
+//   id       — DOM id
+
+interface Props {
+  primary?: boolean;
+  flat?: boolean;
+  class?: string;
+  id?: string;
+}
+
+const { primary = false, flat = false, class: className = '', id = '' } = Astro.props;
+---
+
+<div id={id} class={`pill ${primary ? 'pill--primary' : ''} ${flat ? 'pill--flat' : ''} ${className}`}>
+  <span class="pill__glow" aria-hidden="true"></span>
+  <slot />
+</div>
+
+<style>
+  /* ======== 通用 Pill 样式 ======== */
+  .pill {
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: var(--pill-radius, 24px);
+    background: var(--pill-bg);
+    box-shadow: 0 8px 12px var(--pill-shadow);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+
+    transition:
+      background-color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    user-drag: none;
+  }
+
+  /* 按下放大（纯点击不拖拽时生效） */
+  .pill.is-pressed {
+    transform: scale(1.08);
+  }
+
+  /* 拖拽中禁用 transition，保证手感跟手 */
+  .pill--dragging {
+    transition: transform 0ms !important;
+  }
+
+  /* 渐变边框 via ::before (45°) */
+  .pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    padding: 2px;
+    background: var(--border-gradient);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ======== primary 变体: 主色背景 ======== */
+  .pill--primary {
+    background: var(--pill-primary-bg);
+  }
+
+  /* ======== flat 变体: 轻阴影 ======== */
+  .pill--flat {
+    box-shadow: 0 2px 6px var(--pill-shadow);
+  }
+
+  /* ======== hover 背景状态（仅支持 hover 的设备，如 PC 鼠标） ======== */
+  @media (hover: hover) {
+    .pill:not(.pill--primary):hover {
+      background: var(--pill-bg-hover);
+    }
+
+    .pill--primary:hover {
+      background: var(--pill-primary-bg-hover);
+    }
+
+    .pill--flat.pill--primary:hover {
+      background: color-mix(in srgb, var(--color-primary-500) 90%, transparent);
+    }
+  }
+
+  /* ======== active 背景状态（触屏 & 鼠标通用） ======== */
+  .pill:not(.pill--primary):active {
+    background: var(--pill-bg-active);
+  }
+
+  .pill--primary:active {
+    background: var(--pill-primary-bg-active);
+  }
+
+  .pill--flat.pill--primary:active {
+    background: var(--pill-primary-bg);
+  }
+
+  /* ======== Press Glow: 按下时出现跟随鼠标的 78×78 blur 球 ======== */
+  .pill__glow {
+    position: absolute;
+    z-index: 1;
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.75);
+    filter: blur(32px);
+    -webkit-filter: blur(32px);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    will-change: left, top, opacity;
+
+    /* 基础过渡：淡出 → 700ms */
+    transition: opacity 300ms cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  /* 淡入 → 150ms */
+  .pill__glow.is-visible {
+    opacity: 1;
+    transition: opacity 150ms cubic-bezier(.16,.49,0,.99);
+  }
+</style>
+
+<script is:inline>
+  // Press Glow & Drag — 按下缩放 + 拖拽位移/形变, 释放时弹回
+  (function () {
+    document.addEventListener('pointerdown', function (e) {
+      var pill = e.target.closest('.pill');
+      if (!pill) return;
+      var glow = pill.querySelector('.pill__glow');
+      if (!glow) return;
+      if (pill.classList.contains('pill--dragging')) return;
+
+      var startX = e.clientX;
+      var startY = e.clientY;
+      var rect   = pill.getBoundingClientRect();
+
+      enter(pill, glow, rect, e);
+
+      function onMove(ev) { move(pill, glow, startX, startY, ev); }
+      function onUp()     { leave(pill, glow); cleanup(); }
+
+      function cleanup() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointerleave', onUp);
+      }
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointerleave', onUp);
+    });
+
+    function enter(pill, glow, rect, e) {
+      pill.classList.add('is-pressed');
+      // 初始 inline scale（避免等 pointermove 才设导致的闪烁）
+      pill.style.transform = 'scale(1.08)';
+      // 初次 glow 定位
+      glow.classList.add('is-visible');
+      glow.style.left = (e.clientX - rect.left) + 'px';
+      glow.style.top  = (e.clientY - rect.top) + 'px';
+    }
+
+    function move(pill, glow, sx, sy, e) {
+      if (!pill.classList.contains('pill--dragging')) {
+        // 首次拖拽: 在读 getComputedStyle 之后再切 class，避免过渡中断导致的跳跃
+        var cur = getComputedStyle(pill).transform;
+        pill.classList.remove('is-pressed');
+        pill.classList.add('pill--dragging');
+        pill.style.transform = cur !== 'none' ? cur : 'scale(1.08)';
+        // 下一帧才应用实际拖拽 transform
+        requestAnimationFrame(function () { computeDrag(pill, glow, sx, sy, e); });
+        return;
+      }
+      computeDrag(pill, glow, sx, sy, e);
+    }
+
+    function computeDrag(pill, glow, sx, sy, e) {
+      var dx  = e.clientX - sx;
+      var dy  = e.clientY - sy;
+
+      // 橡胶圈位移: 小拖拽几乎不动，渐近收敛到 ±6px
+      var maxDisp = 6;
+      var tx = Math.sign(dx) * maxDisp * (1 - 1 / (1 + Math.abs(dx) / 80));
+      var ty = Math.sign(dy) * maxDisp * (1 - 1 / (1 + Math.abs(dy) / 80));
+
+      // X/Y 方向各自独立缩放（基值 1.08，衰减更平缓）
+      // 拖拽方向拉伸，垂直方向压缩
+      var scaleX = 1 + 0.08 / (1 + Math.abs(dy) / 120);
+      var scaleY = 1 + 0.08 / (1 + Math.abs(dx) / 120);
+
+      pill.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scaleX + ', ' + scaleY + ')';
+
+      // glow 继续实时跟随鼠标（相对 pill 偏移后的坐标）
+      var r = pill.getBoundingClientRect();
+      glow.style.left = (e.clientX - r.left) + 'px';
+      glow.style.top  = (e.clientY - r.top) + 'px';
+    }
+
+    function leave(pill, glow) {
+      pill.classList.remove('pill--dragging');
+      pill.classList.remove('is-pressed');
+      pill.style.transform = '';               // CSS transition 弹回
+      glow.classList.remove('is-visible');
+    }
+  })();
+</script>

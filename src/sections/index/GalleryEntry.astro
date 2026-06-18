@@ -4,7 +4,7 @@
 // 标题 "Gallery" 居中, 副标题居中, 按钮居中
 // 下方: 一个大的浅灰色矩形区域（瀑布流预览）
 
-import Button from '../../Button.astro';
+import Button from '../../components/Button.astro';
 ---
 
 <section class="bg-light py-24 transition-colors duration-300">
@@ -21,8 +21,8 @@ import Button from '../../Button.astro';
       </p>
       <!-- 按钮 -->
       <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <Button variant="primary" flat href="/gallery">投稿</Button>
-        <Button variant="default" flat href="/gallery">前往</Button>
+        <Button primary flat href="/gallery">投稿</Button>
+        <Button flat href="/gallery">前往</Button>
       </div>
     </div>
 

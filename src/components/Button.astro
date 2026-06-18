@@ -1,24 +1,15 @@
 ---
-// Figma: Button 组件 — 精确参数
+// Figma: Button 组件
 //
-// 所有变体共用 45° 渐变边框 (135°), 1px:
-//   0%    → #FFFFFF 100%
-//   46%   → transparent
-//   56%   → transparent
-//   100%  → #FFFFFF 100%
-//
-// 背景填充:
-//   Primary:      primary-500 @ 60%, 白字
-//   Default 浅色: #FBFAFF @ 60%, neutral-500 字
-//   Default 深色: #C2BFD0 @ 30%, white/70 字
-//
-// 阴影: #4B4B4B @ 6%, y=8, blur=12
-// 背景模糊: 6px
+// Pill 组件提供 45° 渐变边框、阴影、背景模糊。
+// Button 只负责布局、文字、交互状态。
+// 亮/暗色由 CSS 变量自动切换，无需手动指定 variant。
 
+import Pill from './Pill.astro';
 import { getIcon } from '../utils/icons';
 
 interface Props {
-  variant?: 'primary' | 'default' | 'dark';
+  primary?: boolean;
   href?: string;
   icon?: string;
   id?: string;
@@ -27,7 +18,7 @@ interface Props {
 }
 
 const {
-  variant = 'default',
+  primary = false,
   href,
   icon = '',
   id = '',
@@ -36,63 +27,56 @@ const {
 } = Astro.props;
 
 const Tag = href ? 'a' : 'button';
-
 const isIconOnly = !Astro.slots.has('default');
-
-const base =
-  `inline-flex items-center justify-center h-10 px-6 font-cjk text-btn-cjk relative transition-all duration-200 cursor-pointer select-none ${
-    isIconOnly ? 'w-10 !px-0' : ''
-  }`;
-
 const svgHtml = getIcon(icon, 18);
 ---
 
-<Tag id={id} href={href} class={`${base} btn btn-${variant} ${flat ? 'btn--flat' : ''} ${className}`}>
-  {svgHtml && (
-    <span class="btn__icon">
-      <span set:html={svgHtml} />
-    </span>
-  )}
-  {!isIconOnly && <span class="btn__text"><slot /></span>}
-</Tag>
+<Pill primary={primary} flat={flat} id={id} class={className}>
+  <Tag href={href} class={`btn ${isIconOnly ? 'btn--icon-only' : ''}`}>
+    {svgHtml && (
+      <span class="btn__icon">
+        <span set:html={svgHtml} />
+      </span>
+    )}
+    {!isIconOnly && <span class="btn__text"><slot /></span>}
+  </Tag>
+</Pill>
 
 <style>
-  /* ======== 所有变体共用的基础样式 ======== */
+  /* ======== 按钮基础布局 ======== */
   .btn {
-    border-radius: 24px;
-    box-shadow: 0 8px 12px var(--pill-shadow);
-    backdrop-filter: blur(4px);
-    border: none;                            /* 不用原生 border */
-    position: relative;
-    z-index: 0;
-    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
-
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    padding: 0 24px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    background: transparent;
+    border: none;
+    text-decoration: none;
+    color: var(--text-strong);
+    cursor: pointer;
+    transition: opacity 0.2s ease;
     -webkit-user-drag: none;
     user-drag: none;
-
-    cursor: default;
+    user-select: none;
   }
 
-  /* ======== 渐变边框：用 ::before 伪元素绘制 ======== */
-  .btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: 24px;
-    padding: 2px;
-    background: var(--border-gradient);
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+  /* ======== primary 文字色 ======== */
+  :global(.pill--primary) .btn {
+    color: #ffffff;
   }
 
-  /* ======== 图标样式 ======== */
+  /* ======== 纯图标模式 ======== */
+  .btn--icon-only {
+    width: 40px;
+    padding: 0;
+  }
+
+  /* ======== 图标 ======== */
   .btn__icon {
     display: inline-flex;
     align-items: center;
@@ -112,50 +96,4 @@ const svgHtml = getIcon(icon, 18);
   .btn__text {
     display: inline;
   }
-
-  /* ======== 各变体背景 + 文字 ======== */
-  .btn-primary {
-    background: rgba(140, 126, 205, 0.6);   /* primary-500 @ 60% */
-    color: #ffffff;
-  }
-  .btn-primary:hover { opacity: 0.9; }
-  .btn-primary:active { background: rgba(140, 126, 205, 0.8); }
-
-  .btn-default {
-    background: var(--pill-bg);
-    color: var(--text-strong);
-  }
-  .btn-default:hover {
-    color: var(--color-dark);
-    background: #EEEEEE99;
-  }
-  .btn-default:active { background: #DDDDDDCC; }
-
-  .btn-dark {
-    background: rgba(194, 191, 208, 0.3);   /* #C2BFD0 @ 30% */
-    color: #ffffff;
-  }
-  .btn-dark:hover { color: #ffffff; }
-  .btn-dark:active { background: rgba(194, 191, 208, 0.5); }  /* #C2BFD0 @ ~80% of original range */
-
-  /* ======== flat 变体: 去阴影 + 背景透明度减半 ======== */
-  .btn--flat {
-    box-shadow: 0 2px 6px var(--shadow);
-    /* box-shadow: none; */
-  }
-
-  .btn--flat.btn-primary { background: rgba(140, 126, 205, 0.6); }
-  .btn--flat.btn-primary:hover { background: rgba(140, 126, 205, 0.9); }
-  .btn--flat.btn-primary:active { background: rgba(140, 126, 205, 0.6); }
-
-  :global(:root.dark) .btn--flat.btn-default { background: rgba(194, 191, 208, 0.3); }
-  :global(:root.dark) .btn--flat.btn-default:hover { background: rgba(210, 209, 214, 0.6); }
-  :global(:root.dark) .btn--flat.btn-default:active { background: rgba(210, 209, 214, 1); }
-  .btn--flat.btn-default { background: rgba(241, 240, 245, 0.836); }
-  .btn--flat.btn-default:hover { background: rgba(210, 209, 214, 0.4); }
-  .btn--flat.btn-default:active { background: rgba(251, 250, 255, 1); }
-
-  .btn--flat.btn-dark { background: rgba(194, 191, 208, 0.15); }
-  .btn--flat.btn-dark:hover { background: rgba(194, 191, 208, 0.25); }
-  .btn--flat.btn-dark:active { background: rgba(194, 191, 208, 0.35); }
 </style>

@@ -64,10 +64,12 @@ const isIconOnly = !Astro.slots.has('default');
 
     cursor: default;
   }
-
-  .nav-btn:hover {
-    background: var(--border-strong);
+  @media (hover: hover) {
+      .nav-btn:hover {
+          background: var(--border-strong);
+      }
   }
+
 
   .nav-btn:active {
     opacity: 0.6;

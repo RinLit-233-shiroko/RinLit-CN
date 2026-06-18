@@ -7,7 +7,7 @@
 //   "了解更多" 按钮 — primary 样式 (紫色填充)
 // Business Card: 白色矩形, RinLit R Logo 居中
 
-import Button from '../../Button.astro';
+import Button from '../../components/Button.astro';
 ---
 
 <section class="bg-light py-24 transition-colors duration-300">
@@ -24,7 +24,7 @@ import Button from '../../Button.astro';
       </p>
       <!-- 了解更多按钮: PRIMARY 样式 -->
       <div class="mt-8">
-        <Button variant="primary" flat href="/me">了解更多</Button>
+        <Button primary flat href="/me">了解更多</Button>
       </div>
     </div>
 
@@ -32,12 +32,12 @@ import Button from '../../Button.astro';
     <div class="business-card mx-auto mt-16 max-w-md overflow-hidden rounded-3xl p-16 shadow-lg">
       <div class="flex items-center justify-center">
         <img
-          src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
+          src="/images/logo/Type=Square,%20Mode=Light,%20Monochrome=False.png"
           alt="RinLit"
           class="bc-logo bc-logo--light h-28 w-auto opacity-90"
         />
         <img
-          src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
+          src="/images/logo/Type=Square,%20Mode=Dark,%20Monochrome=False.png"
           alt="RinLit"
           class="bc-logo bc-logo--dark h-28 w-auto opacity-90"
         />

@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "astro dev",
+    "dev public": "astro dev --host",
     "build": "astro build",
     "preview": "astro preview"
   },

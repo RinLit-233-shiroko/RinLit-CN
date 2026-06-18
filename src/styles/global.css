@@ -105,7 +105,13 @@
     --footer-bg: var(--color-neutral-400);
 
     /* ---------- 统一 Pill / Button 背景材质 ---------- */
-    --pill-bg: rgba(251, 250, 255, 0.6);
+    --pill-highlight: rgba(255, 250, 255, 0.4);
+    --pill-bg: rgba(251, 250, 255, 0.4);
+    --pill-bg-hover: rgba(238, 238, 238, 0.6);
+    --pill-bg-active: rgba(221, 221, 221, 0.3);
+    --pill-primary-bg: color-mix(in srgb, var(--color-primary-500) 60%, transparent);
+    --pill-primary-bg-hover: color-mix(in srgb, var(--color-primary-500) 72%, transparent);
+    --pill-primary-bg-active: color-mix(in srgb, var(--color-primary-500) 84%, transparent);
     --pill-shadow: rgba(0, 0, 0, 0.08);
 
     color-scheme: light;
@@ -170,6 +176,11 @@
 
     /* Pill / Button — 暗色下统一使用 neutral-500 @ 30% */
     --pill-bg: rgba(194, 191, 208, 0.3);
+    --pill-bg-hover: rgba(210, 209, 214, 0.34);
+    --pill-bg-active: rgba(210, 209, 214, 0.3);
+    --pill-primary-bg: color-mix(in srgb, var(--color-primary-500) 48%, transparent);
+    --pill-primary-bg-hover: color-mix(in srgb, var(--color-primary-500) 62%, transparent);
+    --pill-primary-bg-active: color-mix(in srgb, var(--color-primary-500) 76%, transparent);
     /* 阴影与亮模式一致 */
 
     color-scheme: dark;
@@ -180,6 +191,10 @@
     background: var(--bg);
     color: var(--text);
     transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-primary-500) 75%, transparent);
   }
 
   body {

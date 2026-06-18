@@ -23,6 +23,7 @@ package-lock.json
 .claude
 .trae
 .codex
+*.py
 
 # do not commit .env files or any files that end with `.env`
 *.env

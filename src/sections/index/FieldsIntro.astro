@@ -5,8 +5,8 @@
 // 3 张高卡片横排, 背景图填充, 底部渐变遮罩 + 标题/按钮
 // AutoPlayControl: PauseButton + PageIndicator 居中
 
-import AutoPlayController from '../../AutoPlayController.astro';
-import Button from '../../Button.astro';
+import AutoPlayController from '../../components/AutoPlayController.astro';
+import Button from '../../components/Button.astro';
 
 const fields = [
   { name: 'Software', href: '/fields/software' },
@@ -44,7 +44,7 @@ const fields = [
               {field.name}
             </span>
 
-            <Button variant="default" flat icon="external-link" class="linkBtn" />
+            <Button flat icon="external-link" class="linkBtn" />
           </div>
         </a>
       ))}

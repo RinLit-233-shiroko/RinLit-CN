@@ -1,0 +1,197 @@
+---
+// Figma: MenuItem 组件
+//
+// 菜单项：横排 icon + label + 后缀（√ / ▶），样式参考 NavButton。
+// 嵌套 Menu 到 slot="submenu" 即可实现 cascading menu。
+// 单选/复选由父级 Menu 的 type / group 属性驱动。
+
+import { getIcon } from '../utils/icons';
+
+interface Props {
+  href?: string;
+  icon?: string;
+  id?: string;
+  class?: string;
+  value?: string;
+  checked?: boolean;
+  active?: boolean;
+  disabled?: boolean;
+}
+
+const {
+  href,
+  icon = '',
+  id = '',
+  class: className = '',
+  value = '',
+  checked = false,
+  active = false,
+  disabled = false,
+} = Astro.props;
+
+const Tag = href ? 'a' : 'button';
+const svgHtml = getIcon(icon, 18);
+const chevronHtml = getIcon('chevron-right', 16);
+const checkHtml = getIcon('check', 16);
+const hasSubmenu = Astro.slots.has('submenu');
+const hasLabel = Astro.slots.has('default');
+---
+
+<li class="menu-item__wrapper">
+  <Tag
+    href={href}
+    id={id}
+    class={`menu-item
+      ${active ? 'menu-item--active' : ''}
+      ${checked ? 'menu-item--checked' : ''}
+      ${disabled ? 'menu-item--disabled' : ''}
+      ${hasSubmenu ? 'menu-item--has-submenu' : ''}
+      ${className}`}
+    data-value={value}
+    role="menuitem"
+    aria-checked={checked ? 'true' : 'false'}
+    disabled={disabled}
+  >
+    {svgHtml && <span class="menu-item__icon" set:html={svgHtml} />}
+    {hasLabel && <span class="menu-item__label"><slot /></span>}
+
+    <!-- 选中勾号（单选/复选模式下可见） -->
+    <span class="menu-item__check" set:html={checkHtml} />
+
+    <!-- 子菜单箭头 -->
+    {hasSubmenu && <span class="menu-item__chevron" set:html={chevronHtml} />}
+  </Tag>
+
+  {hasSubmenu && <slot name="submenu" />}
+</li>
+
+<style>
+  /* ======== 基础项 ======== */
+  .menu-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 36px;
+    padding: 0 12px;
+    gap: 8px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    user-select: none;
+    -webkit-user-drag: none;
+    user-drag: none;
+    outline: none;
+  }
+
+  @media (hover: hover) {
+    .menu-item:hover:not(.menu-item--disabled) {
+      background: var(--border-strong);
+    }
+  }
+
+  .menu-item:active:not(.menu-item--disabled) {
+    opacity: 0.6;
+  }
+
+  /* 子菜单打开时父项保持高亮 */
+  .menu-item--submenu-open {
+    background: var(--border-strong);
+  }
+
+  /* ======== 选中态（勾号可见） ======== */
+  .menu-item--checked {
+    color: var(--color-primary-500);
+  }
+
+  .menu-item--checked .menu-item__check {
+    opacity: 1;
+  }
+
+  /* ======== 高亮态 ======== */
+  .menu-item--active {
+    background: var(--border);
+    color: var(--color-primary-500);
+  }
+
+  /* ======== 禁用态 ======== */
+  .menu-item--disabled {
+    opacity: 0.38;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* ======== 图标 ======== */
+  .menu-item__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+  }
+
+  .menu-item__icon :global(svg) {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+
+  /* ======== 文字 ======== */
+  .menu-item__label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  /* ======== 后缀区 ======== */
+  .menu-item__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+    margin-left: auto;
+    transition: opacity 0.15s ease;
+  }
+
+  .menu-item__check :global(svg) {
+    width: 16px;
+    height: 16px;
+    display: block;
+  }
+
+  .menu-item__chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    opacity: 0.5;
+    margin-left: auto;
+  }
+
+  .menu-item__chevron :global(svg) {
+    width: 14px;
+    height: 14px;
+    display: block;
+  }
+
+  /* ======== 包装 ======== */
+  .menu-item__wrapper {
+    position: relative;
+    list-style: none;
+  }
+</style>

@@ -11,6 +11,8 @@ import { getIcon } from '../../utils/icons';
 import Pill from '../Pill.astro';
 import NavButton from '../NavButton.astro';
 import Button from '../Button.astro';
+import Menu from '../Menu.astro';
+import MenuItem from '../MenuItem.astro';
 
 interface Props {
   currentPath?: string;
@@ -76,14 +78,27 @@ const isActive = (href: string) => {
     <Button icon="chevron-left" class="back-btn back-btn--mobile" id="back-btn-mobile" aria-label="返回" />
     <!-- 工具按钮组 -->
     <div class="toolbar" aria-label="工具栏">
-      <!-- 颜色模式 -->
-      <Button class="theme-toggle" id="theme-toggle" aria-label="Color Mode">
-        <span class="theme-icon theme-icon--sun" set:html={getIcon('sun', 18)} />
-        <span class="theme-icon theme-icon--moon" set:html={getIcon('moon', 18)} />
-      </Button>
-      <!-- 菜单 -->
-       <Button icon="menu-2" class="menu" aria-label="Menu">
-      </Button>
+      <!-- 菜单触发器 + 下拉 -->
+      <div class="menu-anchor">
+        <Button icon="menu-2" class="menu-trigger" id="menu-trigger" aria-label="Menu" />
+        <Menu class="menu-dropdown" id="settings-menu">
+          <MenuItem icon="language">
+            语言
+            <Menu slot="submenu" submenu type="radio" group="lang">
+              <MenuItem value="zh" checked>中文</MenuItem>
+              <MenuItem value="en">English</MenuItem>
+            </Menu>
+          </MenuItem>
+          <MenuItem icon="sun">
+            颜色模式
+            <Menu slot="submenu" submenu type="radio" group="theme">
+              <MenuItem value="light" checked>浅色</MenuItem>
+              <MenuItem value="dark">深色</MenuItem>
+              <MenuItem value="auto">自动</MenuItem>
+            </Menu>
+          </MenuItem>
+        </Menu>
+      </div>
     </div>
   </div>
 </header>
@@ -202,6 +217,15 @@ const isActive = (href: string) => {
     }
   }
 
+  /* iOS Safari 适配：整个 header 上移 48px */
+  @supports (-webkit-touch-callout: none) {
+    @media (max-width: 768px) {
+      .nav-header {
+        padding-bottom: calc(32px + 48px);
+      }
+    }
+  }
+
   /* ===== 超窄屏等比缩小 (≤474px) ===== */
   @media (max-width: 474px) {
     .nav-header {
@@ -290,6 +314,13 @@ const isActive = (href: string) => {
     gap: 8px;
   }
 
+  /* ======== 设置菜单 — 由 JS 动态 fixed 定位 ======== */
+  .menu-anchor {
+    position: relative;
+  }
+
+  /* 移除原来的 absolute 定位，改为由 JS setPosition 动态 fixed */
+
   .top-bar :global(.btn) {
     width: 46px;
     height: 46px;
@@ -314,81 +345,116 @@ const isActive = (href: string) => {
     }
   }
 
-  /* ======== 主题切换图标 ======== */
-  .theme-icon {
-    position: absolute;
-    inset: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
 
-  .theme-icon :global(svg) {
-    width: 18px;
-    height: 18px;
-    display: block;
-  }
 </style>
 
 <script is:inline>
-  // ======== 暗色模式切换逻辑 ========
-  // 注意: 该脚本随 Header 在每次 View Transition 后重新执行,
-  // 因此必须保证:
-  //   1. 初始化 (读取 theme) 幂等
-  //   2. 点击监听只绑定一次 (用 data 标记防止重复绑定)
-  //   3. 同步系统偏好变化 (仅当用户尚未手动选择时)
-  //   4. astro:after-swap 恢复主题 (防止 View Transitions 导航时重置)
-
+  // ======== 暗色模式 / 语言 / 菜单切换逻辑 ========
   (function () {
+    function $(el, sel) { return el && el.closest ? el.closest(sel) : null; }
     var root = document.documentElement;
-    var KEY = 'rinlit:theme';
+    var THEME_KEY = 'rinlit:theme';
+    var LANG_KEY = 'rinlit:lang';
 
-    function apply(mode) {
-      root.classList.toggle('dark', mode === 'dark');
-      root.classList.toggle('light', mode === 'light');
-      root.style.colorScheme = mode;
+    function resolveTheme(mode) {
+      if (mode === 'auto' || !mode) {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      return mode;
     }
 
-    // 从 localStorage 读取并应用当前主题 (幂等, 可安全多次调用)
-    function restore() {
-      var saved = localStorage.getItem(KEY);
-      if (saved) { apply(saved); return; }
-      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      apply(prefersDark ? 'dark' : 'light');
+    function applyTheme(resolved) {
+      root.classList.toggle('dark', resolved === 'dark');
+      root.style.colorScheme = resolved;
     }
 
-    // 初始化
-    if (!root.dataset.themeReady) { restore(); }
-
-    // View Transitions 导航后恢复主题 — 防止 DOM swap 导致状态丢失
-    if (!root.dataset.themeSwapBound) {
-      root.dataset.themeSwapBound = '1';
-      document.addEventListener('astro:after-swap', restore);
+    function setTheme(mode) {
+      if (mode === 'auto') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, mode);
+      applyTheme(resolveTheme(mode));
     }
 
-    // 跟随系统变化 (仅当用户未手动选择时) — data-theme-media-bound 防止重复绑定
-    if (!root.dataset.themeMediaBound) {
-      root.dataset.themeMediaBound = '1';
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
-        if (localStorage.getItem(KEY)) return; // 已有手动选择, 不覆盖
-        apply(e.matches ? 'dark' : 'light');
+    function restoreTheme() {
+      var saved = localStorage.getItem(THEME_KEY) || 'auto';
+      applyTheme(resolveTheme(saved));
+    }
+
+    if (!root.dataset.themeReady) { restoreTheme(); }
+
+    // 事件绑定只做一次（防 View Transitions 重复）
+    if (!root.dataset.headerEventBound) {
+      root.dataset.headerEventBound = '1';
+
+      if (!root.dataset.themeSwapBound) {
+        root.dataset.themeSwapBound = '1';
+        document.addEventListener('astro:after-swap', restoreTheme);
+      }
+      if (!root.dataset.themeMediaBound) {
+        root.dataset.themeMediaBound = '1';
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+          if (localStorage.getItem(THEME_KEY)) return;
+          applyTheme(e.matches ? 'dark' : 'light');
+        });
+      }
+
+      // ---- menu:change 事件 ----
+      document.addEventListener('menu:change', function (e) {
+        var d = e.detail;
+        if (d.group === 'theme') setTheme(d.value);
+        if (d.group === 'lang') localStorage.setItem(LANG_KEY, d.value);
       });
-    }
 
-    // 点击切换: 用 data-theme-bound 标记确保每页只绑定一次
-    if (!root.dataset.themeBound) {
-      root.dataset.themeBound = '1';
-      document.addEventListener('click', function (e) {
-        var target = e.target.closest('#theme-toggle');
-        if (!target) return;
-        var next = root.classList.contains('dark') ? 'light' : 'dark';
-        apply(next);
-        localStorage.setItem(KEY, next);
-      });
-    }
+      // ---- 菜单触发器 ----
+      if (!root.dataset.menuBound) {
+        root.dataset.menuBound = '1';
 
-    // 标记本次初始化已完成
+        function closeDropdowns(dd) {
+          if (!dd) return;
+          Menu_close(dd);
+        }
+
+        document.addEventListener('click', function (e) {
+          var btn = $(e.target, '#menu-trigger');
+          if (btn) {
+            e.stopPropagation();
+            var dd = document.getElementById('settings-menu');
+            if (!dd) return;
+            if (dd.classList.contains('is-open')) {
+              closeDropdowns(dd);
+            } else {
+              Menu_open(dd, btn);
+            }
+            return;
+          }
+
+          var inside = $(e.target, '#settings-menu');
+          if (!inside) {
+            var dd2 = document.getElementById('settings-menu');
+            closeDropdowns(dd2);
+          }
+        });
+      }
+    }
     root.dataset.themeReady = '1';
+
+    // ---- 初始化菜单项 checked 状态（每次页面加载都执行） ----
+    function initMenuChecks() {
+      var savedTheme = localStorage.getItem(THEME_KEY) || 'auto';
+      var savedLang = localStorage.getItem(LANG_KEY) || 'zh';
+      var themeItems = document.querySelectorAll('[data-group="theme"] .menu-item');
+      for (var i = 0; i < themeItems.length; i++) {
+        var v = themeItems[i].getAttribute('data-value');
+        themeItems[i].classList.toggle('menu-item--checked', v === savedTheme);
+        themeItems[i].setAttribute('aria-checked', String(v === savedTheme));
+      }
+      var langItems = document.querySelectorAll('[data-group="lang"] .menu-item');
+      for (var j = 0; j < langItems.length; j++) {
+        var lv = langItems[j].getAttribute('data-value');
+        langItems[j].classList.toggle('menu-item--checked', lv === savedLang);
+        langItems[j].setAttribute('aria-checked', String(lv === savedLang));
+      }
+    }
+    initMenuChecks();
   })();
 </script>
 
@@ -428,7 +494,7 @@ const isActive = (href: string) => {
 
   // 2. 全局只需绑定一次点击事件
   document.addEventListener('click', (e) => {
-    const target = e.target.closest('#back-btn-desktop, #back-btn-mobile');
+    var target = e.target.closest ? e.target.closest('#back-btn-desktop, #back-btn-mobile') : null;
     if (!target) return;
 
     e.preventDefault();

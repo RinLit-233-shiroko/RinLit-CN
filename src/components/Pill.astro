@@ -2,7 +2,13 @@
 // Figma: Pill — 可复用的胶囊背景控件
 //
 // 封装 45° 渐变边框、阴影、背景模糊 等通用 Pill 样式。
-// 宽高/内边距/布局 由宿主组件用 class 或 slot 内容自行控制。
+//
+// 架构：视觉层与布局层剥离
+//   .pill                → 布局容器（position/transform/border-radius/交互态）
+//                           无 overflow:hidden → fixed/absolute 子元素不被裁剪
+//   .pill__bg-layer      → 视觉背景层（绝对定位占满父级）
+//                           负责 background / box-shadow / backdrop-filter
+//                           overflow:hidden 仅在此层，glow 放入此层裁剪圆角
 //
 // Props:
 //   primary  — true 时使用主题主色背景
@@ -20,33 +26,46 @@ interface Props {
 const { primary = false, flat = false, class: className = '', id = '' } = Astro.props;
 ---
 
-<div id={id} class={`pill ${primary ? 'pill--primary' : ''} ${flat ? 'pill--flat' : ''} ${className}`}>
-  <span class="pill__glow" aria-hidden="true"></span>
+<div
+  id={id}
+  class={`pill ${primary ? 'pill--primary' : ''} ${flat ? 'pill--flat' : ''} ${className}`}
+>
+  <!-- 视觉背景层：背景色/阴影/模糊/渐变边框/glow → 在此处被 overflow:hidden 裁剪 -->
+  <span class="pill__bg-layer" aria-hidden="true">
+    <span class="pill__glow" aria-hidden="true"></span>
+  </span>
+  <!-- 内容层：不受 overflow 限制，slot 内的 fixed 子菜单可自由漂移 -->
   <slot />
 </div>
 
 <style>
-  /* ======== 通用 Pill 样式 ======== */
+  /* ======== 布局容器 ======== */
   .pill {
     position: relative;
     z-index: 0;
-    overflow: hidden;
     border-radius: var(--pill-radius, 24px);
-    background: var(--pill-bg);
-    box-shadow: 0 8px 12px var(--pill-shadow);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     border: none;
 
     transition:
       background-color 0.25s ease,
       box-shadow 0.25s ease,
-      transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity 0.2s ease;
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-user-drag: none;
     user-drag: none;
+  }
+
+  /* 菜单触发按钮隐藏态 — 向中心放大消失（覆盖 Pill 的弹簧曲线） */
+  .pill.is-trigger-hidden {
+    opacity: 0;
+    transform: translate(var(--move-x, 0px), var(--move-y, 0px)) scale(1.25) !important;
+    pointer-events: none;
+    transition:
+      transform 0.25s cubic-bezier(0.34, 1.34, 0.64, 1),
+      opacity 0.2s ease;
   }
 
   /* 按下放大（纯点击不拖拽时生效） */
@@ -59,8 +78,23 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     transition: transform 0ms !important;
   }
 
-  /* 渐变边框 via ::before (45°) */
-  .pill::before {
+  /* ======== 视觉背景层 ========
+     所有视觉装饰都在此层，overflow:hidden 仅限这里 */
+  .pill__bg-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    overflow: hidden;
+    background: var(--pill-bg);
+    box-shadow: 0 8px 12px var(--pill-shadow);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    pointer-events: none;
+  }
+
+  /* 渐变边框 via ::before (45°) — 挂在 bg-layer 上 */
+  .pill__bg-layer::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -79,45 +113,45 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     pointer-events: none;
   }
 
-  /* ======== primary 变体: 主色背景 ======== */
-  .pill--primary {
+  /* ======== primary 变体 ======== */
+  .pill--primary .pill__bg-layer {
     background: var(--pill-primary-bg);
   }
 
-  /* ======== flat 变体: 轻阴影 ======== */
-  .pill--flat {
+  /* ======== flat 变体 ======== */
+  .pill--flat .pill__bg-layer {
     box-shadow: 0 2px 6px var(--pill-shadow);
   }
 
   /* ======== hover 背景状态（仅支持 hover 的设备，如 PC 鼠标） ======== */
   @media (hover: hover) {
-    .pill:not(.pill--primary):hover {
+    .pill:not(.pill--primary):hover .pill__bg-layer {
       background: var(--pill-bg-hover);
     }
 
-    .pill--primary:hover {
+    .pill--primary:hover .pill__bg-layer {
       background: var(--pill-primary-bg-hover);
     }
 
-    .pill--flat.pill--primary:hover {
+    .pill--flat.pill--primary:hover .pill__bg-layer {
       background: color-mix(in srgb, var(--color-primary-500) 90%, transparent);
     }
   }
 
   /* ======== active 背景状态（触屏 & 鼠标通用） ======== */
-  .pill:not(.pill--primary):active {
+  .pill:not(.pill--primary):active .pill__bg-layer {
     background: var(--pill-bg-active);
   }
 
-  .pill--primary:active {
+  .pill--primary:active .pill__bg-layer {
     background: var(--pill-primary-bg-active);
   }
 
-  .pill--flat.pill--primary:active {
+  .pill--flat.pill--primary:active .pill__bg-layer {
     background: var(--pill-primary-bg);
   }
 
-  /* ======== Press Glow: 按下时出现跟随鼠标的 78×78 blur 球 ======== */
+  /* ======== Press Glow ======== */
   .pill__glow {
     position: absolute;
     z-index: 1;
@@ -132,11 +166,9 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     transform: translate(-50%, -50%);
     will-change: left, top, opacity;
 
-    /* 基础过渡：淡出 → 700ms */
     transition: opacity 300ms cubic-bezier(0.4, 0, 1, 1);
   }
 
-  /* 淡入 → 150ms */
   .pill__glow.is-visible {
     opacity: 1;
     transition: opacity 150ms cubic-bezier(.16,.49,0,.99);
@@ -146,9 +178,13 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
 <script is:inline>
   // Press Glow & Drag — 按下缩放 + 拖拽位移/形变, 释放时弹回
   (function () {
+    function $(el, sel) { return el && el.closest ? el.closest(sel) : null; }
+
     document.addEventListener('pointerdown', function (e) {
-      var pill = e.target.closest('.pill');
+      var pill = $(e.target, '.pill');
       if (!pill) return;
+      // 菜单内的 press 动画会干扰子菜单，跳过
+      if ($(e.target, '.menu-item')) return;
       var glow = pill.querySelector('.pill__glow');
       if (!glow) return;
       if (pill.classList.contains('pill--dragging')) return;
@@ -175,9 +211,7 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
 
     function enter(pill, glow, rect, e) {
       pill.classList.add('is-pressed');
-      // 初始 inline scale（避免等 pointermove 才设导致的闪烁）
       pill.style.transform = 'scale(1.08)';
-      // 初次 glow 定位
       glow.classList.add('is-visible');
       glow.style.left = (e.clientX - rect.left) + 'px';
       glow.style.top  = (e.clientY - rect.top) + 'px';
@@ -185,12 +219,10 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
 
     function move(pill, glow, sx, sy, e) {
       if (!pill.classList.contains('pill--dragging')) {
-        // 首次拖拽: 在读 getComputedStyle 之后再切 class，避免过渡中断导致的跳跃
         var cur = getComputedStyle(pill).transform;
         pill.classList.remove('is-pressed');
         pill.classList.add('pill--dragging');
         pill.style.transform = cur !== 'none' ? cur : 'scale(1.08)';
-        // 下一帧才应用实际拖拽 transform
         requestAnimationFrame(function () { computeDrag(pill, glow, sx, sy, e); });
         return;
       }
@@ -201,19 +233,15 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
       var dx  = e.clientX - sx;
       var dy  = e.clientY - sy;
 
-      // 橡胶圈位移: 小拖拽几乎不动，渐近收敛到 ±6px
       var maxDisp = 6;
       var tx = Math.sign(dx) * maxDisp * (1 - 1 / (1 + Math.abs(dx) / 80));
       var ty = Math.sign(dy) * maxDisp * (1 - 1 / (1 + Math.abs(dy) / 80));
 
-      // X/Y 方向各自独立缩放（基值 1.08，衰减更平缓）
-      // 拖拽方向拉伸，垂直方向压缩
       var scaleX = 1 + 0.08 / (1 + Math.abs(dy) / 120);
       var scaleY = 1 + 0.08 / (1 + Math.abs(dx) / 120);
 
       pill.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scaleX + ', ' + scaleY + ')';
 
-      // glow 继续实时跟随鼠标（相对 pill 偏移后的坐标）
       var r = pill.getBoundingClientRect();
       glow.style.left = (e.clientX - r.left) + 'px';
       glow.style.top  = (e.clientY - r.top) + 'px';
@@ -222,7 +250,7 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     function leave(pill, glow) {
       pill.classList.remove('pill--dragging');
       pill.classList.remove('is-pressed');
-      pill.style.transform = '';               // CSS transition 弹回
+      pill.style.transform = '';
       glow.classList.remove('is-visible');
     }
   })();

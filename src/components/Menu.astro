@@ -1,0 +1,514 @@
+---
+// Figma: Menu 组件
+//
+// 菜单容器：Pill 背景 + 纵向 item 列表。
+// type="radio" → 单选组（仅一个 checked）
+// type="checkbox" → 复选组（可多个 checked）
+// group 属性可跨 Menu 联动（同 group 名的 radio Menu 互斥）。
+// submenu 标记为级联子菜单。由宿主组件控制 show/hide + fixed 定位。
+
+import Pill from './Pill.astro';
+
+interface Props {
+  id?: string;
+  class?: string;
+  type?: 'menu' | 'radio' | 'checkbox';
+  group?: string;
+  submenu?: boolean;
+}
+
+const {
+  id = '',
+  class: className = '',
+  type = 'menu',
+  group = '',
+  submenu = false,
+} = Astro.props;
+
+const roleMap = {
+  menu: 'menu',
+  radio: 'radiogroup',
+  checkbox: 'group',
+} as const;
+
+const role = roleMap[type];
+---
+
+<div
+  id={id}
+  class={`menu ${submenu ? 'menu--sub' : ''} ${className}`}
+  role={role}
+  data-menu-type={type}
+  data-group={group}
+>
+  <Pill>
+    <ul class="menu__list" role="none">
+      <slot />
+    </ul>
+  </Pill>
+</div>
+
+<style>
+  .menu {
+    position: fixed;
+    z-index: 999;
+    min-width: max-content;
+
+    /* 隐藏态 */
+    display: none;
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+
+    transform-origin: var(--origin-x, 100%) var(--origin-y, 0%);
+    transition:
+      opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* 打开态 */
+  .menu.is-open {
+    display: inline-flex;
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+
+  /* 关闭过渡 */
+  .menu--closing {
+    opacity: 0;
+    transform: scale(0.85);
+    pointer-events: none;
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .menu__list {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+</style>
+
+<script is:inline>
+  // Menu: 单选/复选 + 级联子菜单
+  (function () {
+    var root = document.documentElement;
+    if (root.dataset.menuScriptBound) return;
+    root.dataset.menuScriptBound = '1';
+
+    function $(el, sel) { return el && el.closest ? el.closest(sel) : null; }
+
+    // ---- 子菜单定时器隔离 Map ----
+    var submenuTimers = new Map();
+
+    // ---- 触屏检测 ----
+    var isTouch = 'ontouchstart' in window;
+    var canHover = !isTouch && window.matchMedia('(hover: hover)').matches;
+
+    // ==========================================================
+    // 子菜单操作（移入 body → fixed 定位，避开父级 transform 影响）
+    // ==========================================================
+
+    function getSub(wrapper) {
+      // 先查原位（还在 DOM 树中）
+      var sub = wrapper.querySelector(':scope > .menu--sub');
+      if (sub) return sub;
+      // 可能已被移到 body，用 _wrapperRef 找
+      var all = document.querySelectorAll('body > .menu--sub');
+      for (var i = 0; i < all.length; i++) {
+        if (all[i]._wrapperRef === wrapper) return all[i];
+      }
+      return null;
+    }
+
+    /** 给有子菜单的菜单项加/删激活态 class */
+    function setItemActive(wrapper, active) {
+      if (!wrapper) return;
+      var item = wrapper.querySelector('.menu-item--has-submenu');
+      if (item) item.classList.toggle('menu-item--submenu-open', active);
+    }
+
+    /** 关闭同层级其他子菜单 */
+    function closeSiblings(wrapper) {
+      var parent = wrapper.parentElement;
+      if (!parent) return;
+      var siblings = parent.querySelectorAll(':scope > .menu-item__wrapper');
+      for (var i = 0; i < siblings.length; i++) {
+        var sib = siblings[i];
+        if (sib !== wrapper) {
+          var sibSub = getSub(sib);
+          if (sibSub) closeSubmenu(sibSub);
+        }
+      }
+    }
+
+    function openSubmenu(subEl, wrapper) {
+      if (!subEl || !wrapper) return;
+
+      // 还未移到 body？移过去
+      if (subEl.parentElement !== document.body) {
+        subEl._wrapperRef = wrapper;
+        subEl._origParent = subEl.parentElement;
+        subEl._origNextSib = subEl.nextElementSibling;
+        document.body.appendChild(subEl);
+      }
+
+      // 1. 先把子菜单显示出来，但保持透明，以便浏览器渲染并允许我们抓取真实宽高
+      subEl.style.display = 'inline-flex';
+      subEl.style.visibility = 'hidden';
+
+      var tRect = wrapper.getBoundingClientRect(); // 当前父级菜单项的坐标
+      var mW = subEl.offsetWidth || 160;          // 子菜单的真实宽度
+      var mH = subEl.offsetHeight || 100;         // 子菜单的真实高度
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var padding = 8;                             // 视口边缘安全留白
+
+      // 恢复可见性
+      subEl.style.visibility = '';
+
+      // 2. 默认向右展开
+      var left = tRect.right;
+      var top = tRect.top;
+
+      // 【核心碰撞检测】：如果右侧放不下子菜单
+      if (left + mW > vw - padding) {
+        // 策略 A：翻转到左侧展开（对齐到父项的左侧减去子菜单自身的宽度）
+        left = tRect.left - mW;
+
+        // 策略 B（极端情况）：如果左侧也放不下了，则强行靠着屏幕右边缘
+        if (left < padding) {
+          left = vw - mW - padding;
+        }
+      }
+
+      // 3. 纵向边缘检测：防止子菜单底部超出屏幕
+      if (top + mH > vh - padding) {
+        top = vh - mH - padding;
+        if (top < padding) top = padding;
+      }
+
+      // 4. 精准写入 fixed 坐标
+      subEl.style.left = left + 'px';
+      subEl.style.top = top + 'px';
+
+      // 5. 动态计算 transform-origin
+      // 这样无论它是向左、向右还是上下平移，缩放动效都会从主菜单贴合的那个点精准炸开
+      var originX = (tRect.left + tRect.width / 2) - left;
+      var originY = (tRect.top + tRect.height / 2) - top;
+      subEl.style.setProperty('--origin-x', originX + 'px');
+      subEl.style.setProperty('--origin-y', originY + 'px');
+
+      // 6. 激活过渡动画类名
+      setItemActive(wrapper, true);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          subEl.classList.remove('menu--closing');
+          subEl.classList.add('is-open');
+        });
+      });
+    }
+
+    function closeSubmenu(sub) {
+      if (!sub) return;
+      if (!sub.classList.contains('is-open')) return;
+
+      sub.classList.remove('is-open');
+      // 用 closing 类单独控制退场动画（与主菜单一致）
+      sub.classList.add('menu--closing');
+
+      // 清除父菜单项的激活态
+      setItemActive(sub._wrapperRef, false);
+
+      // 递归关闭深层子菜单（在动画完成前先清理深层）
+      var deepSubs = sub.querySelectorAll('.menu--sub.is-open');
+      for (var i = 0; i < deepSubs.length; i++) {
+        var ds = deepSubs[i];
+        setItemActive(ds._wrapperRef, false);
+        ds.classList.remove('is-open');
+        ds.style.display = '';
+        if (submenuTimers.has(ds)) {
+          clearTimeout(submenuTimers.get(ds));
+          submenuTimers.delete(ds);
+        }
+      }
+
+      // 等退场动画完成再隐藏 + 移回原位
+      setTimeout(function () {
+        sub.classList.remove('menu--closing');
+        sub.style.display = '';
+        sub.style.top = '';
+        sub.style.left = '';
+        sub.style.transition = '';
+        sub.style.setProperty('--origin-x', '');
+        sub.style.setProperty('--origin-y', '');
+
+        if (sub._origParent) {
+          if (sub._origNextSib) {
+            sub._origParent.insertBefore(sub, sub._origNextSib);
+          } else {
+            sub._origParent.appendChild(sub);
+          }
+          delete sub._origParent;
+          delete sub._origNextSib;
+          delete sub._wrapperRef;
+        }
+
+        if (submenuTimers.has(sub)) {
+          clearTimeout(submenuTimers.get(sub));
+          submenuTimers.delete(sub);
+        }
+      }, 150);
+    }
+
+    // ==========================================================
+    // 级联 hover（仅桌面）
+    // ==========================================================
+
+    if (canHover) {
+      document.addEventListener('mouseover', function (e) {
+        if (!e.target || !e.target.nodeType) return;
+        var item = $(e.target, '.menu-item--has-submenu');
+        if (!item) return;
+        var wrapper = item.closest('.menu-item__wrapper');
+        if (!wrapper) return;
+        var sub = getSub(wrapper);
+        if (!sub) return;
+
+        if (submenuTimers.has(sub)) {
+          clearTimeout(submenuTimers.get(sub));
+          submenuTimers.delete(sub);
+        }
+
+        // 关闭同层级其他子菜单
+        var parent = wrapper.parentElement;
+        if (parent) {
+          var siblings = parent.querySelectorAll(':scope > .menu-item__wrapper');
+          for (var i = 0; i < siblings.length; i++) {
+            var sib = siblings[i];
+            if (sib !== wrapper) {
+              var sibSub = getSub(sib);
+              if (sibSub) closeSubmenu(sibSub);
+            }
+          }
+        }
+
+        if (!sub.classList.contains('is-open')) {
+          openSubmenu(sub, wrapper);
+        }
+      });
+
+      document.addEventListener('mouseout', function (e) {
+        if (!e.target || !e.target.nodeType) return;
+        var item = $(e.target, '.menu-item--has-submenu');
+        if (!item) return;
+        var wrapper = item.closest('.menu-item__wrapper');
+        if (!wrapper) return;
+        var sub = getSub(wrapper);
+        if (!sub) return;
+
+        var toElement = e.relatedTarget;
+        if (toElement) {
+          if (wrapper.contains(toElement) || sub.contains(toElement)) return;
+        }
+        if (e.buttons > 0) return;
+
+        var timer = setTimeout(function () { closeSubmenu(sub); }, 180);
+        submenuTimers.set(sub, timer);
+      });
+    }
+
+    // ==========================================================
+    // click: 子菜单 / radio / checkbox
+    // ==========================================================
+
+    document.addEventListener('click', function (e) {
+      var plainItem = $(e.target, '.menu-item');
+      if (!plainItem) return;
+      if (plainItem.disabled || plainItem.matches('.menu-item--disabled')) return;
+
+      if (plainItem.matches('.menu-item--has-submenu')) {
+        if (canHover) return;
+        // 移动端 toggle（互斥：打开前关闭同级其他子菜单）
+        var wrapper = plainItem.closest('.menu-item__wrapper');
+        if (!wrapper) return;
+        var sub = getSub(wrapper);
+        if (!sub) return;
+        if (sub.classList.contains('is-open')) {
+          closeSubmenu(sub);
+        } else {
+          closeSiblings(wrapper);
+          openSubmenu(sub, wrapper);
+        }
+        return;
+      }
+
+      var menu = $(plainItem, '.menu');
+      if (!menu) return;
+      var type = menu.getAttribute('data-menu-type');
+      if (type !== 'radio' && type !== 'checkbox') return;
+      e.preventDefault();
+
+      if (type === 'radio') {
+        var groupName = menu.getAttribute('data-group') || '';
+        var siblings = groupName
+          ? document.querySelectorAll('[data-group="' + groupName + '"] .menu-item')
+          : menu.querySelectorAll('.menu-item');
+        for (var i = 0; i < siblings.length; i++) {
+          siblings[i].classList.remove('menu-item--checked');
+          siblings[i].setAttribute('aria-checked', 'false');
+        }
+        plainItem.classList.add('menu-item--checked');
+        plainItem.setAttribute('aria-checked', 'true');
+        notify(plainItem, true, groupName);
+      }
+
+      if (type === 'checkbox') {
+        var isChecked = plainItem.classList.toggle('menu-item--checked');
+        plainItem.setAttribute('aria-checked', String(isChecked));
+        var grp = menu.getAttribute('data-group') || '';
+        notify(plainItem, isChecked, grp);
+      }
+    });
+
+    function notify(item, checked, group) {
+      var value = item.getAttribute('data-value') || '';
+      document.dispatchEvent(new CustomEvent('menu:change', {
+        bubbles: true,
+        detail: { group: group, value: value, checked: checked },
+      }));
+    }
+
+    // ==========================================================
+    // 通用动画 API — 主菜单也带动画
+    // ==========================================================
+
+    /** 将菜单从触发按钮位置动画展开 */
+    window.Menu_open = function (menuEl, triggerEl) {
+      if (!menuEl || !triggerEl) return;
+
+      // 记录触发按钮引用，供关闭时恢复
+      menuEl._triggerEl = triggerEl;
+      triggerEl.classList.add('is-trigger-hidden');
+
+      // 1. 先显示但保持透明，让浏览器计算菜单真实宽高
+      menuEl.style.display = 'inline-flex';
+      menuEl.style.visibility = 'hidden';
+
+      var tRect = triggerEl.getBoundingClientRect();
+      var mW = menuEl.offsetWidth || 160;
+      var mH = menuEl.offsetHeight || 100;
+      var padding = 8;
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+
+      // 2. 顶部与按钮顶部对齐（原位覆盖），左侧向内侧展开
+      var left = tRect.right - mW;
+      var top = tRect.top;
+
+      if (left < padding) left = padding;
+      if (left + mW > vw - padding) left = vw - mW - padding;
+      if (top + mH > vh - padding) top = Math.max(padding, vh - mH - padding);
+
+      menuEl.style.left = left + 'px';
+      menuEl.style.top = top + 'px';
+
+      // 3. 计算菜单的中心点（页面坐标）
+      var menuCenterX = left + mW / 2;
+      var menuCenterY = top + mH / 2;
+
+      // 4. 计算按钮中心到菜单中心的偏移，注入按钮让按钮"飞向"菜单中心
+      var triggerCenterX = tRect.left + tRect.width / 2;
+      var triggerCenterY = tRect.top + tRect.height / 2;
+      var moveX = menuCenterX - triggerCenterX;
+      var moveY = menuCenterY - triggerCenterY;
+
+      triggerEl.style.setProperty('--move-x', moveX + 'px');
+      triggerEl.style.setProperty('--move-y', moveY + 'px');
+
+      // 5. 菜单的 transform-origin：按钮中心相对菜单位置
+      var originX = triggerCenterX - left;
+      var originY = triggerCenterY - top;
+      menuEl.style.setProperty('--origin-x', originX + 'px');
+      menuEl.style.setProperty('--origin-y', originY + 'px');
+
+      // 6. 恢复可见，执行打开动画
+      menuEl.style.visibility = 'visible';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          menuEl.classList.remove('menu--closing');
+          menuEl.classList.add('is-open');
+        });
+      });
+    };
+
+    /** 带动画关闭菜单 */
+    window.Menu_close = function (menuEl) {
+      if (!menuEl) return;
+      if (!menuEl.classList.contains('is-open')) return;
+
+      // 恢复触发按钮
+      if (menuEl._triggerEl) {
+        var trig = menuEl._triggerEl;
+        // 先用平滑曲线过渡回来（覆盖 .pill 默认的弹跳曲线）
+        trig.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.34, 0.64, 1), opacity 0.2s ease';
+        trig.classList.remove('is-trigger-hidden');
+        trig.style.removeProperty('--move-x');
+        trig.style.removeProperty('--move-y');
+        // 等过渡完成再清理 inline style，恢复 .pill 默认 transition
+        var onRestoreEnd = function () {
+          trig.style.transition = '';
+          trig.removeEventListener('transitionend', onRestoreEnd);
+        };
+        trig.addEventListener('transitionend', onRestoreEnd);
+        // 安全兜底：300ms 后清理 inline style（防止 transitionend 漏触发）
+        setTimeout(function () {
+          if (trig.style.transition) {
+            trig.style.transition = '';
+            trig.removeEventListener('transitionend', onRestoreEnd);
+          }
+        }, 300);
+        delete menuEl._triggerEl;
+      }
+
+      // 关闭所有级联子菜单（body 下和原位）
+      var allOpen = document.querySelectorAll('.menu--sub.is-open');
+      for (var i = 0; i < allOpen.length; i++) {
+        closeSubmenu(allOpen[i]);
+      }
+
+      menuEl.classList.remove('is-open');
+      menuEl.classList.add('menu--closing');
+
+      setTimeout(function () {
+        menuEl.classList.remove('menu--closing');
+        menuEl.style.display = 'none';
+      }, 150);
+    };
+
+    // ==========================================================
+    // 视口变化时自动关闭所有菜单（fixed 定位会失效）
+    // ==========================================================
+
+    function closeAllMenus() {
+      var allMenus = document.querySelectorAll('.menu.is-open');
+      for (var i = 0; i < allMenus.length; i++) {
+        window.Menu_close(allMenus[i]);
+      }
+    }
+
+    var resizeTimer;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(closeAllMenus, 100);
+    });
+
+    window.addEventListener('scroll', closeAllMenus, true);
+  })();
+</script>

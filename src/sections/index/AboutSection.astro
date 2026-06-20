@@ -1,34 +1,29 @@
 ---
-// Figma: About — 深色背景 + 垂直居中 + Business Card
-// 背景: 深色 (neutral-900)
-// 内容全部居中:
-//   "About" 标题 (浅色)
-//   "了解我" 副标题
-//   "了解更多" 按钮 — primary 样式 (紫色填充)
-// Business Card: 白色矩形, RinLit R Logo 居中
-
+import { t } from '../../i18n/index';
 import Button from '../../components/Button.astro';
+
+export interface Props {
+  lang?: string;
+}
+
+const { lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
 ---
 
 <section class="bg-light py-24 transition-colors duration-300">
   <div class="mx-auto max-w-6xl px-6">
-    <!-- 居中文字区 -->
     <div class="mx-auto max-w-2xl text-center">
-      <!-- About 标题 -->
       <h2 class="text-title-large font-sans font-bold tracking-tight text-dark">
-        About
+        {__('about.title')}
       </h2>
-      <!-- 了解我 -->
       <p class="mt-3 text-body-large text-neutral-500">
-        了解我
+        {__('about.subtitle')}
       </p>
-      <!-- 了解更多按钮: PRIMARY 样式 -->
       <div class="mt-8">
-        <Button primary flat href="/me">了解更多</Button>
+        <Button to="me" primary flat>{__('about.cta')}</Button>
       </div>
     </div>
 
-    <!-- Business Card: 白色矩形 + Logo 居中 -->
     <div class="business-card mx-auto mt-16 max-w-md overflow-hidden rounded-3xl p-16 shadow-lg">
       <div class="flex items-center justify-center">
         <img

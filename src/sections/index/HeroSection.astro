@@ -1,34 +1,22 @@
 ---
+import { t } from '../../i18n/index';
 import Button from '../../components/Button.astro';
+import Link from '../../components/Link.astro';
+
+export interface Props {
+  lang?: string;
+}
+
+const { lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
 
 const artifacts = [
-  {
-    label: 'Software Artifact',
-    className: 'artifact--class',
-    href: '/fields/software',
-  },
-  {
-    label: 'Design Artifact',
-    className: 'artifact--rinui',
-    href: '/fields/design',
-  },
-  {
-    label: 'Gallery Artifact',
-    className: 'artifact--pbi',
-    href: '/gallery',
-  },
-  {
-    label: 'Lab Artifact',
-    className: 'artifact--lab',
-    href: '/fields/experiment',
-  },
-  {
-    label: 'Writing Artifact',
-    className: 'artifact--notes',
-    href: '/writing',
-  },
+  { label: __('hero.artifact.software'), className: 'artifact--class', href: 'fields/software' },
+  { label: __('hero.artifact.design'),    className: 'artifact--rinui', href: 'fields/design' },
+  { label: __('hero.artifact.gallery'),   className: 'artifact--pbi',   href: 'gallery' },
+  { label: __('hero.artifact.lab'),       className: 'artifact--lab',   href: 'fields/experiment' },
+  { label: __('hero.artifact.writing'),   className: 'artifact--notes', href: 'writing' },
 ];
-
 ---
 
 <section class="hero-shell" aria-label="RinLit overview">
@@ -39,21 +27,17 @@ const artifacts = [
     <div class="hero-copy">
       <h1>
         <span class="hero-title-desktop">
-          Building software,<br />
-          design systems,<br />
-          and experimental ideas.
+          {__('hero.title.desktop')}
         </span>
         <span class="hero-title-mobile">
-          Building,<br />
-          design,<br />
-          and experiment.
+          {__('hero.title.mobile')}
         </span>
       </h1>
     </div>
 
     <div class="hero-actions" aria-label="Primary links">
-      <Button flat href="/fields">项目</Button>
-      <Button primary flat href="/me">关于我</Button>
+      <Button to="fields" flat>{__('hero.projects')}</Button>
+      <Button to="me" primary flat>{__('hero.about')}</Button>
     </div>
   </div>
 
@@ -72,43 +56,37 @@ const artifacts = [
     />
   </div>
 
-  <!-- 地平线中心光晕：放在 stage-wrap 前面，被地面遮挡 -->
   <div class="hero-logo-glow" aria-hidden="true"></div>
 
   <div class="stage-wrap">
     <div class="artifact-grid" aria-label="Featured project artifacts">
       {artifacts.map((item) => (
-        <a href={item.href} class={`artifact ${item.className}`} aria-label={item.label}>
+        <Link to={item.href} class={`artifact ${item.className}`} aria-label={item.label}>
           <span>{item.label}</span>
-        </a>
+        </Link>
       ))}
     </div>
   </div>
 
-  <a class="scroll-cue" href="#fields" aria-label="Scroll to content">
+  <Link to="fields" class="scroll-cue" aria-label="Scroll to content">
     <span aria-hidden="true"></span>
-    <b>SCROLL</b>
-  </a>
+    <b>{__('hero.scroll')}</b>
+  </Link>
 </section>
 
 <style>
-  /* Hero 主题变量 — 亮色默认 */
   :global(:root) {
     --hero-shell-bg: radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.98) 0 22%, rgba(255, 255, 255, 0) 42%), radial-gradient(circle at 61% 40%, rgba(190, 146, 244, 0.24), rgba(190, 146, 244, 0) 28%), linear-gradient(180deg, #fbf9ff 0%, #f8f5fb 54%, #cfd2e2 54.1%, #aaaec4 100%);
     --hero-shell-color: #10162f;
     --hero-shell-bg-mobile: radial-gradient(circle at 44% 27%, rgba(255, 255, 255, 0.98) 0 22%, rgba(255, 255, 255, 0) 46%), radial-gradient(circle at 57% 43%, rgba(178, 132, 243, 0.26), rgba(178, 132, 243, 0) 32%), linear-gradient(180deg, #fbf9ff 0%, #f8f5fb 54%, #cbd0e2 54.1%, #a7acc2 100%);
   }
 
-  /* Hero 主题变量 — 暗色 */
   :global(:root.dark) {
     --hero-shell-bg: radial-gradient(circle at 30% 18%, rgba(50, 40, 90, 0.28) 0 22%, rgba(50, 40, 90, 0) 46%), radial-gradient(circle at 61% 40%, rgba(30, 24, 70, 0.38), rgba(30, 24, 70, 0) 32%), linear-gradient(180deg, #050507 0%, #08080d 54%, #0c0c14 54.1%, #101018 100%);
     --hero-shell-color: #f4f2fb;
     --hero-shell-bg-mobile: radial-gradient(circle at 44% 27%, rgba(50, 40, 90, 0.28) 0 22%, rgba(50, 40, 90, 0) 46%), radial-gradient(circle at 57% 43%, rgba(30, 24, 70, 0.38), rgba(30, 24, 70, 0) 32%), linear-gradient(180deg, #050507 0%, #08080d 54%, #0c0c14 54.1%, #101018 100%);
   }
 
-  /* ===== 暗色 — 装饰元素覆盖 ===== */
-
-  /* 大气光晕: 去掉亮色的暖橙, 改为深邃的紫蓝色调 */
   :global(:root.dark) .hero-atmosphere {
     background:
       radial-gradient(circle at 15% 0%, rgba(74, 60, 140, 0.4), transparent 31%),
@@ -117,18 +95,15 @@ const artifacts = [
     filter: blur(34px);
   }
 
-  /* 光泽层: 降低亮度, 避免在深底上发灰 */
   :global(:root.dark) .hero-sheen {
     opacity: 0.18;
   }
 
-  /* 地平线: 紫色微光取代纯白 */
   :global(:root.dark) .hero-horizon::before {
     background: rgba(172, 159, 225, 0.55);
     box-shadow: 0 0 42px rgba(140, 126, 205, 0.45);
   }
 
-  /* 地平线中心光晕: 暗色下淡紫光, 向上扩散, 强度收敛 */
   :global(:root.dark) .hero-logo-glow {
     width: min(960px, 105vw);
     height: 300px;
@@ -141,12 +116,10 @@ const artifacts = [
     filter: blur(14px);
   }
 
-  /* Logo 标记: 柔化阴影 */
   :global(:root.dark) .hero-mark {
     filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 16px rgba(140, 126, 205, 0.18)) saturate(1.15);
   }
 
-  /* Artifact 网格容器背景: 玻璃质感中性灰 */
   :global(:root.dark) .artifact-grid::before {
     background:
       linear-gradient(120deg, rgba(90, 90, 100, 0.22), rgba(160, 160, 170, 0.05) 48%, rgba(60, 60, 70, 0.24)),
@@ -156,7 +129,6 @@ const artifacts = [
       inset 0 1px 0 rgba(170, 170, 180, 0.12);
   }
 
-  /* Artifact 卡片: 紫色玻璃材质取代白色 */
   :global(:root.dark) .artifact {
     background: linear-gradient(180deg, rgba(140, 126, 205, 0.18), rgba(74, 60, 140, 0.08));
     border: 2px solid rgba(172, 159, 225, 0.16);
@@ -165,13 +137,11 @@ const artifacts = [
       0 14px 38px rgba(0, 0, 0, 0.24);
   }
 
-  /* 高光扫过 */
   :global(:root.dark) .artifact::before {
     background:
       linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(197, 188, 240, 0.28), rgba(255, 255, 255, 0));
   }
 
-  /* Hover: 紫色辉光 */
   :global(:root.dark) .artifact:hover {
     background: linear-gradient(180deg, rgba(140, 126, 205, 0.3), rgba(74, 60, 140, 0.16));
     box-shadow:
@@ -180,7 +150,6 @@ const artifacts = [
       0 0 28px rgba(140, 126, 205, 0.24);
   }
 
-  /* 标题: 柔和提亮 */
   :global(:root.dark) .hero-copy h1 {
     text-shadow: 0 2px 30px rgba(74, 60, 140, 0.35);
   }
@@ -244,6 +213,7 @@ const artifacts = [
     line-height: 1.14;
     font-weight: 800;
     letter-spacing: 0;
+    white-space: pre-line;
   }
 
   .hero-title-mobile {
@@ -285,7 +255,6 @@ const artifacts = [
   }
 
   .hero-logo-glow {
-    /* 底部锚定地平线(54vh = 距底部46vh), 向上照亮天空 */
     position: absolute;
     z-index: 4;
     left: 50%;
@@ -311,7 +280,6 @@ const artifacts = [
     filter: drop-shadow(0 18px 22px rgba(89, 62, 151, 0.25)) saturate(1.1);
   }
 
-  /* Logo 在两种主题间切换 — 由全局 --logo-*-display 变量驱动 */
   .hero-mark--light { display: var(--logo-light-display); }
   .hero-mark--dark { display: var(--logo-dark-display); }
 
@@ -320,7 +288,6 @@ const artifacts = [
     z-index: 5;
     inset: calc(54vh - 1px) 0 0;
     height: 46vh;
-
     min-height: 0;
     perspective: 320px;
     perspective-origin: 50% 0%;
@@ -340,7 +307,6 @@ const artifacts = [
     width: min(820px, 64vw);
     height: 72vh;
     padding: clamp(48px, 5vw, 128px) clamp(32px, 3vw, 72px);
-
     transform: translateX(-50%) rotateX(70deg) scale(0.52);
     transform-origin: 50% 0%;
     transform-style: preserve-3d;
@@ -500,7 +466,6 @@ const artifacts = [
     .hero-content {
       padding-top: 138px;
     }
-
     .artifact span {
       font-size: 10px;
     }
@@ -511,45 +476,37 @@ const artifacts = [
       min-height: 100svh;
       background: var(--hero-shell-bg-mobile);
     }
-
     .hero-content {
       display: block;
       width: min(100% - 40px, 520px);
       padding-top: 112px;
       text-align: left;
     }
-
     .hero-copy h1 {
       font-size: clamp(40px, 11vw, 54px);
     }
-
     .hero-title-desktop {
       display: none;
     }
-
     .hero-title-mobile {
       display: inline;
     }
-
     .hero-actions {
       display: flex;
       justify-content: flex-start;
       margin-top: 24px;
     }
-
     .hero-horizon {
       --mark-size: 106px;
       top: calc(54vh - var(--mark-size));
       width: 180px;
     }
-
     .stage-wrap {
       inset: calc(54vh - 1px) 0 0;
       height: 46vh;
       perspective: 280px;
       perspective-origin: 50% 0%;
     }
-
     .artifact-grid {
       top: 0;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -560,47 +517,23 @@ const artifacts = [
       padding: clamp(32px, 4vw, 56px) clamp(20px, 3vw, 36px);
       transform: translateX(-50%) rotateX(76deg) scale(0.58);
     }
-
     .artifact {
       border-radius: 14px;
     }
-
-    .artifact--class {
-      grid-column: 1;
-      grid-row: span 3;
-    }
-
-    .artifact--rinui {
-      grid-column: 2;
-      grid-row: span 2;
-    }
-
-    .artifact--pbi {
-      grid-column: 1;
-      grid-row: span 4;
-    }
-
-    .artifact--lab {
-      grid-column: 2;
-      grid-row: span 3;
-    }
-
-    .artifact--notes {
-      grid-column: 2;
-      grid-row: span 4;
-    }
-
+    .artifact--class { grid-column: 1; grid-row: span 3; }
+    .artifact--rinui { grid-column: 2; grid-row: span 2; }
+    .artifact--pbi { grid-column: 1; grid-row: span 4; }
+    .artifact--lab { grid-column: 2; grid-row: span 3; }
+    .artifact--notes { grid-column: 2; grid-row: span 4; }
     .scroll-cue {
       bottom: 128px;
       gap: 12px;
     }
-
     .scroll-cue span {
       width: 18px;
       height: 28px;
       border-width: 1px;
     }
-
     .scroll-cue b {
       font-size: 11px;
       letter-spacing: 0.36em;
@@ -612,42 +545,32 @@ const artifacts = [
       width: calc(100% - 32px);
       padding-top: 96px;
     }
-
     .hero-copy h1 {
       font-size: clamp(35px, 10.8vw, 42px);
     }
-
     .hero-actions :global(.btn) {
       height: 38px;
       padding-inline: 20px;
       font-size: 15px;
     }
-
     .hero-horizon {
       --mark-size: 92px;
       top: calc(54vh - var(--mark-size));
     }
-
     .stage-wrap {
       inset: calc(54vh - 1px) 0 0;
       perspective: 240px;
     }
-
     .artifact-grid {
       transform: translateX(-50%) rotateX(77deg) scale(0.5);
       grid-auto-rows: clamp(26px, 4.8vh, 40px);
       gap: 16px;
       padding: clamp(64px, 10vw, 128px) clamp(32px, 5vw, 64px);
     }
-
-    .artifact span {
-      font-size: 9px;
-    }
+    .artifact span { font-size: 9px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .artifact {
-      transition: none;
-    }
+    .artifact { transition: none; }
   }
 </style>

@@ -1,64 +1,57 @@
 ---
-// Figma: FieldsIntro — 深色背景 + 高卡片
-// 背景: 深色（接近 neutral-900 或更深）
-// 标题: "Explorer the fields." 浅色文字
-// 3 张高卡片横排, 背景图填充, 底部渐变遮罩 + 标题/按钮
-// AutoPlayControl: PauseButton + PageIndicator 居中
-
+import { t } from '../../i18n/index';
 import AutoPlayController from '../../components/AutoPlayController.astro';
 import Button from '../../components/Button.astro';
+import Link from '../../components/Link.astro';
+
+export interface Props {
+  lang?: string;
+}
+
+const { lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
 
 const fields = [
-  { name: 'Software', href: '/fields/software' },
-  { name: 'Design',   href: '/fields/design' },
-  { name: 'Lab',      href: '/fields/experiment' },
+  { name: 'Software', href: 'fields/software' },
+  { name: 'Design',   href: 'fields/design' },
+  { name: 'Lab',      href: 'fields/experiment' },
 ];
 ---
 
 <section id="fields" class="bg-light py-24 transition-colors duration-300">
-  <!-- 标题区: 受 max-w-6xl 约束 -->
   <div class="mx-auto max-w-6xl px-6">
     <h2 class="text-title-large font-sans font-bold tracking-tight text-dark">
-      Explorer the fields.
+      {__('fields.title')}
     </h2>
   </div>
 
-  <!-- 卡片滚动容器: 填满页面宽度, 无视父级 padding -->
   <div class="fields-scroll mt-10 overflow-x-auto" data-count={fields.length}>
     <div class="fields-cards flex gap-4">
       {fields.map((field, i) => (
-        <a
-          href={field.href}
+        <Link
+          to={field.href}
           class="fields-card group relative flex shrink-0 flex-col justify-end overflow-hidden rounded-3xl"
           data-card={i}
         >
-          <!-- 背景图占位 (fill) -->
-          <div class="absolute inset-0 bg-neutral-300" data-bg />
-
-          <!-- 底部渐变遮罩伪元素 (在文字按钮下方) -->
+          <div class="absolute inset-0 bg-neutral-300 bg-cover bg-center" data-bg style="background-image: url('/images/under_construction.png');" />
           <div class="fields-card__overlay" />
-
-          <!-- 底部内容区: 标题 + 按钮 -->
           <div class="relative z-10 mb-[42px] flex items-center justify-between px-[46px]">
             <span class="fields-card__title">
               {field.name}
             </span>
-
             <Button flat icon="external-link" class="linkBtn" />
           </div>
-        </a>
+        </Link>
       ))}
     </div>
   </div>
 
-  <!-- AutoPlayControl: PauseButton + PageIndicator 居中 -->
   <div class="mt-8 flex items-center justify-center">
     <AutoPlayController count={fields.length} duration={5000} autoplay={true} />
   </div>
 </section>
 
 <script>
-  // 翻页器 ↔ 卡片滚动 双向同步
   function syncFieldsCards() {
     const section = document.querySelector<HTMLElement>('#fields');
     const scrollContainer = document.querySelector<HTMLElement>('.fields-scroll');
@@ -66,7 +59,6 @@ const fields = [
 
     const cardEls = Array.from(scrollContainer.querySelectorAll<HTMLElement>('.fields-card'));
 
-    // 翻页器 change → 滚动卡片 (只操作 .fields-scroll, 不影响页面滚动)
     section.addEventListener('change', ((e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!detail || typeof detail.index !== 'number') return;
@@ -79,7 +71,6 @@ const fields = [
       });
     }) as EventListener);
 
-    // 滚动结束后同步翻页器 (scroll-snap 已对齐, 只需判断当前是哪张卡)
     scrollContainer.addEventListener('scrollend', () => {
       const snapLeft = parseFloat(getComputedStyle(scrollContainer).scrollPaddingLeft) || 0;
       const scrollLeft = scrollContainer.scrollLeft;
@@ -106,7 +97,6 @@ const fields = [
 </script>
 
 <style>
-  /* ======== 滚动容器 ======== */
   .fields-scroll {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -118,21 +108,18 @@ const fields = [
     display: none;
   }
 
-  /* ======== 卡片轨道: 按内容撑开, 左右对齐标题区 ======== */
   .fields-cards {
     width: max-content;
     padding-left: var(--side-pad);
     padding-right: var(--side-pad);
   }
 
-  /* ======== 单张卡片: 宽度 = 视口 - 两侧 padding, 上限 1200px ======== */
   .fields-card {
     width: min(100vw - var(--side-pad) * 2, 1200px);
     height: 700px;
     scroll-snap-align: start;
   }
 
-  /* ======== 标题字体: Plus Jakarta Sans 粗体 40px ======== */
   .fields-card__title {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 700;
@@ -140,7 +127,6 @@ const fields = [
     color: #ffffff;
   }
 
-  /* ======== 链接按钮: 默认 48×48, phone 36×36 ======== */
   :global(.linkBtn) {
     display: flex;
     align-items: center;
@@ -149,37 +135,32 @@ const fields = [
     height: 44px;
   }
 
-  /* Tablet: 高度 460px */
   @media (max-width: 1024px) {
     .fields-card {
       height: 460px;
     }
   }
 
-  /* Phone: 高度 400px */
   @media (max-width: 640px) {
     .fields-card {
       height: 400px;
     }
-
     .fields-card__title {
       font-size: 32px;
     }
-
     :global(.linkBtn) {
       width: 42px;
-      height: 42px ;
+      height: 42px;
     }
   }
 
-  /* ======== 底部渐变遮罩: 深灰 alpha50% → 黑透明 (由下到上) ======== */
   .fields-card__overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 1;
-    height: calc(46px + 48px + 42px); /* padding + button-height + margin-bottom */
+    height: calc(46px + 48px + 42px);
     background: linear-gradient(
       to top,
       rgba(64, 64, 64, 0.5),

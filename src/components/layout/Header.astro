@@ -1,13 +1,8 @@
 ---
-// Figma: NavigationBar — Desktop (Light) / Mobile
-//
-// 结构: [Logo 46x46]  [Nav 导航标签]
-// 容器样式与 Button 一致: rounded-24, 渐变边框, 阴影, 模糊
-//
-// Desktop: fixed top center
-// Mobile:  fixed bottom, full-width
-
+import { t, locales as allLocales } from '../../i18n/index';
+import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getIcon } from '../../utils/icons';
+import Link from '../Link.astro';
 import Pill from '../Pill.astro';
 import NavButton from '../NavButton.astro';
 import Button from '../Button.astro';
@@ -15,27 +10,36 @@ import Menu from '../Menu.astro';
 import MenuItem from '../MenuItem.astro';
 
 interface Props {
+  lang?: string;
   currentPath?: string;
 }
 
-const { currentPath = '/' } = Astro.props;
+const { lang: currentLang, currentPath = '/' } = Astro.props;
+const __ = (key: string) => t(currentLang, key);
 
 const navItems = [
-  { label: '领域', href: '/fields',    icon: 'map' },
-  { label: '收藏', href: '/gallery',   icon: 'photo' },
-  { label: '随笔', href: '/writing',   icon: 'pencil' },
-  { label: '我',   href: '/me',        icon: 'badge' },
+  { label: __('nav.fields'),  href: 'fields',   icon: 'map' },
+  { label: __('nav.gallery'), href: 'gallery',  icon: 'photo' },
+  { label: __('nav.writing'), href: 'writing',  icon: 'pencil' },
+  { label: __('nav.me'),      href: 'me',       icon: 'badge' },
 ];
 
+// 计算无语言前缀的路径用于激活状态判断
+const stripLangPrefix = (path: string) => {
+  const langPattern = new RegExp(`^/(${allLocales.join('|')})(/|$)`);
+  return path.replace(langPattern, '/');
+};
+
+const cleanPath = stripLangPrefix(currentPath);
 const isActive = (href: string) => {
-  if (href === '/') return currentPath === '/';
-  return currentPath.startsWith(href);
+  if (href === '/') return cleanPath === '/';
+  return cleanPath.startsWith(`/${href}`);
 };
 ---
+
 <header class="nav-header">
-  <!-- ======== 左侧: Logo pill (含桌面端返回按钮) ======== -->
+  <!-- Logo pill -->
   <Pill class="nav-pill nav-pill--logo-group">
-    <!-- 桌面端返回按钮 (icon-only NavButton) -->
     <NavButton
       icon="chevron-left"
       href="javascript:history.back()"
@@ -44,8 +48,7 @@ const isActive = (href: string) => {
       aria-label="返回"
     />
     <span class="nav-pill__separator"></span>
-    <!-- Logo -->
-    <a href="/" class="nav-pill__logo-link" aria-label="RinLit Home">
+    <Link to="" class="nav-pill__logo-link" aria-label="RinLit Home">
       <img
         class="nav-pill__logo-img nav-pill__logo--light"
         src="/images/logo/Type=Square, Mode=Light, Monochrome=False.png"
@@ -56,14 +59,14 @@ const isActive = (href: string) => {
         src="/images/logo/Type=Square, Mode=Dark, Monochrome=False.png"
         alt="RinLit"
       />
-    </a>
+    </Link>
   </Pill>
 
-  <!-- ======== 右侧: Nav pill ======== -->
+  <!-- Nav pill -->
   <Pill class="nav-pill nav-pill--nav">
     {navItems.map((item) => (
       <NavButton
-        href={item.href}
+        href={getRelativeLocaleUrl(currentLang, item.href)}
         active={isActive(item.href)}
         icon={item.icon}
       >
@@ -72,25 +75,22 @@ const isActive = (href: string) => {
     ))}
   </Pill>
 
-  <!-- ======== 顶部工具栏: 桌面端正常排列 / 移动端固定顶部两端 ======== -->
+  <!-- Top bar -->
   <div class="top-bar">
-    <!-- 移动端返回按钮 -->
     <Button icon="chevron-left" class="back-btn back-btn--mobile" id="back-btn-mobile" aria-label="返回" />
-    <!-- 工具按钮组 -->
     <div class="toolbar" aria-label="工具栏">
-      <!-- 菜单触发器 + 下拉 -->
       <div class="menu-anchor">
         <Button icon="menu-2" class="menu-trigger" id="menu-trigger" aria-label="Menu" />
         <Menu class="menu-dropdown" id="settings-menu">
           <MenuItem icon="language">
-            语言
+            {__('nav.language')}
             <Menu slot="submenu" submenu type="radio" group="lang">
-              <MenuItem value="zh" checked>中文</MenuItem>
-              <MenuItem value="en">English</MenuItem>
+              <MenuItem value="zh-cn" checked={currentLang === 'zh-cn'}>中文</MenuItem>
+              <MenuItem value="en" checked={currentLang === 'en'}>English</MenuItem>
             </Menu>
           </MenuItem>
           <MenuItem icon="sun">
-            颜色模式
+            {__('nav.colorMode')}
             <Menu slot="submenu" submenu type="radio" group="theme">
               <MenuItem value="light" checked>浅色</MenuItem>
               <MenuItem value="dark">深色</MenuItem>
@@ -104,7 +104,6 @@ const isActive = (href: string) => {
 </header>
 
 <style>
-  /* ======== Header 定位 ======== */
   .nav-header {
     position: fixed;
     top: 24px;
@@ -120,12 +119,10 @@ const isActive = (href: string) => {
     gap: 8px;
   }
 
-  /* ======== 通用 nav-pill 布局样式 (背景/阴影/边框由 Pill 组件提供) ======== */
   :global(.nav-pill) {
     flex-shrink: 0;
   }
 
-  /* ======== Logo group pill: 包含返回按钮 + Logo，隐藏时为46×46正方形 ======== */
   :global(.nav-pill--logo-group) {
     display: flex;
     align-items: center;
@@ -136,7 +133,6 @@ const isActive = (href: string) => {
     gap: 3px;
   }
 
-  /* 当返回按钮可见时，撑开宽度并恢复横向 padding（仅桌面端） */
   @media (min-width: 769px) {
     :global(.nav-pill--logo-group:has(.back-btn--desktop.is-visible)) {
       width: fit-content;
@@ -158,11 +154,9 @@ const isActive = (href: string) => {
     display: block;
   }
 
-  /* Logo 切换: 由全局 --logo-*-display 变量驱动 */
   .nav-pill__logo--light { display: var(--logo-light-display); }
   .nav-pill__logo--dark { display: var(--logo-dark-display); }
 
-  /* ======== Nav pill: 高 46, padding 6/8, gap 8 ======== */
   :global(.nav-pill--nav) {
     display: flex;
     align-items: center;
@@ -172,9 +166,6 @@ const isActive = (href: string) => {
     margin-left: auto;
   }
 
-  /* ==========================================================
-     Mobile: 整体固定在底部，两端对齐
-     ========================================================== */
   @media (max-width: 768px) {
     .nav-header {
       top: auto;
@@ -190,7 +181,6 @@ const isActive = (href: string) => {
       --pill-radius: 9999px;
     }
 
-    /* Logo pill: 72×72, logo 48×48 */
     :global(.nav-pill--logo-group) {
       width: 72px;
       height: 72px;
@@ -208,7 +198,6 @@ const isActive = (href: string) => {
       height: 48px;
     }
 
-    /* Nav pill: 高 72, padding 8，内容自适应不拉伸 */
     :global(.nav-pill--nav) {
       height: 72px;
       padding: 8px 6px;
@@ -217,7 +206,6 @@ const isActive = (href: string) => {
     }
   }
 
-  /* iOS Safari 适配：整个 header 上移 48px */
   @supports (-webkit-touch-callout: none) {
     @media (max-width: 768px) {
       .nav-header {
@@ -226,7 +214,6 @@ const isActive = (href: string) => {
     }
   }
 
-  /* ===== 超窄屏等比缩小 (≤474px) ===== */
   @media (max-width: 474px) {
     .nav-header {
       --scale: calc(max(266px, 100vw) / 474px);
@@ -251,54 +238,44 @@ const isActive = (href: string) => {
 
     :global(.nav-pill--nav) {
       height: calc(72px * var(--scale));
-      padding: calc(8px * var(--scale))  calc(6px * var(--scale));
+      padding: calc(8px * var(--scale)) calc(6px * var(--scale));
       gap: calc(6px * var(--scale));
+      flex: 1;        /* 核心修改 */
+      min-width: 0;
     }
   }
 
-  /* ======== 返回按钮及分隔线显隐控制 ======== */
-
-  /* 【核心修复】：只要没有 .is-visible 类名，就用 !important 绝对压制组件自带的 inline-flex 等原子样式 */
   :global(.back-btn--desktop):not(.is-visible),
   :global(.back-btn--mobile):not(.is-visible) {
     display: none !important;
   }
 
-  /* 分隔线默认隐藏 */
   .nav-pill__separator {
     display: none;
   }
 
-  /* 宽屏/桌面端 (≥769px) 的响应式规则 */
   @media (min-width: 769px) {
-    /* 当 JS 判定通过、打上 .is-visible 标签时，桌面端返回键才允许显示 */
     :global(.back-btn--desktop).is-visible {
       display: flex;
     }
-    /* 紧跟在可见返回键后面的分隔线也同步显示 */
     :global(.back-btn--desktop).is-visible + .nav-pill__separator {
       display: block;
     }
-    /* 桌面端无论何时都绝对不准显示移动端按钮 */
     :global(.back-btn--mobile) {
       display: none !important;
     }
   }
 
-  /* 窄屏/移动端 (≤768px) 的响应式规则 */
   @media (max-width: 768px) {
-    /* 当 JS 判定通过、打上 .is-visible 标签时，移动端返回键才允许显示 */
     :global(.back-btn--mobile).is-visible {
       display: flex;
     }
-    /* 移动端任何时候都绝对不准显示桌面端的组件 */
     :global(.back-btn--desktop),
     .nav-pill__separator {
       display: none !important;
     }
   }
 
-  /* ======== Top Bar: 桌面端正常 / 移动端固定顶部两端 ======== */
   .top-bar {
     display: flex;
     align-items: center;
@@ -306,7 +283,6 @@ const isActive = (href: string) => {
     gap: 8px;
   }
 
-  /* ======== Toolbar: 桌面端内联排列 / 移动端固定右上角 ======== */
   .toolbar {
     display: flex;
     align-items: center;
@@ -314,19 +290,15 @@ const isActive = (href: string) => {
     gap: 8px;
   }
 
-  /* ======== 设置菜单 — 由 JS 动态 fixed 定位 ======== */
   .menu-anchor {
     position: relative;
   }
-
-  /* 移除原来的 absolute 定位，改为由 JS setPosition 动态 fixed */
 
   .top-bar :global(.btn) {
     width: 46px;
     height: 46px;
   }
 
-  /* Mobile: top-bar 固定顶部，返回按钮左、工具栏右 */
   @media (max-width: 768px) {
     .top-bar {
       position: fixed;
@@ -344,12 +316,9 @@ const isActive = (href: string) => {
       z-index: 60;
     }
   }
-
-
 </style>
 
 <script is:inline>
-  // ======== 暗色模式 / 语言 / 菜单切换逻辑 ========
   (function () {
     function $(el, sel) { return el && el.closest ? el.closest(sel) : null; }
     var root = document.documentElement;
@@ -381,7 +350,6 @@ const isActive = (href: string) => {
 
     if (!root.dataset.themeReady) { restoreTheme(); }
 
-    // 事件绑定只做一次（防 View Transitions 重复）
     if (!root.dataset.headerEventBound) {
       root.dataset.headerEventBound = '1';
 
@@ -397,14 +365,26 @@ const isActive = (href: string) => {
         });
       }
 
-      // ---- menu:change 事件 ----
       document.addEventListener('menu:change', function (e) {
         var d = e.detail;
         if (d.group === 'theme') setTheme(d.value);
-        if (d.group === 'lang') localStorage.setItem(LANG_KEY, d.value);
+        if (d.group === 'lang') {
+          // 存储语言偏好
+          localStorage.setItem(LANG_KEY, d.value);
+          // 导航到目标语言页面
+          var path = window.location.pathname;
+          // 移除当前语言前缀，添加目标语言前缀
+          var langs = ['en', 'zh-cn'];
+          var stripped = path;
+          for (var i = 0; i < langs.length; i++) {
+            var pattern = new RegExp('^/' + langs[i] + '(/|$)');
+            stripped = stripped.replace(pattern, '/');
+          }
+          var targetPath = '/' + d.value + stripped.replace(/\/+$/, '') || '/';
+          window.location.href = targetPath;
+        }
       });
 
-      // ---- 菜单触发器 ----
       if (!root.dataset.menuBound) {
         root.dataset.menuBound = '1';
 
@@ -428,7 +408,6 @@ const isActive = (href: string) => {
           }
 
           var inside = $(e.target, '#settings-menu');
-          // 子菜单被移到 body 下，也需要检测
           if (!inside) {
             var bodySubs = document.querySelectorAll('body > .menu--sub');
             for (var i = 0; i < bodySubs.length; i++) {
@@ -447,21 +426,23 @@ const isActive = (href: string) => {
     }
     root.dataset.themeReady = '1';
 
-    // ---- 初始化菜单项 checked 状态（每次页面加载都执行） ----
     function initMenuChecks() {
       var savedTheme = localStorage.getItem(THEME_KEY) || 'auto';
-      var savedLang = localStorage.getItem(LANG_KEY) || 'zh';
+      var tempLang = localStorage.getItem(LANG_KEY);
       var themeItems = document.querySelectorAll('[data-group="theme"] .menu-item');
       for (var i = 0; i < themeItems.length; i++) {
         var v = themeItems[i].getAttribute('data-value');
         themeItems[i].classList.toggle('menu-item--checked', v === savedTheme);
         themeItems[i].setAttribute('aria-checked', String(v === savedTheme));
       }
-      var langItems = document.querySelectorAll('[data-group="lang"] .menu-item');
-      for (var j = 0; j < langItems.length; j++) {
-        var lv = langItems[j].getAttribute('data-value');
-        langItems[j].classList.toggle('menu-item--checked', lv === savedLang);
-        langItems[j].setAttribute('aria-checked', String(lv === savedLang));
+      // 语言选中状态：服务端已通过 checked 属性设置，这里也做客户端补齐
+      if (tempLang) {
+        var langItems = document.querySelectorAll('[data-group="lang"] .menu-item');
+        for (var j = 0; j < langItems.length; j++) {
+          var lv = langItems[j].getAttribute('data-value');
+          langItems[j].classList.toggle('menu-item--checked', lv === tempLang);
+          langItems[j].setAttribute('aria-checked', String(lv === tempLang));
+        }
       }
     }
     initMenuChecks();
@@ -469,40 +450,42 @@ const isActive = (href: string) => {
 </script>
 
 <script>
-  // 1. 每次页面加载或路由切换完成时，精准刷新按钮的【显隐状态】
   document.addEventListener('astro:page-load', () => {
     const desktopBtn = document.getElementById('back-btn-desktop');
     const mobileBtn = document.getElementById('back-btn-mobile');
-    
+
     if (!desktopBtn || !mobileBtn) return;
 
-    // 核心逻辑：用 sessionStorage 维护导航栈，回退时自动截断
-    // 首页 / 新标签打开 → 不显示；从站内点击进入 → 显示；退回首页 → 消失
-    const isIndex = window.location.pathname === '/' || window.location.pathname === '/index';
-    const currentPage = window.location.pathname;
+    const path = window.location.pathname;
+    const langs = ['en', 'zh-cn'];
+    // 去掉语言前缀判断是否首页
+    let stripped = path;
+    for (var i = 0; i < langs.length; i++) {
+      var p = new RegExp('^/' + langs[i] + '$');
+      if (p.test(stripped)) { stripped = '/'; break; }
+      var p2 = new RegExp('^/' + langs[i] + '(/|$)');
+      stripped = stripped.replace(p2, '/');
+    }
+    const isIndex = stripped === '/' || stripped === '/index';
+    const currentPage = path;
 
     let navStack = JSON.parse(sessionStorage.getItem('nav-stack') || '[]');
     const stackIndex = navStack.indexOf(currentPage);
 
     if (stackIndex !== -1) {
-      // 后退到栈中已有页面 → 截断栈
       navStack = navStack.slice(0, stackIndex + 1);
     } else {
-      // 前进到新页面 → 入栈
       navStack.push(currentPage);
     }
     sessionStorage.setItem('nav-stack', JSON.stringify(navStack));
 
     const hasHistory = navStack.length > 1;
     const shouldShow = hasHistory && !isIndex;
-    
 
-    // 【纯净修正】：仅仅切换类名，绝不染指具体样式，把控制权还给 CSS
     desktopBtn.classList.toggle('is-visible', shouldShow);
     mobileBtn.classList.toggle('is-visible', shouldShow);
   });
 
-  // 2. 全局只需绑定一次点击事件
   document.addEventListener('click', (e) => {
     var target = e.target.closest ? e.target.closest('#back-btn-desktop, #back-btn-mobile') : null;
     if (!target) return;
@@ -511,7 +494,17 @@ const isActive = (href: string) => {
     if (window.history.length > 1) {
       window.history.back();
     } else {
-      window.location.href = '/';
+      // 回到当前语言的首页
+      var langs = ['en', 'zh-cn'];
+      var path = window.location.pathname;
+      var lang = 'zh-cn';
+      for (var i = 0; i < langs.length; i++) {
+        if (path.startsWith('/' + langs[i] + '/') || path === '/' + langs[i]) {
+          lang = langs[i];
+          break;
+        }
+      }
+      window.location.href = '/' + lang;
     }
   });
 </script>

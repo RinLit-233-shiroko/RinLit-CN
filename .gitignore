@@ -23,6 +23,7 @@ package-lock.json
 .claude
 .trae
 .codex
+.supabase_pwd
 *.py
 
 # do not commit .env files or any files that end with `.env`

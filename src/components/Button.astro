@@ -7,10 +7,13 @@
 
 import Pill from './Pill.astro';
 import { getIcon } from '../utils/icons';
+import { getRelativeLocaleUrl } from 'astro:i18n';
 
 interface Props {
   primary?: boolean;
   href?: string;
+  /** i18n-aware 路由路径（自动添加语言前缀） */
+  to?: string;
   icon?: string;
   id?: string;
   class?: string;
@@ -20,19 +23,21 @@ interface Props {
 const {
   primary = false,
   href,
+  to,
   icon = '',
   id = '',
   class: className = '',
   flat = false,
 } = Astro.props;
 
-const Tag = href ? 'a' : 'button';
+const resolvedHref = to ? getRelativeLocaleUrl(Astro.currentLocale!, to) : href;
+const Tag = resolvedHref ? 'a' : 'button';
 const isIconOnly = !Astro.slots.has('default');
 const svgHtml = getIcon(icon, 18);
 ---
 
 <Pill primary={primary} flat={flat} id={id} class={className}>
-  <Tag href={href} class={`btn ${isIconOnly ? 'btn--icon-only' : ''}`}>
+  <Tag href={resolvedHref} class={`btn ${isIconOnly ? 'btn--icon-only' : ''}`}>
     {svgHtml && (
       <span class="btn__icon">
         <span set:html={svgHtml} />

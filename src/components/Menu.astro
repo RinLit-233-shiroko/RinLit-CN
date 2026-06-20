@@ -15,6 +15,7 @@ interface Props {
   type?: 'menu' | 'radio' | 'checkbox';
   group?: string;
   submenu?: boolean;
+  contextTarget?: string;  // CSS selector: right-click on matching elements opens this menu
 }
 
 const {
@@ -23,6 +24,7 @@ const {
   type = 'menu',
   group = '',
   submenu = false,
+  contextTarget = '',
 } = Astro.props;
 
 const roleMap = {
@@ -40,6 +42,7 @@ const role = roleMap[type];
   role={role}
   data-menu-type={type}
   data-group={group}
+  data-context-target={contextTarget || ''}
 >
   <Pill>
     <ul class="menu__list" role="none">
@@ -445,6 +448,112 @@ const role = roleMap[type];
     window.addEventListener('resize', function () {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(closeAllMenus, 100);
+    });
+
+    // ==========================================================
+    // 右键上下文菜单
+    // ==========================================================
+
+    var _ctxMenuEl = null;
+
+    /** 在指定视口坐标打开右键菜单（无触发按钮动画） */
+    window.ContextMenu_open = function (menuEl, x, y) {
+      if (!menuEl) return;
+
+      // 关闭已打开的右键菜单
+      if (_ctxMenuEl && _ctxMenuEl !== menuEl) {
+        window.Menu_close(_ctxMenuEl);
+      }
+
+      // 显示但保持透明，让浏览器计算真实宽高
+      menuEl.style.display = 'inline-flex';
+      menuEl.style.visibility = 'hidden';
+
+      var mW = menuEl.offsetWidth || 160;
+      var mH = menuEl.offsetHeight || 100;
+      var padding = 8;
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+
+      var left = x;
+      var top = y;
+
+      // 碰撞检测：防止菜单超出视口
+      if (left + mW > vw - padding) left = vw - mW - padding;
+      if (left < padding) left = padding;
+      if (top + mH > vh - padding) top = vh - mH - padding;
+      if (top < padding) top = padding;
+
+      menuEl.style.left = left + 'px';
+      menuEl.style.top = top + 'px';
+
+      // 以光标位置作为 transform-origin
+      menuEl.style.setProperty('--origin-x', (x - left) + 'px');
+      menuEl.style.setProperty('--origin-y', (y - top) + 'px');
+
+      // 恢复可见，执行打开动画
+      menuEl.style.visibility = 'visible';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          menuEl.classList.remove('menu--closing');
+          menuEl.classList.add('is-open');
+        });
+      });
+
+      _ctxMenuEl = menuEl;
+    };
+
+    /** 关闭当前右键菜单 */
+    window.ContextMenu_close = function () {
+      if (_ctxMenuEl) {
+        window.Menu_close(_ctxMenuEl);
+        _ctxMenuEl = null;
+      }
+    };
+
+    // ---- 全局右键拦截 ----
+    // 检查所有带 data-context-target 的 Menu，如果点击目标匹配则显示对应菜单
+    document.addEventListener('contextmenu', function (e) {
+      var menus = document.querySelectorAll('.menu[data-context-target]:not([data-context-target=""])');
+      for (var i = 0; i < menus.length; i++) {
+        var sel = menus[i].getAttribute('data-context-target');
+        if (!sel) continue;
+        if (e.target.closest(sel)) {
+          e.preventDefault();
+          window.ContextMenu_open(menus[i], e.clientX, e.clientY);
+          return;
+        }
+      }
+    });
+
+    // 点击菜单项（非子菜单）→ 关闭右键菜单
+    document.addEventListener('click', function (e) {
+      if (!_ctxMenuEl) return;
+
+      var item = $(e.target, '.menu-item');
+      if (item && !item.matches('.menu-item--has-submenu') && _ctxMenuEl.contains(item)) {
+        window.ContextMenu_close();
+        return;
+      }
+
+      // 点击菜单外部 → 关闭（含 body 移出的子菜单）
+      if (!_ctxMenuEl.contains(e.target)) {
+        var inSub = false;
+        var bodySubs = document.querySelectorAll('body > .menu--sub.is-open');
+        for (var i = 0; i < bodySubs.length; i++) {
+          if (bodySubs[i].contains(e.target)) { inSub = true; break; }
+        }
+        if (!inSub) {
+          window.ContextMenu_close();
+        }
+      }
+    });
+
+    // Escape → 关闭右键菜单
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && _ctxMenuEl) {
+        window.ContextMenu_close();
+      }
     });
   })();
 </script>

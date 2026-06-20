@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
+import node from "@astrojs/node";
 
 export default defineConfig({
   integrations: [tailwind()],
@@ -11,4 +12,9 @@ export default defineConfig({
       prefixDefaultLocale: true,
     },
   },
+
+  output: "server",
+  adapter: node({
+    mode: "standalone",
+  }),
 });

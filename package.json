@@ -10,10 +10,11 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/node": "^9.0.0",
     "@astrojs/tailwind": "^6.0.2",
-    "@supabase/supabase-js": "^2.108.2",
+    "@supabase/supabase-js": "^2.49.0",
     "@tabler/icons": "^3.44.0",
-    "astro": "latest",
+    "astro": "^5.18.2",
     "tailwindcss": "^3.4.19"
   },
   "devDependencies": {

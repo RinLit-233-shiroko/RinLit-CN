@@ -1,0 +1,25 @@
+---
+import { locales, defaultLocale } from '../../i18n/index';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HeroSection from '../../sections/index/HeroSection.astro';
+import FieldsIntro from '../../sections/index/FieldsIntro.astro';
+import GalleryEntry from '../../sections/index/GalleryEntry.astro';
+import AboutSection from '../../sections/index/AboutSection.astro';
+
+export async function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const { lang } = Astro.params;
+---
+
+<BaseLayout
+  lang={lang}
+  title="RinLit — Building software, design systems, and experimental ideas"
+  description="RinLit is a personal creative space for software projects, design systems, experiments, writing, and visual ideas."
+>
+  <HeroSection lang={lang} />
+  <FieldsIntro lang={lang} />
+  <GalleryEntry lang={lang} />
+  <AboutSection lang={lang} />
+</BaseLayout>

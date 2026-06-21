@@ -328,7 +328,7 @@ const __ = (key: string) => t(lang, key);
 </style>
 
 <script>
-  import { signIn, signUp, resetPasswordForEmail } from '../../lib/auth.client';
+  import { signIn, signUp, resetPasswordForEmail, signInWithGithub } from '../../lib/auth.client';
 
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -439,7 +439,7 @@ const __ = (key: string) => t(lang, key);
         this.modal?.setTitle(title);
         // 聚焦密码框
         requestAnimationFrame(() => {
-          const pw = this.$el?.querySelector('#auth-password') as HTMLInputElement;
+          const pw = el?.querySelector('#auth-password') as HTMLInputElement;
           pw?.focus();
         });
       }
@@ -479,15 +479,18 @@ const __ = (key: string) => t(lang, key);
       this.syncSwitch();
       this.syncSubmitLabel();
       this.syncSubtitle();
+      this.syncPasswordPlaceholder();
       // 清空表单字段
       const el = this.$el;
       if (el) {
         const emailInput = el.querySelector('#auth-email') as HTMLInputElement;
         const pwInput = el.querySelector('#auth-password') as HTMLInputElement;
         const forgotEmailInput = el.querySelector('#auth-forgot-email') as HTMLInputElement;
+        const dnInput = el.querySelector('#auth-display-name') as HTMLInputElement;
         if (emailInput) emailInput.value = '';
         if (pwInput) pwInput.value = '';
         if (forgotEmailInput) forgotEmailInput.value = '';
+        if (dnInput) dnInput.value = '';
       }
       this.modal?.open();
     }
@@ -507,6 +510,7 @@ const __ = (key: string) => t(lang, key);
       this.syncSwitch();
       this.syncSubmitLabel();
       this.syncSubtitle();
+      this.syncPasswordPlaceholder();
     }
 
     private syncSwitch() {
@@ -521,8 +525,8 @@ const __ = (key: string) => t(lang, key);
     private syncSubmitLabel() {
       const el = this.$el;
       if (!el) return;
-      const signinLabel = el.querySelector('[data-label-signin]') as HTMLElement;
-      const signupLabel = el.querySelector('[data-label-signup]') as HTMLElement;
+      const signinLabel = el.querySelector('.auth-modal__submit-label[data-label-signin]') as HTMLElement;
+      const signupLabel = el.querySelector('.auth-modal__submit-label[data-label-signup]') as HTMLElement;
       if (signinLabel) signinLabel.classList.toggle('is-hidden', this.mode !== 'signin');
       if (signupLabel) signupLabel.classList.toggle('is-hidden', this.mode !== 'signup');
     }
@@ -534,6 +538,18 @@ const __ = (key: string) => t(lang, key);
       const signupSub = el.querySelector('[data-subtitle-signup]') as HTMLElement;
       if (signinSub) signinSub.classList.toggle('is-hidden', this.mode !== 'signin');
       if (signupSub) signupSub.classList.toggle('is-hidden', this.mode !== 'signup');
+    }
+
+    /** 切换密码框 placeholder */
+    private syncPasswordPlaceholder() {
+      const el = this.$el;
+      if (!el) return;
+      const i18n = (window as any).__AUTH_I18N || {};
+      const pwInput = el.querySelector('#auth-password') as HTMLInputElement;
+      if (!pwInput) return;
+      pwInput.placeholder = this.mode === 'signin'
+        ? '········'
+        : (i18n.passwordSignupPlaceholder || 'At least 6 chars, include letters & numbers');
     }
 
     // ============ 邮箱回显 ============
@@ -647,9 +663,16 @@ const __ = (key: string) => t(lang, key);
       this.setLoading(true);
 
       try {
+        // 注册时读取 DisplayName
+        let displayName: string | undefined;
+        if (this.mode === 'signup') {
+          const dnInput = el.querySelector('#auth-display-name') as HTMLInputElement;
+          displayName = dnInput?.value.trim() || undefined;
+        }
+
         const { error, data } = this.mode === 'signin'
           ? await signIn(this.emailValue, password)
-          : await signUp(this.emailValue, password);
+          : await signUp(this.emailValue, password, displayName);
 
         if (error) {
           this.setError('auth-error-password', getAuthErrorMessage(error));
@@ -791,6 +814,23 @@ const __ = (key: string) => t(lang, key);
         if (!btn) return;
         e.preventDefault();
         self.goToPage(0);
+      });
+
+      // GitHub OAuth 登录
+      document.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest('.auth-modal__github-btn');
+        if (!btn) return;
+        e.preventDefault();
+        try {
+          const { error } = await signInWithGithub();
+          if (error) {
+            const i18n = (window as any).__AUTH_I18N || {};
+            self.setError('auth-error-email', getAuthErrorMessage(error) || error.message || i18n.__default);
+          }
+        } catch (err: any) {
+          const i18n = (window as any).__AUTH_I18N || {};
+          self.setError('auth-error-email', err.message || i18n.__default);
+        }
       });
 
       // 全局打开触发器 — data-action="auth:open"

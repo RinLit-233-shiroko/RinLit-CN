@@ -30,11 +30,58 @@ export async function resetPasswordForEmail(email: string, redirectTo: string) {
     return await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 }
 
-export async function signInWithGithub() {
+export async function signInWithGithub(redirectTo?: string) {
     const supabase = getClient();
     return await supabase.auth.signInWithOAuth({
         provider: 'github',
+        options: redirectTo ? { redirectTo } : undefined,
     });
+}
+
+export async function linkGithubIdentity(redirectTo?: string) {
+    const supabase = getClient();
+    return await supabase.auth.linkIdentity({
+        provider: 'github',
+        options: redirectTo ? { redirectTo } : undefined,
+    });
+}
+
+export async function unlinkIdentity(identity: any) {
+    const supabase = getClient();
+    return await supabase.auth.unlinkIdentity(identity);
+}
+
+export async function updateDisplayName(displayName: string) {
+    const supabase = getClient();
+    return await supabase.auth.updateUser({
+        data: { display_name: displayName },
+    });
+}
+
+export async function updateEmail(email: string) {
+    const supabase = getClient();
+    return await supabase.auth.updateUser({ email });
+}
+
+export async function updatePassword(password: string) {
+    const supabase = getClient();
+    return await supabase.auth.updateUser({ password });
+}
+
+export async function verifyPassword(email: string, password: string) {
+    const supabase = getClient();
+    return await supabase.auth.signInWithPassword({ email, password });
+}
+
+export async function refreshSession() {
+    const supabase = getClient();
+    return await supabase.auth.refreshSession();
+}
+
+export async function getUser() {
+    const supabase = getClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    return { user, error };
 }
 
 export async function signOut() {

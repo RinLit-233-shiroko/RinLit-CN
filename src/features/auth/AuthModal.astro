@@ -842,6 +842,11 @@ const __ = (key: string) => t(lang, key);
         (window as any).__authModal?.open(tab);
       });
 
+      document.addEventListener('auth:open', ((e: CustomEvent) => {
+        const tab = (e.detail?.tab as 'signin' | 'signup') || 'signin';
+        (window as any).__authModal?.open(tab);
+      }) as EventListener);
+
       // 键盘 Enter 键快捷提交
       document.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter') return;

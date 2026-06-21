@@ -98,9 +98,10 @@ const isActive = (href: string) => {
               class="auth-btn is-user-btn"
               aria-label="Account"
             >
-              <span id="user-email-display"></span>
+              <span id="user-account-display"></span>
             </Button>
             <Menu id="user-menu-dropdown">
+              <MenuItem value="account">{__('auth.account')}</MenuItem>
               <MenuItem value="signout">{__('auth.signOut')}</MenuItem>
             </Menu>
           </div>
@@ -136,7 +137,7 @@ const isActive = (href: string) => {
     left: 0;
     right: 0;
     z-index: 50;
-    max-width: 1400px;
+    max-width: 1448px;  /* 24*2 */
     margin: 0 auto;
     padding: 0 24px;
     display: flex;
@@ -323,10 +324,28 @@ const isActive = (href: string) => {
   /* ======== 用户区域 ======== */
   .user-area {
     position: relative;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: min(32vw, 220px);
+  }
+
+  .user-area :global(.auth-btn) {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .user-area :global(.auth-btn .pill) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .user-area :global(.auth-btn .btn) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     padding: 0 16px;
     height: 46px;
     font-size: 15px;
@@ -338,8 +357,12 @@ const isActive = (href: string) => {
     font-weight: 600;
   }
 
-  #user-email-display {
-    max-width: 140px;
+  #user-account-display {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -350,11 +373,27 @@ const isActive = (href: string) => {
     min-width: 150px;
   }
 
+  @media (max-width: 1024px) {
+    .user-area {
+      max-width: min(28vw, 180px);
+    }
+  }
+
   @media (max-width: 768px) {
+    .user-area {
+      max-width: min(42vw, 150px);
+    }
+
     .user-area :global(.auth-btn .btn) {
       height: 46px;
       padding: 0 14px;
       font-size: 14px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .user-area {
+      max-width: min(36vw, 132px);
     }
   }
 
@@ -588,14 +627,14 @@ const isActive = (href: string) => {
     const userArea = document.getElementById('auth-btn-signin')?.closest('.user-area');
     const signinBtn = userArea?.querySelector('#auth-btn-signin') as HTMLElement | null;
     const userMenu = document.getElementById('user-menu');
-    const userEmailDisplay = document.getElementById('user-email-display');
+    const userAccountDisplay = document.getElementById('user-account-display');
     if (!signinBtn || !userMenu) return;
 
     if (hasSession) {
       signinBtn.style.display = 'none';
       userMenu.style.display = '';
-      if (userEmailDisplay && currentUserEmail) {
-        userEmailDisplay.textContent = currentUserEmail;
+      if (userAccountDisplay && currentUserLabel) {
+        userAccountDisplay.textContent = currentUserLabel;
       }
     } else {
       signinBtn.style.display = '';
@@ -604,16 +643,16 @@ const isActive = (href: string) => {
   }
 
   let hasSession = false;
-  let currentUserEmail = '';
+  let currentUserLabel = '';
 
   async function checkSession() {
     try {
       const session = await getSession();
       hasSession = !!session;
-      currentUserEmail = session?.user?.email || '';
+      currentUserLabel = session?.user?.user_metadata?.display_name || session?.user?.email || '';
     } catch {
       hasSession = false;
-      currentUserEmail = '';
+      currentUserLabel = '';
     }
     updateAuthUI();
   }
@@ -627,31 +666,40 @@ const isActive = (href: string) => {
   onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session) {
       hasSession = true;
-      currentUserEmail = session.user?.email || '';
+      currentUserLabel = session.user?.user_metadata?.display_name || session.user?.email || '';
       updateAuthUI();
     } else if (event === 'SIGNED_OUT') {
       hasSession = false;
-      currentUserEmail = '';
+      currentUserLabel = '';
       updateAuthUI();
     }
   });
 
-  // 监听 AuthModal 发出的登录成功事件
   document.addEventListener('auth:signed-in', ((e: CustomEvent) => {
     hasSession = true;
-    currentUserEmail = e.detail?.session?.user?.email || '';
+    currentUserLabel = e.detail?.session?.user?.user_metadata?.display_name || e.detail?.session?.user?.email || '';
     updateAuthUI();
   }) as EventListener);
 
-  // 退出登录 — 不刷新页面，直接更新 UI
+  function getCurrentLang() {
+    const path = window.location.pathname;
+    return path.startsWith('/en') ? 'en' : 'zh-cn';
+  }
+
+  function isAccountPath() {
+    return /^\/(en|zh-cn)\/account(?:\/|$)/.test(window.location.pathname);
+  }
+
   async function handleSignOut() {
-    await signOut();
+    await signOut().catch(() => null);
     hasSession = false;
-    currentUserEmail = '';
+    currentUserLabel = '';
     updateAuthUI();
-    // 关闭用户下拉菜单
     const userMenu = document.getElementById('user-menu-dropdown');
     if (userMenu && Menu_close) Menu_close(userMenu);
+    if (isAccountPath()) {
+      window.location.href = '/' + getCurrentLang();
+    }
   }
 
   // 用户菜单 & 退出登录 — 使用 Menu 组件
@@ -678,7 +726,14 @@ const isActive = (href: string) => {
     // Sign out via user menu item
     const userMenuItem = target.closest('#user-menu-dropdown .menu-item');
     if (userMenuItem) {
+      e.preventDefault();
+      e.stopPropagation();
       const value = userMenuItem.getAttribute('data-value');
+      if (value === 'account') {
+        const path = window.location.pathname;
+        const lang = path.startsWith('/en') ? 'en' : 'zh-cn';
+        window.location.href = '/' + lang + '/account';
+      }
       if (value === 'signout') handleSignOut();
       return;
     }

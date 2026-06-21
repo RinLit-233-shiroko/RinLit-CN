@@ -1,0 +1,122 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/Button.astro';
+import { t, locales } from '../../../i18n/index';
+
+export async function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const { lang = 'zh-cn' } = Astro.params;
+const __ = (key: string) => t(lang, key);
+const isZh = lang === 'zh-cn';
+---
+
+<BaseLayout
+  lang={lang}
+  title={isZh ? '登录账号' : 'Sign in'}
+  description={isZh ? '登录后继续访问账号设置。' : 'Sign in to continue to account settings.'}
+>
+  <section class="account-redirect-page">
+    <main class="account-redirect-card">
+      <a class="account-logo" href={`/${lang}`} aria-label="RinLit Home">
+        <img class="account-logo__img account-logo__img--light" src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=False.png" alt="RinLit" />
+        <img class="account-logo__img account-logo__img--dark" src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png" alt="RinLit" />
+        <span>{__('auth.account')}</span>
+      </a>
+      <h1>{isZh ? '请先登录' : 'Sign in required'}</h1>
+      <p>{isZh ? '登录后将自动返回刚才的账号设置页面。' : 'After signing in, you will return to the account settings page.'}</p>
+      <Button primary flat id="account-redirect-login">{__('auth.signIn')}</Button>
+    </main>
+  </section>
+</BaseLayout>
+
+<script>
+  import { getUser } from '../../../lib/auth.client';
+
+  const loginBtn = document.getElementById('account-redirect-login') as HTMLElement;
+
+  function getNextUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next') || `/${document.documentElement.lang}/account`;
+    if (!next.startsWith(`/${document.documentElement.lang}/account`)) {
+      return `/${document.documentElement.lang}/account`;
+    }
+    return next;
+  }
+
+  async function checkSignedIn() {
+    const { user } = await getUser();
+    if (user) {
+      window.location.replace(getNextUrl());
+      return;
+    }
+    document.dispatchEvent(new CustomEvent('auth:open', { detail: { tab: 'signin' } }));
+  }
+
+  loginBtn?.addEventListener('click', () => {
+    document.dispatchEvent(new CustomEvent('auth:open', { detail: { tab: 'signin' } }));
+  });
+
+  document.addEventListener('auth:signed-in', () => {
+    window.location.replace(getNextUrl());
+  });
+
+  document.addEventListener('astro:page-load', checkSignedIn);
+  checkSignedIn();
+</script>
+
+<style>
+  .account-redirect-page {
+    min-height: 100vh;
+    padding: 120px 20px 80px;
+    background: var(--bg);
+    display: grid;
+    place-items: start center;
+  }
+
+  .account-redirect-card {
+    width: min(100%, 460px);
+    max-width: 1400px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 28px;
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--shadow-color) 20%, transparent);
+  }
+
+  .account-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-strong);
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 30px;
+  }
+
+  .account-logo__img {
+    width: 96px;
+    height: auto;
+    display: block;
+  }
+
+  .account-logo__img--light { display: var(--logo-light-display); }
+  .account-logo__img--dark { display: var(--logo-dark-display); }
+
+  h1 {
+    margin: 0 0 10px;
+    color: var(--text-strong);
+    font-size: 30px;
+    line-height: 1.15;
+  }
+
+  p {
+    margin: 0 0 24px;
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.6;
+  }
+</style>

@@ -1,0 +1,708 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/Button.astro';
+import Input from '../../../components/Input.astro';
+import SettingsCard from '../../../components/SettingsCard.astro';
+import { getIcon } from '../../../utils/icons';
+import { t, locales } from '../../../i18n/index';
+
+export async function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const { lang = 'zh-cn' } = Astro.params;
+const __ = (key: string) => t(lang, key);
+const isZh = lang === 'zh-cn';
+const pageTitle = isZh ? '账号' : 'Account';
+
+const navItems = [
+  { id: 'profile', label: isZh ? '个人信息' : 'Profile' },
+  { id: 'security', label: isZh ? '登录和安全' : 'Sign-in & Security' },
+  { id: 'oauth', label: isZh ? 'OAuth' : 'OAuth' },
+];
+
+const icons = {
+  user: getIcon('user', 18),
+  mail: getIcon('mail', 18),
+  key: getIcon('key', 18),
+  github: getIcon('brand-github', 18),
+  chevron: getIcon('chevron-right', 16),
+};
+---
+
+<BaseLayout
+  lang={lang}
+  title={pageTitle}
+  description={isZh ? '管理 RinLit 账号。' : 'Manage your RinLit account.'}
+>
+  <section class="account-page">
+    <div class="account-topbar">
+      <a class="account-brand" href={`/${lang}`} aria-label="RinLit Home">
+        <img class="account-brand__img account-brand__img--light" src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=False.png" alt="RinLit" />
+        <img class="account-brand__img account-brand__img--dark" src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png" alt="RinLit" />
+        <span>{__('auth.account')}</span>
+      </a>
+      <Button id="account-signout" flat>
+        <span id="account-signout-label">{__('auth.signOut')}</span>
+        <span class="btn-spinner" id="account-signout-spinner" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </span>
+      </Button>
+    </div>
+
+    <main class="account-main" id="account-main" hidden>
+      <aside class="account-sidebar" aria-label={isZh ? '账号设置导航' : 'Account settings navigation'}>
+        <div class="account-identity" id="account-identity">
+          <strong id="account-display-name">RinLit</strong>
+          <span id="account-email">...</span>
+        </div>
+
+        <nav class="account-nav" id="account-nav">
+          {navItems.map((item) => (
+            <button class:list={["account-nav__item", { "is-active": item.id === 'profile' }]} type="button" data-panel-target={item.id}>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <section class="account-content">
+        <section class="account-panel is-active" id="panel-profile" data-panel="profile">
+          <h2 class="panel-title">{isZh ? '名称' : 'Display name'}</h2>
+
+          <SettingsCard>
+            <div class="card-head">
+              <div class="card-icon" set:html={icons.user}></div>
+              <div class="card-copy">
+                <h3>{__('auth.displayName')}</h3>
+                <p>{isZh ? '用于在 RinLit 中显示你的名称。' : 'Used as your display name in RinLit.'}</p>
+              </div>
+            </div>
+
+            <form class="account-form" id="display-name-form">
+              <Input
+                type="text"
+                name="display-name"
+                id="display-name-input"
+                label={__('auth.displayName')}
+                placeholder={__('auth.displayNamePlaceholder')}
+                autocomplete="name"
+                flat
+                required
+              />
+              <div class="form-actions">
+                <p class="form-message" id="name-message" role="status"></p>
+                <Button primary flat class="form-submit" id="name-submit-btn">
+                  <span id="name-submit-label">{isZh ? '保存' : 'Save'}</span>
+                  <span class="btn-spinner" id="name-submit-spinner" hidden>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
+                  </span>
+                </Button>
+              </div>
+            </form>
+          </SettingsCard>
+        </section>
+
+        <section class="account-panel" id="panel-security" data-panel="security">
+          <h2 class="panel-title">{isZh ? '邮箱与密码' : 'Email and password'}</h2>
+
+          <div class="settings-list">
+            <SettingsCard asRow href={`/${lang}/account/change-email`}>
+              <div class="card-icon" set:html={icons.mail}></div>
+              <span class="row-copy">
+                <strong>{isZh ? '更换邮箱' : 'Change email'}</strong>
+                <small id="email-card-value">...</small>
+              </span>
+              <span class="row-chevron" set:html={icons.chevron}></span>
+            </SettingsCard>
+
+            <SettingsCard asRow href={`/${lang}/account/change-password`}>
+              <div class="card-icon" set:html={icons.key}></div>
+              <span class="row-copy">
+                <strong>{__('auth.updatePassword')}</strong>
+                <small>{isZh ? '需要验证旧密码' : 'Requires current password'}</small>
+              </span>
+              <span class="row-chevron" set:html={icons.chevron}></span>
+            </SettingsCard>
+          </div>
+        </section>
+
+        <section class="account-panel" id="panel-oauth" data-panel="oauth">
+          <h2 class="panel-title">{isZh ? '第三方登录' : 'Third-party sign-in'}</h2>
+
+          <SettingsCard>
+            <div class="card-head card-head--split">
+              <div class="card-icon" set:html={icons.github}></div>
+              <div class="card-copy">
+                <h3>GitHub</h3>
+                <p id="github-provider-state">{isZh ? '读取中' : 'Loading'}</p>
+              </div>
+              <Button id="github-link-btn" flat>
+                <span id="github-link-label">{isZh ? '连接' : 'Connect'}</span>
+                <span class="btn-spinner" id="github-link-spinner" hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                </span>
+              </Button>
+            </div>
+            <p class="oauth-note" id="github-message"></p>
+          </SettingsCard>
+        </section>
+      </section>
+    </main>
+  </section>
+</BaseLayout>
+
+<script is:inline define:vars={{
+  __ACCOUNT_I18N: JSON.stringify({
+    required: __('auth.error.required'),
+    defaultError: __('auth.error.default'),
+    signIn: __('auth.signIn'),
+    saving: isZh ? '保存中…' : 'Saving…',
+    saved: isZh ? '已保存。' : 'Saved.',
+    notSignedIn: isZh ? '登录后才能访问账号设置。' : 'Sign in to access account settings.',
+    connected: isZh ? '已连接' : 'Connected',
+    notConnected: isZh ? '未连接' : 'Not connected',
+    unavailable: isZh ? '不可用' : 'Unavailable',
+    reconnectGithub: isZh ? '重新连接' : 'Reconnect',
+    connectGithub: isZh ? '连接' : 'Connect',
+    signingOut: isZh ? '正在退出…' : 'Signing out…',
+    saveName: isZh ? '保存' : 'Save',
+    oauthStarting: isZh ? '正在跳转到 GitHub…' : 'Opening GitHub…',
+  })
+}}>
+  window.__ACCOUNT_I18N = JSON.parse(__ACCOUNT_I18N);
+</script>
+
+<script>
+  import { getUser, updateDisplayName, linkGithubIdentity, signOut } from '../../../lib/auth.client';
+
+  const text = (window as any).__ACCOUNT_I18N || {};
+  const PANEL_KEY = 'rinlit:account-panel';
+  let currentUser: any = null;
+  let cleanupAccountPage: (() => void) | null = null;
+
+  function getDisplayName(user: any) {
+    return user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'RinLit';
+  }
+
+  function getIdentity(provider: string) {
+    return currentUser?.identities?.find((i: any) => i.provider === provider);
+  }
+
+  function showLoginRequired() {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.replace(`/${document.documentElement.lang}/account/redirect?next=${next}`);
+  }
+
+  function switchPanel(target: string) {
+    document.querySelectorAll('[data-panel-target]').forEach((button) => {
+      button.classList.toggle('is-active', button.getAttribute('data-panel-target') === target);
+    });
+    document.querySelectorAll('[data-panel]').forEach((panel) => {
+      panel.classList.toggle('is-active', panel.getAttribute('data-panel') === target);
+    });
+    try {
+      sessionStorage.setItem(PANEL_KEY, target);
+    } catch (_) {}
+  }
+
+  function restorePanel() {
+    let saved: string | null = null;
+    try {
+      saved = sessionStorage.getItem(PANEL_KEY);
+    } catch (_) {}
+    if (saved && document.querySelector(`[data-panel="${saved}"]`)) {
+      switchPanel(saved);
+      return;
+    }
+    switchPanel('profile');
+  }
+
+  function initAccountPage() {
+    cleanupAccountPage?.();
+
+    const byId = (id: string) => document.getElementById(id);
+    const accountMain = byId('account-main');
+    const displayNameEl = byId('account-display-name');
+    const emailEl = byId('account-email');
+    const nameInput = byId('display-name-input') as HTMLInputElement | null;
+    const nameForm = byId('display-name-form') as HTMLFormElement | null;
+    const nameMessage = byId('name-message');
+    const nameSubmitLabel = byId('name-submit-label');
+    const nameSubmitSpinner = byId('name-submit-spinner');
+    const nameSubmitBtn = byId('name-submit-btn');
+    const emailCardValue = byId('email-card-value');
+    const githubProviderState = byId('github-provider-state');
+    const githubLinkBtn = byId('github-link-btn');
+    const githubLinkLabel = byId('github-link-label');
+    const githubLinkSpinner = byId('github-link-spinner');
+    const githubMessage = byId('github-message');
+    const signoutBtn = byId('account-signout');
+    const signoutLabel = byId('account-signout-label');
+    const signoutSpinner = byId('account-signout-spinner');
+    const panelButtons = Array.from(document.querySelectorAll('[data-panel-target]')) as HTMLButtonElement[];
+
+    if (
+      !accountMain ||
+      !displayNameEl ||
+      !emailEl ||
+      !nameInput ||
+      !nameForm ||
+      !nameMessage ||
+      !nameSubmitLabel ||
+      !nameSubmitSpinner ||
+      !nameSubmitBtn ||
+      !emailCardValue ||
+      !githubProviderState ||
+      !githubLinkBtn ||
+      !githubLinkLabel ||
+      !githubLinkSpinner ||
+      !githubMessage ||
+      !signoutBtn ||
+      !signoutLabel ||
+      !signoutSpinner
+    ) {
+      cleanupAccountPage = null;
+      return;
+    }
+
+    function setMessage(el: HTMLElement, msg: string, type = 'neutral') {
+      el.textContent = msg;
+      el.setAttribute('data-type', type);
+    }
+
+    function renderUser(user: any) {
+      currentUser = user;
+      const displayName = getDisplayName(user);
+      const email = user?.email || text.unavailable;
+      const githubIdentity = getIdentity('github');
+
+      accountMain.hidden = false;
+      (signoutBtn as HTMLElement).style.display = '';
+      displayNameEl.textContent = displayName;
+      emailEl.textContent = email;
+      nameInput.value = displayName;
+      emailCardValue.textContent = email;
+      githubProviderState.textContent = githubIdentity ? text.connected : text.notConnected;
+      githubLinkLabel.textContent = githubIdentity ? text.reconnectGithub : text.connectGithub;
+    }
+
+    async function loadAccount() {
+      const { user, error } = await getUser();
+      if (error || !user) {
+        showLoginRequired();
+        return;
+      }
+      renderUser(user);
+    }
+
+    const onPanelClick = (event: Event) => {
+      const target = (event.currentTarget as HTMLElement).getAttribute('data-panel-target');
+      if (target) switchPanel(target);
+    };
+
+    panelButtons.forEach((button) => {
+      button.addEventListener('click', onPanelClick);
+    });
+
+    const onNameSubmit = async (event: Event) => {
+      event.preventDefault();
+      if (!currentUser) return;
+
+      const nextName = nameInput.value.trim();
+      if (!nextName) {
+        setMessage(nameMessage, text.required, 'error');
+        return;
+      }
+
+      nameSubmitLabel.hidden = true;
+      nameSubmitSpinner.hidden = false;
+      nameSubmitBtn.setAttribute('aria-disabled', 'true');
+      setMessage(nameMessage, '', 'neutral');
+
+      const { data, error } = await updateDisplayName(nextName);
+      if (error) {
+        setMessage(nameMessage, error.message || text.defaultError, 'error');
+      } else {
+        renderUser(data.user);
+        setMessage(nameMessage, text.saved, 'success');
+        document.dispatchEvent(new CustomEvent('auth:signed-in', { detail: { session: { user: data.user } } }));
+      }
+
+      nameSubmitLabel.hidden = false;
+      nameSubmitSpinner.hidden = true;
+      nameSubmitBtn.removeAttribute('aria-disabled');
+    };
+
+    const onGithubClick = async (event: Event) => {
+      event.preventDefault();
+      if (!currentUser) return;
+
+      githubLinkLabel.hidden = true;
+      githubLinkSpinner.hidden = false;
+      githubMessage.textContent = '';
+
+      const { data, error } = await linkGithubIdentity(window.location.href);
+      if (error) {
+        githubMessage.textContent = error.message || text.defaultError;
+        githubLinkLabel.hidden = false;
+        githubLinkSpinner.hidden = true;
+        return;
+      }
+      if (data?.url) window.location.href = data.url;
+    };
+
+    const onSignOut = async (event: Event) => {
+      event.preventDefault();
+      signoutLabel.hidden = true;
+      signoutSpinner.hidden = false;
+      signoutBtn.setAttribute('aria-disabled', 'true');
+      await signOut().catch(() => null);
+      window.location.href = `/${document.documentElement.lang}`;
+    };
+
+    nameForm.addEventListener('submit', onNameSubmit);
+    githubLinkBtn.addEventListener('click', onGithubClick);
+    signoutBtn.addEventListener('click', onSignOut);
+
+    restorePanel();
+    loadAccount();
+
+    cleanupAccountPage = () => {
+      panelButtons.forEach((button) => {
+        button.removeEventListener('click', onPanelClick);
+      });
+      nameForm.removeEventListener('submit', onNameSubmit);
+      githubLinkBtn.removeEventListener('click', onGithubClick);
+      signoutBtn.removeEventListener('click', onSignOut);
+    };
+  }
+
+  document.addEventListener('astro:before-swap', () => {
+    cleanupAccountPage?.();
+    cleanupAccountPage = null;
+  });
+  document.addEventListener('astro:page-load', initAccountPage);
+  initAccountPage();
+</script>
+
+<style>
+  .account-page {
+    min-height: 100vh;
+    padding: 104px clamp(20px, 4vw, 48px) 80px;
+    background: var(--bg);
+  }
+
+  .account-topbar {
+    max-width: 1400px;
+    margin: 0 auto 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* gap: 20px; */
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+
+  .account-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0px;
+    color: var(--text-strong);
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .account-brand__img {
+    width: auto;
+    height: 42px;
+    display: block;
+  }
+
+  .account-brand__img--light { display: var(--logo-light-display); }
+  .account-brand__img--dark { display: var(--logo-dark-display); }
+
+  .account-topbar :global(#account-signout),
+  .account-topbar :global(#account-signout .btn) {
+    width: auto;
+  }
+  .account-topbar :global(#account-signout .btn) {
+    height: 36px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .account-main {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 800px);
+    justify-content: center;
+    gap: clamp(48px, 7vw, 80px);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* .account-sidebar {
+    padding-top: 74px;
+  } */
+
+  .account-identity {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 34px;
+  }
+
+  .account-identity strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-strong);
+  }
+
+  .account-identity span {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .account-nav {
+    display: grid;
+    gap: 6px;
+  }
+
+  .account-nav__item {
+    all: unset;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 8px 0;
+    transition: color 160ms ease;
+  }
+
+  .account-nav__item:hover,
+  .account-nav__item.is-active {
+    color: var(--color-primary-600);
+  }
+
+  .account-content {
+    min-width: 0;
+  }
+
+  .account-panel {
+    display: none;
+  }
+
+  .account-panel.is-active {
+    display: block;
+  }
+
+  .panel-title {
+    margin: 0 0 22px;
+    color: var(--text-strong);
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    font-weight: 800;
+  }
+
+  /* ======== 卡片头部 ======== */
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .card-head--split {
+    align-items: center;
+  }
+
+  .card-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .card-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--color-primary-600);
+    background: color-mix(in srgb, var(--surface) 88%, var(--color-primary-500));
+  }
+
+  :root.dark .card-icon {
+    color: var(--color-primary-300);
+    background: color-mix(in srgb, var(--surface) 92%, black);
+  }
+
+  :global(.card-icon svg) {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+
+  .card-head h3,
+  .settings-list strong {
+    display: block;
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: var(--text-strong);
+  }
+
+  .card-head p,
+  .settings-list small,
+  .oauth-note {
+    display: block;
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+
+  /* ======== 表单 ======== */
+  .account-form {
+    margin-top: 20px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .form-message {
+    min-height: 18px;
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .form-message[data-type='success'] { color: #059669; }
+  .form-message[data-type='error'] { color: #dc2626; }
+
+  .form-submit,
+  .form-submit :global(.btn) {
+    width: auto;
+  }
+
+  .form-submit :global(.btn),
+  .card-head--split :global(#github-link-btn .btn) {
+    min-width: 84px;
+    height: 38px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .card-head--split :global(#github-link-btn),
+  .card-head--split :global(#github-link-btn .btn) {
+    width: auto;
+  }
+
+  /* 按钮进度环 */
+  .btn-spinner svg {
+    animation: btn-spin 0.8s linear infinite;
+    display: block;
+  }
+
+  @keyframes btn-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ======== 设置列表 ======== */
+  .settings-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .row-copy {
+    display: block;
+    min-width: 0;
+  }
+
+  .row-chevron {
+    align-self: center;
+    color: var(--color-primary-600);
+    display: inline-flex;
+  }
+
+  /* ======== 移动端 ======== */
+  @media (max-width: 860px) {
+    .account-main {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .account-sidebar {
+      padding-top: 0;
+    }
+
+    .account-identity {
+      display: none;
+    }
+
+    .account-nav {
+      display: flex;
+      overflow-x: auto;
+      gap: 16px;
+      padding-bottom: 4px;
+    }
+
+    .account-nav__item {
+      flex: 0 0 auto;
+      padding: 8px 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .account-page {
+      padding-inline: 14px;
+    }
+
+    /* .account-brand__img {
+      width: 82px;
+    } */
+
+    .form-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .form-submit,
+    .form-submit :global(.btn),
+    .card-head--split :global(#github-link-btn),
+    .card-head--split :global(#github-link-btn .btn) {
+      width: 100%;
+    }
+
+    .card-head--split {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-head--split :global(#github-link-btn) {
+      grid-column: 1 / -1;
+    }
+
+    .card-head--split :global(#github-link-btn .btn) {
+      justify-content: center;
+    }
+  }
+</style>

@@ -1,0 +1,249 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/Button.astro';
+import Input from '../../../components/Input.astro';
+import { t, locales } from '../../../i18n/index';
+
+export async function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const { lang = 'zh-cn' } = Astro.params;
+const __ = (key: string) => t(lang, key);
+const isZh = lang === 'zh-cn';
+---
+
+<BaseLayout
+  lang={lang}
+  title={isZh ? '更换邮箱' : 'Change Email'}
+  description={isZh ? '发送邮箱确认链接以更换账号邮箱。' : 'Send a confirmation link to change your account email.'}
+>
+  <section class="account-action-page">
+    <div class="account-action-header">
+      <a class="account-logo" href={`/${lang}/account`} aria-label={isZh ? '返回账号' : 'Back to account'}>
+        <img class="account-logo__img account-logo__img--light" src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=False.png" alt="RinLit" />
+        <img class="account-logo__img account-logo__img--dark" src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png" alt="RinLit" />
+        <span>{__('auth.account')}</span>
+      </a>
+    </div>
+
+    <main class="account-action-card" id="change-email-card" hidden>
+      <div class="account-action-title">
+        <p>{isZh ? '登录和安全' : 'Sign-in & Security'}</p>
+        <h1>{isZh ? '更换邮箱' : 'Change email'}</h1>
+        <span id="current-email-line">...</span>
+      </div>
+
+      <form class="account-action-form" id="change-email-form">
+        <Input
+          type="email"
+          name="new-email"
+          id="new-email"
+          label={isZh ? '新邮箱' : 'New email'}
+          placeholder="email@example.com"
+          autocomplete="email"
+          flat
+          required
+        />
+        <p class="account-action-message" id="change-email-message" role="status"></p>
+        <Button primary flat class="account-action-submit" id="email-submit-btn">
+          <span id="email-submit-label">{isZh ? '发送确认邮件' : 'Send Confirmation'}</span>
+          <span class="btn-spinner" id="email-submit-spinner" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </span>
+        </Button>
+      </form>
+    </main>
+  </section>
+</BaseLayout>
+
+<script is:inline define:vars={{
+  __CHANGE_EMAIL_I18N: JSON.stringify({
+    required: __('auth.error.required'),
+    emailInvalid: __('auth.emailInvalid'),
+    defaultError: __('auth.error.default'),
+    sending: isZh ? '发送中...' : 'Sending...',
+    sent: isZh ? '确认邮件已发送，请在新邮箱中完成确认。' : 'Confirmation email sent. Please confirm it from your new inbox.',
+    submit: isZh ? '发送确认邮件' : 'Send Confirmation',
+    currentEmail: isZh ? '当前邮箱：' : 'Current email: ',
+  })
+}}>
+  window.__CHANGE_EMAIL_I18N = JSON.parse(__CHANGE_EMAIL_I18N);
+</script>
+
+<script>
+  import { getUser, updateEmail } from '../../../lib/auth.client';
+
+  const text = (window as any).__CHANGE_EMAIL_I18N || {};
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const card = document.getElementById('change-email-card')!;
+  const form = document.getElementById('change-email-form') as HTMLFormElement;
+  const emailInput = document.getElementById('new-email') as HTMLInputElement;
+  const message = document.getElementById('change-email-message')!;
+  const submitLabel = document.getElementById('email-submit-label')!;
+  const submitSpinner = document.getElementById('email-submit-spinner')!;
+  const submitBtn = document.getElementById('email-submit-btn') as HTMLElement;
+  const currentEmailLine = document.getElementById('current-email-line')!;
+
+  function setMessage(value: string, type = 'neutral') {
+    message.textContent = value;
+    message.setAttribute('data-type', type);
+  }
+
+  async function loadPage() {
+    const { user } = await getUser();
+    if (!user?.email) {
+      const next = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.replace(`/${document.documentElement.lang}/account/redirect?next=${next}`);
+      return;
+    }
+
+    currentEmailLine.textContent = `${text.currentEmail}${user.email}`;
+    card.hidden = false;
+  }
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const nextEmail = emailInput.value.trim();
+
+    if (!nextEmail) {
+      setMessage(text.required, 'error');
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(nextEmail)) {
+      setMessage(text.emailInvalid, 'error');
+      return;
+    }
+
+    submitLabel.hidden = true;
+    submitSpinner.hidden = false;
+    submitBtn.setAttribute('aria-disabled', 'true');
+    setMessage('', 'neutral');
+
+    const { error } = await updateEmail(nextEmail);
+    if (error) {
+      setMessage(error.message || text.defaultError, 'error');
+    } else {
+      setMessage(text.sent, 'success');
+      form.reset();
+    }
+
+    submitLabel.hidden = false;
+    submitSpinner.hidden = true;
+    submitBtn.removeAttribute('aria-disabled');
+  });
+
+  document.addEventListener('astro:page-load', loadPage);
+  loadPage();
+</script>
+
+<style>
+  .account-action-page {
+    min-height: 100vh;
+    padding: 104px clamp(20px, 4vw, 48px) 80px;
+    background: var(--bg);
+  }
+
+  .account-action-header {
+    max-width: 1400px;
+    margin-inline: auto;
+  }
+
+  .account-action-card {
+    max-width: 640px;
+    margin-inline: auto;
+  }
+
+  .account-action-header {
+    margin-bottom: 44px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+
+  .account-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-strong);
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .account-logo__img {
+    width: 96px;
+    height: auto;
+    display: block;
+  }
+
+  .account-logo__img--light { display: var(--logo-light-display); }
+  .account-logo__img--dark { display: var(--logo-dark-display); }
+
+  .account-action-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 26px;
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--shadow-color) 24%, transparent);
+  }
+
+  .account-action-title {
+    margin-bottom: 24px;
+  }
+
+  .account-action-title p {
+    margin: 0 0 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .account-action-title h1 {
+    margin: 0 0 10px;
+    color: var(--text-strong);
+    font-size: 32px;
+    line-height: 1.16;
+  }
+
+  .account-action-title span {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .account-action-form {
+    display: grid;
+    gap: 16px;
+  }
+
+  .account-action-message {
+    min-height: 20px;
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .account-action-message[data-type='success'] { color: #059669; }
+  .account-action-message[data-type='error'] { color: #dc2626; }
+
+  .account-action-submit,
+  .account-action-submit :global(.btn) {
+    width: 100%;
+  }
+
+  /* 进度环 */
+  .btn-spinner svg {
+    animation: btn-spin 0.8s linear infinite;
+    display: block;
+  }
+
+  @keyframes btn-spin {
+    to { transform: rotate(360deg); }
+  }
+</style>

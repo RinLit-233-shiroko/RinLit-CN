@@ -55,6 +55,8 @@ const svgHtml = getIcon(icon, 18);
     justify-content: center;
     gap: 8px;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
     height: 40px;
     padding: 0 24px;
     font-family: 'Sarasa SC', Geist, sans-serif;
@@ -100,6 +102,49 @@ const svgHtml = getIcon(icon, 18);
   }
 
   .btn__text {
-    display: inline;
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn__text :global(*) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .btn__text > :global(*) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .btn__text > :global(.btn-spinner:not([hidden])) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  .btn__text > :global(*:not([hidden]):not(.btn-spinner)) {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn__text :global([hidden]) {
+    display: none !important;
+  }
+
+  .btn__text :global(.btn-spinner svg) {
+    display: block;
+    width: 18px;
+    height: 18px;
   }
 </style>

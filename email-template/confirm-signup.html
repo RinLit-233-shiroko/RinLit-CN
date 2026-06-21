@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Confirm your email address</title>
+  <style>
+    /* ==============================================
+       RinLit — Confirm Sign Up Email Template
+       Single HTML · EN / 中文
+       ============================================== */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #101216;
+      font-family: 'Geist', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      color: #e7e6f0;
+      padding: 0;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ---------- Wrapper ---------- */
+    .email-wrapper {
+      width: 100%;
+      padding: 16px 16px 48px;
+    }
+
+    /* ---------- Card ---------- */
+    .email-card {
+      max-width: 480px;
+      margin: 0 auto;
+      background-color: #1d1c22;
+      border-radius: 24px;
+      padding: 48px 40px 40px;
+    }
+
+    /* ---------- Logo ---------- */
+    .email-logo {
+      display: block;
+      height: 32px;
+      width: auto;
+      margin: 0 auto 32px;
+    }
+
+    /* ---------- Heading ---------- */
+    .email-heading {
+      font-family: 'Geist', 'Segoe UI', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.35;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    /* ---------- Body ---------- */
+    .email-text {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #a39fbf;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .email-text--note {
+      font-size: 12px;
+      color: #6b687d;
+    }
+
+    /* ---------- Divider ---------- */
+    .email-divider {
+      height: 1px;
+      background-color: rgba(255, 255, 255, 0.06);
+      margin: 28px 0;
+      border: none;
+    }
+
+    /* ======== Button (from Pill.astro primary variant) ======== */
+    .email-btn-wrap {
+      text-align: center;
+      margin: 32px 0 24px;
+    }
+
+    .email-btn {
+      position: relative;
+      z-index: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      padding: 0 24px;
+      font-family: 'Sarasa SC', 'Geist', 'Segoe UI', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      text-decoration: none;
+      color: #ffffff;
+      background: rgba(140, 126, 205, 0.48);
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition: background 0.2s ease;
+      -webkit-user-drag: none;
+      user-select: none;
+    }
+
+    /* 45° 渐变边框 */
+    .email-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      padding: 2px;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0) 46%,
+        rgba(255, 255, 255, 0) 56%,
+        rgba(255, 255, 255, 0.22) 100%
+      );
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .email-btn:hover {
+      background: rgba(140, 126, 205, 0.62);
+    }
+
+    .email-btn:active {
+      background: rgba(140, 126, 205, 0.76);
+    }
+
+    @media (max-width: 520px) {
+      .email-btn {
+        display: flex;
+        width: 100%;
+      }
+    }
+
+    /* ---------- Fallback ---------- */
+    .email-fallback {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .email-fallback__label {
+      font-size: 12px;
+      color: #6b687d;
+      margin-bottom: 8px;
+    }
+
+    .email-fallback__link {
+      display: inline-block;
+      font-size: 12px;
+      color: #6b687d;
+      word-break: break-all;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color 0.15s;
+    }
+
+    .email-fallback__link:hover { color: #aaaacc; }
+
+    /* ---------- Meta ---------- */
+    .email-meta {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .email-meta__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 12px;
+    }
+
+    .email-meta__label { color: #6b687d; }
+    .email-meta__value {
+      color: #a39fbf;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 11px;
+    }
+
+    /* ---------- Footer ---------- */
+    .email-footer {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 20px;
+    }
+
+    .email-footer__text {
+      font-size: 11px;
+      color: #6b687d;
+      line-height: 1.6;
+    }
+
+    .email-footer__brand { font-weight: 600; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 520px) {
+      .email-card { padding: 32px 24px 28px; border-radius: 20px; }
+      .email-heading { font-size: 19px; }
+      .email-wrapper { padding: 12px 12px 32px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="email-wrapper">
+    <div class="email-card">
+
+      <img
+        class="email-logo"
+        src="https://raw.githubusercontent.com/RinLit-233-shiroko/RinLit-233-shiroko/main/assets/img/Type%3DHorizontal%2C%20Mode%3DDark%2C%20Monochrome%3DFalse.png"
+        alt="RinLit"
+      />
+
+      <!-- ============ 中文 / English ============ -->
+
+      <h1 class="email-heading">确认您的电子邮箱 / Confirm your <br> email address</h1>
+
+      <p class="email-text">
+        点击下方按钮确认此邮箱地址并完成注册。 <br> Follow the link below to confirm this email address and finish signing up.
+      </p>
+
+      <p class="email-text email-text--note">
+        此链接将在短时间内过期。如非本人操作，请忽略此邮件。 <br> This link will expire shortly. If you didn't request this, please ignore this email.
+      </p>
+
+      <hr class="email-divider" />
+
+      <div class="email-btn-wrap">
+        <a href="{{ .ConfirmationURL }}" class="email-btn" target="_blank">
+          确认电子邮箱 / Confirm email address
+        </a>
+      </div>
+
+      <div class="email-fallback">
+        <p class="email-fallback__label">如按钮无法使用，请将以下链接复制到浏览器： <br> If the button does not work, copy and paste this link:</p>
+        <a href="{{ .ConfirmationURL }}" class="email-fallback__link" target="_blank">{{ .ConfirmationURL }}</a>
+      </div>
+
+      <div class="email-meta">
+        <div class="email-meta__row">
+          <span class="email-meta__label">Email</span>
+          <span class="email-meta__value">{{ .Email }}</span>
+        </div>
+        <div class="email-meta__row">
+          <span class="email-meta__label">Site</span>
+          <span class="email-meta__value">{{ .SiteURL }}</span>
+        </div>
+      </div>
+
+      <div class="email-footer">
+        <p class="email-footer__text">
+          &copy; <span class="email-footer__brand">RinLit</span> &mdash;
+          <span lang="en">All rights reserved.</span>
+          <span lang="zh">保留所有权利。</span>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

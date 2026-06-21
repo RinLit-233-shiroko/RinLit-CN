@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Your verification code</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #101216;
+      font-family: 'Geist', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      color: #e7e6f0;
+      padding: 0;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .email-wrapper {
+      width: 100%;
+      padding: 48px 16px;
+    }
+
+    .email-card {
+      max-width: 480px;
+      margin: 0 auto;
+      background-color: #1d1c22;
+      border-radius: 24px;
+      padding: 48px 40px 40px;
+    }
+
+    .email-logo {
+      display: block;
+      height: 32px;
+      width: auto;
+      margin: 0 auto 32px;
+    }
+
+    .email-heading {
+      font-family: 'Geist', 'Segoe UI', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.35;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .email-text {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #a39fbf;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .email-text--note {
+      font-size: 12px;
+      color: #6b687d;
+    }
+
+    .email-divider {
+      height: 1px;
+      background-color: rgba(255, 255, 255, 0.06);
+      margin: 28px 0;
+      border: none;
+    }
+
+    /* ======== Code display ======== */
+    .email-code-wrap {
+      text-align: center;
+      margin: 32px 0 24px;
+    }
+
+    .email-code {
+      display: inline-block;
+      padding: 16px 40px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Geist', monospace;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      user-select: all;
+    }
+
+    .email-meta {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .email-meta__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 12px;
+    }
+
+    .email-meta__label { color: #6b687d; }
+    .email-meta__value {
+      color: #a39fbf;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 11px;
+    }
+
+    .email-footer {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 20px;
+    }
+
+    .email-footer__text {
+      font-size: 11px;
+      color: #6b687d;
+      line-height: 1.6;
+    }
+
+    .email-footer__brand { font-weight: 600; }
+
+    @media (max-width: 520px) {
+      .email-card { padding: 32px 24px 28px; border-radius: 20px; }
+      .email-heading { font-size: 19px; }
+      .email-wrapper { padding: 32px 12px; }
+      .email-code { font-size: 26px; padding: 14px 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-card">
+
+      <img
+        class="email-logo"
+        src="https://raw.githubusercontent.com/RinLit-233-shiroko/RinLit-233-shiroko/main/assets/img/Type%3DHorizontal%2C%20Mode%3DDark%2C%20Monochrome%3DFalse.png"
+        alt="RinLit"
+      />
+
+      <!-- ============ 中文 / English ============ -->
+
+      <h1 class="email-heading">您的验证码 / Your verification <br> code</h1>
+
+      <p class="email-text">
+        请使用以下验证码验证您的身份。验证码即将过期。 <br> Use the code below to verify your identity. It expires shortly.
+      </p>
+
+      <div class="email-code-wrap">
+        <span class="email-code">{{ .Token }}</span>
+      </div>
+
+      <div class="email-meta">
+        <div class="email-meta__row">
+          <span class="email-meta__label">Email</span>
+          <span class="email-meta__value">{{ .Email }}</span>
+        </div>
+        <div class="email-meta__row">
+          <span class="email-meta__label">Site</span>
+          <span class="email-meta__value">{{ .SiteURL }}</span>
+        </div>
+      </div>
+
+      <div class="email-footer">
+        <p class="email-footer__text">
+          &copy; <span class="email-footer__brand">RinLit</span> &mdash;
+          <span lang="en">All rights reserved.</span>
+          <span lang="zh">保留所有权利。</span>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

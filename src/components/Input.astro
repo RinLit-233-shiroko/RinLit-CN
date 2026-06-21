@@ -1,0 +1,146 @@
+---
+// Input — 基于 Pill 风格的输入框组件
+//
+// Props:
+//   type         — input type (默认 text)
+//   value        — 初始值
+//   placeholder  — 占位文本
+//   label        — 标签文本(可选)
+//   name         — 表单 name
+//   required     — 是否必填
+//   autocomplete — 自动填充
+//   error        — 错误信息
+//   class        — 附加 CSS 类
+//   id           — DOM id
+
+import Pill from './Pill.astro';
+
+interface Props {
+  type?: 'text' | 'email' | 'password' | 'url' | 'search' | 'tel' | 'number';
+  value?: string;
+  placeholder?: string;
+  label?: string;
+  name?: string;
+  required?: boolean;
+  autocomplete?: string;
+  autofocus?: boolean;
+  error?: string;
+  flat?: boolean;
+  class?: string;
+  id?: string;
+}
+
+const {
+  type = 'text',
+  value = '',
+  placeholder = '',
+  label = '',
+  name = '',
+  required = false,
+  autocomplete = '',
+  autofocus = false,
+  error = '',
+  flat = false,
+  class: className = '',
+  id = '',
+} = Astro.props;
+
+const inputId = id || (name ? `input-${name}` : `input-${Math.random().toString(36).slice(2)}`);
+---
+
+<div class={`input-wrap ${error ? 'input-wrap--error' : ''} ${className}`}>
+  {label && (
+    <label class="input-label" for={inputId}>{label}</label>
+  )}
+
+  <Pill flat={flat} class={`input-field-pill ${error ? 'input-field-pill--error' : ''}`}>
+    <input
+      id={inputId}
+      name={name}
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      required={required}
+      autocomplete={autocomplete || (type === 'password' ? 'current-password' : 'off')}
+      autofocus={autofocus}
+      class="input-field"
+      aria-invalid={error ? 'true' : 'false'}
+      aria-describedby={error ? `${inputId}-error` : undefined}
+    />
+  </Pill>
+
+  {error && (
+    <p class="input-error" id={`${inputId}-error`} role="alert">{error}</p>
+  )}
+</div>
+
+<style>
+  .input-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .input-label {
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    padding-left: 4px;
+    transition: color 0.2s ease;
+  }
+
+  /* Pill 包裹 input 的容器 — 覆盖 Pill 默认圆角以匹配输入框风格 */
+  .input-field-pill {
+    --pill-radius: 14px;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-field {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 44px;
+    padding: 0 16px;
+    background: transparent;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--text-strong);
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .input-field::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+
+  /* ======== Error 状态 ======== */
+  .input-field-pill--error {
+    box-shadow: 0 0 0 1.5px rgba(220, 38, 38, 0.45);
+    border-radius: 14px;
+  }
+
+  .input-wrap--error:focus-within .input-field-pill--error {
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.55);
+  }
+
+  .input-error {
+    margin: 0;
+    padding-left: 4px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    color: #dc2626;
+  }
+
+  /* ======== Dark 模式微调 ======== */
+  :root.dark .input-field-pill--error {
+    box-shadow: 0 0 0 1.5px rgba(239, 68, 68, 0.5);
+  }
+</style>

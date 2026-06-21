@@ -3,6 +3,7 @@ import { locales } from '../../i18n/index';
 import { t } from '../../i18n/index';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Link from '../../components/Link.astro';
+import Input from '../../components/Input.astro';
 
 export async function getStaticPaths() {
   return locales.map((lang) => ({ params: { lang } }));
@@ -22,6 +23,7 @@ const __ = (key: string) => t(lang, key);
         <Link to="fields/software" class="rounded-pill border border-neutral-400 px-6 py-2 text-body hover:bg-neutral-100">{__('page.fields.software')}</Link>
         <Link to="fields/design" class="rounded-pill border border-neutral-400 px-6 py-2 text-body hover:bg-neutral-100">{__('page.fields.design')}</Link>
         <Link to="fields/experiment" class="rounded-pill border border-neutral-400 px-6 py-2 text-body hover:bg-neutral-100">{__('page.fields.experiment')}</Link>
+        <Input type="text" placeholder={__('page.fields.search')} />
       </nav>
     </div>
   </main>

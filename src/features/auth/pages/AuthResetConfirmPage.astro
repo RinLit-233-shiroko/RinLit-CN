@@ -1,0 +1,33 @@
+---
+// AuthResetConfirmPage — 密码重置邮件已发送确认页（Page 4）
+//
+// 点击忘记密码 → 发送邮件后显示此页面。
+
+import { t } from '../../../i18n/index';
+import Button from '../../../components/Button.astro';
+
+interface Props {
+  lang: string;
+}
+
+const { lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
+---
+
+<div data-page="4" class="auth-modal__page auth-modal__verify-page">
+  <div class="auth-modal__verify-icon">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M22 4L12 13L2 4" />
+    </svg>
+  </div>
+
+  <h3 class="auth-modal__verify-title">{__('auth.resetEmailSent')}</h3>
+  <p class="auth-modal__verify-desc">{__('auth.resetEmailSentDesc')}</p>
+
+  <div class="auth-modal__action">
+    <Button flat class="auth-modal__back-to-signin-btn">
+      {__('auth.backToSignIn')}
+    </Button>
+  </div>
+</div>

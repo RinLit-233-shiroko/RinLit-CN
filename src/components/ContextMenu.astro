@@ -1,0 +1,31 @@
+---
+// ContextMenu: 自定义右键上下文菜单
+//
+// 基于 Menu + MenuItem 实现，完全替代浏览器默认右键菜单。
+//
+// 用法：
+//   <ContextMenu id="editor-ctx-menu" target=".editor-canvas">
+//     <MenuItem icon="scissors" value="cut">剪切</MenuItem>
+//     <MenuItem icon="copy" value="copy">复制</MenuItem>
+//     <MenuItem icon="clipboard" value="paste">粘贴</MenuItem>
+//   </ContextMenu>
+//
+// Props:
+//   id       — 菜单 DOM id（必填，同一页面不可重复）
+//   target   — CSS 选择器，命中该选择器的元素上右键弹出此菜单（默认 '*' 即全局）
+//   class    — 附加 CSS 类
+
+import Menu from './Menu.astro';
+
+interface Props {
+  id: string;
+  target?: string;
+  class?: string;
+}
+
+const { id, target = '*', class: className = '' } = Astro.props;
+---
+
+<Menu id={id} contextTarget={target} class={className}>
+  <slot />
+</Menu>

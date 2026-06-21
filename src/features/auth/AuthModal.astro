@@ -1,0 +1,837 @@
+---
+// AuthModal — 登录/注册弹窗（编排器）
+//
+// 基于通用 Modal 组件，管理多页流程:
+//   AuthEmailPage        — 邮箱输入 + 登录/注册选项卡 (Page 0)
+//   AuthPasswordPage     — 密码输入 + 提交按钮 (Page 1)
+//   AuthVerifyPage       — 注册成功邮件验证提示 (Page 2)
+//   AuthForgotPasswordPage — 忘记密码邮箱输入 (Page 3)
+//   AuthResetConfirmPage   — 重置密码邮件已发送确认 (Page 4)
+//
+// 未来扩展只需新增页面组件并在此注册即可:
+//   AuthVerifyCodePage   — 验证码输入
+//
+// 触发方式:
+//   data-action="auth:open" → 打开弹窗 (默认 Sign In)
+//   data-auth-tab="signup"  → 打开弹窗并切换到注册选项卡
+//
+// 全局事件:
+//   auth:open        → 打开弹窗
+//   auth:signed-in   → 登录成功
+
+import { t } from '../../i18n/index';
+import Modal from '../../components/Modal.astro';
+import AuthEmailPage from './pages/AuthEmailPage.astro';
+import AuthPasswordPage from './pages/AuthPasswordPage.astro';
+import AuthVerifyPage from './pages/AuthVerifyPage.astro';
+import AuthForgotPasswordPage from './pages/AuthForgotPasswordPage.astro';
+import AuthResetConfirmPage from './pages/AuthResetConfirmPage.astro';
+
+interface Props {
+  lang?: string;
+}
+
+const { lang = 'zh-cn' } = Astro.props;
+const __ = (key: string) => t(lang, key);
+---
+
+<Modal id="auth-modal" title={__('auth.signIn')} ariaLabel={__('auth.signIn')}>
+  <AuthEmailPage lang={lang} />
+  <AuthPasswordPage lang={lang} />
+  <AuthVerifyPage lang={lang} />
+  <AuthForgotPasswordPage lang={lang} />
+  <AuthResetConfirmPage lang={lang} />
+</Modal>
+
+<!-- 注入 i18n 翻译 -->
+<script is:inline define:vars={{
+  __I18N_DATA: JSON.stringify({
+    invalid_credentials: __('auth.error.invalid_credentials'),
+    email_not_confirmed: __('auth.error.email_not_confirmed'),
+    email_exists: __('auth.error.email_exists'),
+    user_already_exists: __('auth.error.user_already_exists'),
+    weak_password: __('auth.error.weak_password'),
+    signup_disabled: __('auth.error.signup_disabled'),
+    email_provider_disabled: __('auth.error.email_provider_disabled'),
+    over_email_send_rate_limit: __('auth.error.over_email_send_rate_limit'),
+    over_request_rate_limit: __('auth.error.over_request_rate_limit'),
+    user_banned: __('auth.error.user_banned'),
+    validation_failed: __('auth.error.validation_failed'),
+    same_password: __('auth.error.same_password'),
+    otp_expired: __('auth.error.otp_expired'),
+    phone_not_confirmed: __('auth.error.phone_not_confirmed'),
+    phone_exists: __('auth.error.phone_exists'),
+    session_expired: __('auth.error.session_expired'),
+    reauthentication_needed: __('auth.error.reauthentication_needed'),
+    __default: __('auth.error.default'),
+    __required: __('auth.error.required'),
+    __password_length: __('auth.error.password_length'),
+    __email_sent: __('auth.signup.email_sent'),
+    signIn: __('auth.signIn'),
+    signUp: __('auth.signUp'),
+    signInTitle: __('auth.signInTitle'),
+    signUpTitle: __('auth.signUpTitle'),
+    checkEmailTitle: __('auth.checkEmailTitle'),
+    forgotPassword: __('auth.forgotPassword'),
+    forgotPasswordTitle: __('auth.forgotPasswordTitle'),
+    forgotPasswordAction: __('auth.forgotPasswordAction'),
+    resetEmailSent: __('auth.resetEmailSent'),
+    backToSignIn: __('auth.backToSignIn'),
+    emailInvalid: __('auth.emailInvalid'),
+  })
+}}>
+  window.__AUTH_I18N = JSON.parse(__I18N_DATA);
+</script>
+
+<style is:global>
+  /* ======== 页面容器 ======== */
+  .auth-modal__page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .auth-modal__page[data-page="0"] {
+    gap: 12px;
+  }
+
+  /* ======== Logo + 账户头部 ======== */
+  .auth-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 0 4px;
+  }
+
+  .auth-modal__logo {
+    display: block;
+    height: 42px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .auth-modal__logo--light { display: var(--logo-light-display); }
+  .auth-modal__logo--dark { display: var(--logo-dark-display); }
+
+  .auth-modal__account-label {
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--text-strong);
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  /* ======== 欢迎字幕 ======== */
+  .auth-modal__subtitle {
+    margin: 0;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ======== 表单域间距 ======== */
+  .auth-modal__field {
+    /* Input 组件自带 .input-wrap，此处仅作间距容器 */;
+  }
+
+  /* ======== 错误提示 ======== */
+  .auth-modal__error {
+    margin: 0;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: #ef4444;
+    text-align: center;
+    min-height: 18px;
+  }
+
+  /* ======== 操作按钮区 ======== */
+  .auth-modal__action {
+    margin-top: 4px;
+  }
+
+  /* ======== 切换提示 ======== */
+  .auth-modal__switch {
+    margin: 6px 0 0;
+    text-align: center;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .auth-modal__switch-btn {
+    all: unset;
+    cursor: pointer;
+    color: var(--color-primary-600);
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .auth-modal__switch-btn:hover {
+    color: var(--color-primary-500);
+  }
+
+  /* ======== Page 1: 邮箱回显 ======== */
+  .auth-modal__email-display {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 4px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-muted);
+    word-break: break-all;
+  }
+
+  .auth-modal__email-display-icon {
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .auth-modal__email-display-text {
+    word-break: break-all;
+  }
+
+  /* ======== Page 1: 忘记密码链接 ======== */
+  .auth-modal__forgot-link-wrap {
+    text-align: right;
+    margin-top: -8px;
+  }
+
+  .auth-modal__forgot-link {
+    all: unset;
+    cursor: pointer;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-primary-600);
+    transition: color 0.2s ease;
+  }
+
+  .auth-modal__forgot-link:hover {
+    color: var(--color-primary-500);
+  }
+
+  /* ======== 提交按钮加载态 ======== */
+  .auth-modal__submit-spinner svg {
+    animation: auth-spin 0.8s linear infinite;
+    display: block;
+  }
+
+  @keyframes auth-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ======== Page 2: 邮件验证提示 ======== */
+  .auth-modal__verify-page {
+    align-items: center;
+    text-align: center;
+    padding-top: 16px;
+    padding-bottom: 8px;
+  }
+
+  .auth-modal__verify-icon {
+    color: var(--color-primary-500);
+    margin-bottom: 8px;
+  }
+
+  .auth-modal__verify-title {
+    margin: 0 0 6px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-strong);
+  }
+
+  .auth-modal__verify-desc {
+    margin: 0 0 20px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    max-width: 280px;
+  }
+
+  /* ======== Page 3: 忘记密码 ======== */
+  .auth-modal__forgot-icon {
+    display: flex;
+    justify-content: center;
+    color: var(--color-primary-500);
+    padding-top: 8px;
+    margin-bottom: 4px;
+  }
+
+  .auth-modal__forgot-title {
+    margin: 0 0 4px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-strong);
+    text-align: center;
+  }
+
+  .auth-modal__forgot-desc {
+    margin: 0 0 8px;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.55;
+  }
+
+  .is-hidden {
+    display: none !important;
+  }
+
+  /* ======== 分隔线 ======== */
+  .auth-modal__divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+  }
+
+  .auth-modal__divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .auth-modal__divider-text {
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* ======== GitHub OAuth 按钮 ======== */
+  .auth-modal__github-btn {
+    width: 100%;
+  }
+
+  .auth-modal__github-btn :global(.btn) {
+    gap: 10px;
+  }
+</style>
+
+<script>
+  import { signIn, signUp, resetPasswordForEmail } from '../../lib/auth.client';
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const ERROR_I18N_CODES: Record<string, string> = {
+    invalid_credentials: 'invalid_credentials',
+    email_not_confirmed: 'email_not_confirmed',
+    email_exists: 'email_exists',
+    user_already_exists: 'user_already_exists',
+    weak_password: 'weak_password',
+    signup_disabled: 'signup_disabled',
+    email_provider_disabled: 'email_provider_disabled',
+    over_email_send_rate_limit: 'over_email_send_rate_limit',
+    over_request_rate_limit: 'over_request_rate_limit',
+    user_banned: 'user_banned',
+    validation_failed: 'validation_failed',
+    same_password: 'same_password',
+    otp_expired: 'otp_expired',
+    phone_not_confirmed: 'phone_not_confirmed',
+    phone_exists: 'phone_exists',
+    session_expired: 'session_expired',
+    reauthentication_needed: 'reauthentication_needed',
+  };
+
+  function getAuthErrorMessage(error: any): string {
+    const i18n = (window as any).__AUTH_I18N || {};
+    if (error?.code && i18n[ERROR_I18N_CODES[error.code]]) {
+      return i18n[ERROR_I18N_CODES[error.code]];
+    }
+    if (error?.status === 429) {
+      return i18n.over_request_rate_limit || i18n.__default;
+    }
+    return error?.message || i18n.__default || 'An error occurred. Please try again.';
+  }
+
+  function isValidEmail(email: string): boolean {
+    return EMAIL_REGEX.test(email);
+  }
+
+  class AuthModal {
+    private modal: any;
+    private mode: 'signin' | 'signup' = 'signin';
+    private emailValue = '';
+    private isLoading = false;
+    private static _globalBound = false;
+    /** 页面导航历史栈，用于精确返回 */
+    private _pageHistory: number[] = [0];
+
+    /** 实时获取 auth-modal DOM */
+    private get $el(): HTMLElement | null {
+      return document.getElementById('auth-modal');
+    }
+
+    constructor() {
+      this.modal = (window as any).__modals?.['auth-modal'];
+      // 用历史栈导航替换 Modal 原生的线性 goBack
+      if (this.modal) {
+        this.modal.goBack = () => { this._handleBack(); };
+      }
+      this.bindDelegated();
+      this.bindPageListener();
+    }
+
+    /** 导航到指定页面（记录历史栈） */
+    private goToPage(index: number) {
+      this._pageHistory.push(index);
+      this.modal?.goToPage(index);
+    }
+
+    /** 返回上一页（基于历史栈，非简单递减） */
+    private _handleBack() {
+      if (this._pageHistory.length <= 1) {
+        this.modal?.close();
+        return;
+      }
+      this._pageHistory.pop(); // 弹出当前页
+      const target = this._pageHistory[this._pageHistory.length - 1];
+      this.modal?.goToPage(target);
+    }
+
+    // ============ 页面切换监听 ============
+
+    private bindPageListener() {
+      document.addEventListener('modal:page-changed', (e: any) => {
+        if (e.detail?.id !== 'auth-modal') return;
+        this.onPageChanged(e.detail.page);
+      });
+    }
+
+    private onPageChanged(page: number) {
+      const i18n = (window as any).__AUTH_I18N || {};
+      const el = this.$el;
+
+      // 重置所有页面的返回按钮状态
+      if (el) {
+        const backWrap = el.querySelector('.modal__back-wrap') as HTMLElement;
+        if (backWrap) backWrap.hidden = false;
+      }
+
+      if (page === 0) {
+        // 回到邮箱页：恢复邮箱字段、更新标题
+        this.restoreEmail();
+        this.modal?.setTitle(this.mode === 'signin' ? (i18n.signIn || 'Sign In') : (i18n.signUp || 'Sign Up'));
+      }
+      if (page === 1) {
+        // 进入密码页：回显邮箱、更新标题、聚焦密码框
+        this.showEmailDisplay();
+        const title = this.mode === 'signin' ? (i18n.signInTitle || 'Welcome back') : (i18n.signUpTitle || 'Create account');
+        this.modal?.setTitle(title);
+        // 聚焦密码框
+        requestAnimationFrame(() => {
+          const pw = this.$el?.querySelector('#auth-password') as HTMLInputElement;
+          pw?.focus();
+        });
+      }
+      if (page === 2) {
+        // 验证提示页：隐藏返回按钮、保持简短标题
+        if (el) {
+          const backWrap = el.querySelector('.modal__back-wrap') as HTMLElement;
+          if (backWrap) backWrap.hidden = true;
+        }
+        this.modal?.setTitle(i18n.signUp || 'Sign Up');
+      }
+      if (page === 3) {
+        // 忘记密码页
+        this.modal?.setTitle(i18n.forgotPasswordTitle || 'Reset your password');
+        requestAnimationFrame(() => {
+          const emailInput = el?.querySelector('#auth-forgot-email') as HTMLInputElement;
+          emailInput?.focus();
+        });
+      }
+      if (page === 4) {
+        // 重置确认页：隐藏返回按钮
+        if (el) {
+          const backWrap = el.querySelector('.modal__back-wrap') as HTMLElement;
+          if (backWrap) backWrap.hidden = true;
+        }
+        this.modal?.setTitle(i18n.resetEmailSent || 'Check your email');
+      }
+    }
+
+    // ============ 公共 API ============
+
+    open(tab: 'signin' | 'signup' = 'signin') {
+      this.mode = tab;
+      this.emailValue = '';
+      this.isLoading = false;
+      this.clearErrors();
+      this.syncSwitch();
+      this.syncSubmitLabel();
+      this.syncSubtitle();
+      // 清空表单字段
+      const el = this.$el;
+      if (el) {
+        const emailInput = el.querySelector('#auth-email') as HTMLInputElement;
+        const pwInput = el.querySelector('#auth-password') as HTMLInputElement;
+        const forgotEmailInput = el.querySelector('#auth-forgot-email') as HTMLInputElement;
+        if (emailInput) emailInput.value = '';
+        if (pwInput) pwInput.value = '';
+        if (forgotEmailInput) forgotEmailInput.value = '';
+      }
+      this.modal?.open();
+    }
+
+    close() {
+      this.modal?.close();
+    }
+
+    // ============ 选项卡切换 ============
+
+    switchTab(tab: 'signin' | 'signup') {
+      if (this.mode === tab) return;
+      this.mode = tab;
+      this.clearErrors();
+      const i18n = (window as any).__AUTH_I18N || {};
+      this.modal?.setTitle(tab === 'signin' ? (i18n.signIn || 'Sign In') : (i18n.signUp || 'Sign Up'));
+      this.syncSwitch();
+      this.syncSubmitLabel();
+      this.syncSubtitle();
+    }
+
+    private syncSwitch() {
+      const el = this.$el;
+      if (!el) return;
+      const signinEls = el.querySelectorAll('[data-switch-signin]');
+      const signupEls = el.querySelectorAll('[data-switch-signup]');
+      signinEls.forEach(e => e.classList.toggle('is-hidden', this.mode !== 'signin'));
+      signupEls.forEach(e => e.classList.toggle('is-hidden', this.mode !== 'signup'));
+    }
+
+    private syncSubmitLabel() {
+      const el = this.$el;
+      if (!el) return;
+      const signinLabel = el.querySelector('[data-label-signin]') as HTMLElement;
+      const signupLabel = el.querySelector('[data-label-signup]') as HTMLElement;
+      if (signinLabel) signinLabel.classList.toggle('is-hidden', this.mode !== 'signin');
+      if (signupLabel) signupLabel.classList.toggle('is-hidden', this.mode !== 'signup');
+    }
+
+    private syncSubtitle() {
+      const el = this.$el;
+      if (!el) return;
+      const signinSub = el.querySelector('[data-subtitle-signin]') as HTMLElement;
+      const signupSub = el.querySelector('[data-subtitle-signup]') as HTMLElement;
+      if (signinSub) signinSub.classList.toggle('is-hidden', this.mode !== 'signin');
+      if (signupSub) signupSub.classList.toggle('is-hidden', this.mode !== 'signup');
+    }
+
+    // ============ 邮箱回显 ============
+
+    private showEmailDisplay() {
+      const el = this.$el;
+      if (!el) return;
+      const display = el.querySelector('#auth-email-display .auth-modal__email-display-text');
+      if (display) display.textContent = this.emailValue;
+    }
+
+    private restoreEmail() {
+      const el = this.$el;
+      if (!el) return;
+      const emailInput = el.querySelector('#auth-email') as HTMLInputElement;
+      if (emailInput) emailInput.value = this.emailValue;
+    }
+
+    // ============ 错误处理 ============
+
+    private clearErrors() {
+      const el = this.$el;
+      if (!el) return;
+      el.querySelectorAll('.auth-modal__error').forEach(err => {
+        err.setAttribute('hidden', '');
+        err.textContent = '';
+      });
+    }
+
+    private setError(id: string, message: string) {
+      const el = this.$el;
+      if (!el) return;
+      const errorEl = el.querySelector(`#${id}`);
+      if (!errorEl) return;
+      errorEl.textContent = message;
+      errorEl.removeAttribute('hidden');
+    }
+
+    // ============ 加载态 ============
+
+    private setLoading(loading: boolean) {
+      this.isLoading = loading;
+      const el = this.$el;
+      if (!el) return;
+
+      const labels = el.querySelectorAll('.auth-modal__submit-label') as NodeListOf<HTMLElement>;
+      const spinner = el.querySelector('.auth-modal__submit-spinner') as HTMLElement;
+
+      labels.forEach(l => l.hidden = loading);
+      if (spinner) spinner.hidden = !loading;
+    }
+
+    // ============ 邮箱验证 ============
+
+    private validateEmail(email: string, errorId: string): boolean {
+      const i18n = (window as any).__AUTH_I18N || {};
+
+      if (!email) {
+        this.setError(errorId, i18n.__required || 'Please fill in all fields.');
+        return false;
+      }
+
+      if (!isValidEmail(email)) {
+        this.setError(errorId, i18n.emailInvalid || 'Please enter a valid email address.');
+        return false;
+      }
+
+      return true;
+    }
+
+    // ============ 业务逻辑 ============
+
+    /** Page 0 → Page 1: 验证邮箱并前进 */
+    private handleNext() {
+      const el = this.$el;
+      if (!el) return;
+      const emailInput = el.querySelector('#auth-email') as HTMLInputElement;
+      if (!emailInput) return;
+
+      const email = emailInput.value.trim();
+
+      if (!this.validateEmail(email, 'auth-error-email')) return;
+
+      this.emailValue = email;
+      this.clearErrors();
+      this.goToPage(1);
+    }
+
+    /** Page 1: 提交登录/注册 */
+    private async handleSubmit() {
+      if (this.isLoading) return;
+      const el = this.$el;
+      if (!el) return;
+      const i18n = (window as any).__AUTH_I18N || {};
+
+      const pwInput = el.querySelector('#auth-password') as HTMLInputElement;
+      if (!pwInput) return;
+      const password = pwInput.value;
+
+      if (!password) {
+        this.setError('auth-error-password', i18n.__required || 'Please fill in all fields.');
+        return;
+      }
+
+      if (this.mode === 'signup' && password.length < 6) {
+        this.setError('auth-error-password', i18n.__password_length || 'Password must be at least 6 characters.');
+        return;
+      }
+
+      this.clearErrors();
+      this.setLoading(true);
+
+      try {
+        const { error, data } = this.mode === 'signin'
+          ? await signIn(this.emailValue, password)
+          : await signUp(this.emailValue, password);
+
+        if (error) {
+          this.setError('auth-error-password', getAuthErrorMessage(error));
+        } else {
+          if (this.mode === 'signup') {
+            // 注册成功 → 进入邮件验证提示页
+            this.goToPage(2);
+          } else {
+            // 登录成功 → 关闭弹窗、广播事件
+            this.close();
+            document.dispatchEvent(new CustomEvent('auth:signed-in', {
+              detail: { session: data?.session },
+            }));
+          }
+        }
+      } catch (err: any) {
+        this.setError('auth-error-password',
+          getAuthErrorMessage(err) || err.message || i18n.__default || 'An error occurred.');
+      } finally {
+        this.setLoading(false);
+      }
+    }
+
+    /** Page 3: 发送密码重置邮件 */
+    private async handleResetPassword() {
+      if (this.isLoading) return;
+      const el = this.$el;
+      if (!el) return;
+      const i18n = (window as any).__AUTH_I18N || {};
+
+      const emailInput = el.querySelector('#auth-forgot-email') as HTMLInputElement;
+      if (!emailInput) return;
+
+      const email = emailInput.value.trim();
+
+      if (!this.validateEmail(email, 'auth-error-forgot')) return;
+
+      this.clearErrors();
+      this.isLoading = true;
+
+      // 切换加载态（spinner / label）
+      const resetLabels = el.querySelectorAll('.auth-modal__reset-label') as NodeListOf<HTMLElement>;
+      const resetSpinner = el.querySelector('.auth-modal__reset-btn .auth-modal__submit-spinner') as HTMLElement;
+      const resetBtn = el.querySelector('.auth-modal__reset-btn') as HTMLElement;
+      resetLabels.forEach(l => l.hidden = true);
+      if (resetSpinner) resetSpinner.hidden = false;
+      if (resetBtn) resetBtn.setAttribute('disabled', '');
+
+      try {
+        // 获取当前语言前缀构建 redirect URL
+        const lang = window.location.pathname.split('/')[1] || 'zh-cn';
+        const redirectTo = `${window.location.origin}/${lang}/account/update-password`;
+
+        const { error } = await resetPasswordForEmail(email, redirectTo);
+
+        if (error) {
+          this.setError('auth-error-forgot', getAuthErrorMessage(error));
+        } else {
+          this.goToPage(4);
+        }
+      } catch (err: any) {
+        this.setError('auth-error-forgot',
+          getAuthErrorMessage(err) || err.message || i18n.__default || 'An error occurred.');
+      } finally {
+        this.isLoading = false;
+        resetLabels.forEach(l => l.hidden = false);
+        if (resetSpinner) resetSpinner.hidden = true;
+        if (resetBtn) resetBtn.removeAttribute('disabled');
+      }
+    }
+
+    // ============ 一次性全局委托 ============
+
+    private bindDelegated() {
+      if (AuthModal._globalBound) return;
+      AuthModal._globalBound = true;
+
+      const self = this;
+
+      // 登录/注册切换按钮
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('[data-action="auth:switch"]');
+        if (!btn) return;
+        self.switchTab(self.mode === 'signin' ? 'signup' : 'signin');
+      });
+
+      // Next 按钮 (Page 0) — click 委托，避免 Astro ClientRouter 拦截
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.auth-modal__next-btn');
+        if (!btn) return;
+        e.preventDefault();
+        self.handleNext();
+      });
+
+      // 提交按钮 (Page 1) — click 委托
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.auth-modal__submit-btn');
+        if (!btn) return;
+        e.preventDefault();
+        self.handleSubmit();
+      });
+
+      // 忘记密码链接 (Page 1) → 跳转到 Page 3
+      document.addEventListener('click', (e) => {
+        const link = (e.target as HTMLElement).closest('[data-action="auth:forgot"]');
+        if (!link) return;
+        e.preventDefault();
+        self.clearErrors();
+        self.goToPage(3);
+      });
+
+      // 重置密码发送按钮 (Page 3)
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.auth-modal__reset-btn');
+        if (!btn) return;
+        e.preventDefault();
+        self.handleResetPassword();
+      });
+
+      // 返回登录 (Page 3 → Page 0，或 Page 4 → Page 0)
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('[data-action="auth:back-to-signin"]');
+        if (!btn) return;
+        e.preventDefault();
+        self.goToPage(0);
+      });
+
+      // 验证页关闭按钮 (Page 2)
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.auth-modal__verify-close');
+        if (!btn) return;
+        e.preventDefault();
+        self.close();
+      });
+
+      // 重置确认页返回登录 (Page 4)
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.auth-modal__back-to-signin-btn');
+        if (!btn) return;
+        e.preventDefault();
+        self.goToPage(0);
+      });
+
+      // 全局打开触发器 — data-action="auth:open"
+      document.addEventListener('click', (e) => {
+        const trigger = (e.target as HTMLElement).closest('[data-action="auth:open"]');
+        if (!trigger) return;
+        e.preventDefault();
+        const tab = (trigger.getAttribute('data-auth-tab') as 'signin' | 'signup') || 'signin';
+        (window as any).__authModal?.open(tab);
+      });
+
+      // 键盘 Enter 键快捷提交
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const el = self.$el;
+        if (!el?.classList.contains('is-open')) return;
+        const target = e.target as HTMLElement;
+
+        // 在邮箱输入框中按 Enter → Next
+        if (target.id === 'auth-email') {
+          e.preventDefault();
+          self.handleNext();
+          return;
+        }
+
+        // 在密码输入框中按 Enter → Submit
+        if (target.id === 'auth-password') {
+          e.preventDefault();
+          self.handleSubmit();
+          return;
+        }
+
+        // 在忘记密码邮箱输入框中按 Enter → 发送重置链接
+        if (target.id === 'auth-forgot-email') {
+          e.preventDefault();
+          self.handleResetPassword();
+        }
+      });
+    }
+  }
+
+  const authModal = new AuthModal();
+  (window as any).__authModal = authModal;
+</script>

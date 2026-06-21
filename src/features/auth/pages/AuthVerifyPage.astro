@@ -1,0 +1,33 @@
+---
+// AuthVerifyPage — 邮件验证提示页面（Page 2）
+//
+// 注册成功后显示，提示用户查收验证邮件。
+
+import { t } from '../../../i18n/index';
+import Button from '../../../components/Button.astro';
+
+interface Props {
+  lang: string;
+}
+
+const { lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
+---
+
+<div data-page="2" class="auth-modal__page auth-modal__verify-page">
+  <div class="auth-modal__verify-icon">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M22 4L12 13L2 4" />
+    </svg>
+  </div>
+
+  <h3 class="auth-modal__verify-title">{__('auth.checkEmailTitle')}</h3>
+  <p class="auth-modal__verify-desc">{__('auth.checkEmailDesc')}</p>
+
+  <div class="auth-modal__action">
+    <Button flat class="auth-modal__verify-close">
+      {__('auth.checkEmailClose')}
+    </Button>
+  </div>
+</div>

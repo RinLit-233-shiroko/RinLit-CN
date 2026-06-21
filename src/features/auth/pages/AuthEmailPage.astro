@@ -1,0 +1,87 @@
+---
+// AuthEmailPage — 邮箱输入页面（Page 0）
+//
+// 登录/注册共用。通过 data-* 属性 + is-hidden 类在客户端切换模式。
+// 未来扩展: 忘记密码也可复用此页面。
+
+import { t } from '../../../i18n/index';
+import Input from '../../../components/Input.astro';
+import Button from '../../../components/Button.astro';
+
+interface Props {
+  lang: string;
+}
+
+const { lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
+---
+
+<div data-page="0" class="auth-modal__page">
+  <!-- Logo + 账户 -->
+  <div class="auth-modal__header">
+    <img
+      class="auth-modal__logo auth-modal__logo--light"
+      src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=False.png"
+      alt="RinLit"
+      width="96"
+      height="24"
+    />
+    <img
+      class="auth-modal__logo auth-modal__logo--dark"
+      src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png"
+      alt="RinLit"
+      width="96"
+      height="24"
+    />
+    <span class="auth-modal__account-label">{__('auth.account')}</span>
+  </div>
+
+  <p class="auth-modal__subtitle">
+    <span data-subtitle-signin>{__('auth.signInTitle')}</span>
+    <span data-subtitle-signup class="is-hidden">{__('auth.signUpTitle')}</span>
+  </p>
+
+  <div class="auth-modal__field">
+    <Input
+      type="email"
+      name="email"
+      id="auth-email"
+      placeholder="email@example.com"
+      label={__('auth.email')}
+      flat
+      required
+      autocomplete="email"
+    />
+  </div>
+
+  <p class="auth-modal__error" id="auth-error-email" hidden></p>
+
+  <div class="auth-modal__action">
+    <Button primary flat class="auth-modal__next-btn">
+      {__('auth.next')}
+    </Button>
+  </div>
+
+  <p class="auth-modal__switch">
+    <span data-switch-signin>{__('auth.noAccount')}</span>
+    <span data-switch-signup class="is-hidden">{__('auth.hasAccount')}</span>
+    <button class="auth-modal__switch-btn" data-action="auth:switch" type="button">
+      <span data-switch-signin>{__('auth.signUp')}</span>
+      <span data-switch-signup class="is-hidden">{__('auth.signIn')}</span>
+    </button>
+  </p>
+
+  <!-- 分隔线 -->
+  <div class="auth-modal__divider">
+    <span class="auth-modal__divider-line"></span>
+    <span class="auth-modal__divider-text">{__('auth.or')}</span>
+    <span class="auth-modal__divider-line"></span>
+  </div>
+
+  <!-- GitHub OAuth -->
+  <div class="auth-modal__oauth">
+    <Button icon="brand-github" flat class="auth-modal__github-btn">
+      {__('auth.githubSignIn')}
+    </Button>
+  </div>
+</div>

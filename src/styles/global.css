@@ -148,7 +148,7 @@
 
     /* 语义 Token */
     --bg: #101216;
-    --bg-elevated: #181834;
+    --bg-elevated: rgba(209, 209, 232, 0.1);
     --bg-muted: #25213e;
     --bg-pill: rgba(31, 24, 98, 0.18);
     --text: #e7e6f0;

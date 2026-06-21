@@ -79,7 +79,33 @@ const isActive = (href: string) => {
   <div class="top-bar">
     <Button icon="chevron-left" class="back-btn back-btn--mobile" id="back-btn-mobile" aria-label="返回" />
     <div class="toolbar" aria-label="工具栏">
-      <div class="menu-anchor">
+        <!-- 用户按钮 -->
+        <div class="user-area">
+          <span data-action="auth:open" data-auth-tab="signin">
+          <Button
+            id="auth-btn-signin"
+            icon="user"
+            class="auth-btn"
+            aria-label={__('auth.signIn')}
+          >
+            {__('auth.signIn')}
+          </Button>
+          </span>
+          <div class="user-menu" id="user-menu" style="display:none;">
+            <Button
+              id="auth-btn-user"
+              icon="user"
+              class="auth-btn is-user-btn"
+              aria-label="Account"
+            >
+              <span id="user-email-display"></span>
+            </Button>
+            <Menu id="user-menu-dropdown">
+              <MenuItem value="signout">{__('auth.signOut')}</MenuItem>
+            </Menu>
+          </div>
+        </div>
+        <div class="menu-anchor">
         <Button icon="menu-2" class="menu-trigger" id="menu-trigger" aria-label="Menu" />
         <Menu class="menu-dropdown" id="settings-menu">
           <MenuItem icon="language">
@@ -294,9 +320,52 @@ const isActive = (href: string) => {
     position: relative;
   }
 
-  .top-bar :global(.btn) {
-    width: 46px;
+  /* ======== 用户区域 ======== */
+  .user-area {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .user-area :global(.auth-btn .btn) {
+    padding: 0 16px;
     height: 46px;
+    font-size: 15px;
+  }
+
+  .user-area :global(.auth-btn.is-user-btn .btn) {
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  #user-email-display {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* User menu — Menu 组件自带 Pill 背景，此处仅设最小宽度 */
+  #user-menu-dropdown {
+    min-width: 150px;
+  }
+
+  @media (max-width: 768px) {
+    .user-area :global(.auth-btn .btn) {
+      height: 46px;
+      padding: 0 14px;
+      font-size: 14px;
+    }
+  }
+
+  /* 顶栏按钮统一高度 */
+  .top-bar :global(.btn) {
+    height: 46px;
+  }
+
+  /* 纯图标按钮在顶栏保持正方形 */
+  .top-bar :global(.btn--icon-only) {
+    width: 46px;
   }
 
   @media (max-width: 768px) {
@@ -402,6 +471,9 @@ const isActive = (href: string) => {
             if (dd.classList.contains('is-open')) {
               closeDropdowns(dd);
             } else {
+              // 关闭用户菜单后再打开 settings
+              var um = document.getElementById('user-menu-dropdown');
+              if (um?.classList.contains('is-open')) Menu_close(um);
               Menu_open(dd, btn);
             }
             return;
@@ -505,6 +577,103 @@ const isActive = (href: string) => {
         }
       }
       window.location.href = '/' + lang;
+    }
+  });
+</script>
+
+<script>
+  import { getSession, signOut } from '../../lib/auth.client';
+
+  function updateAuthUI() {
+    const userArea = document.getElementById('auth-btn-signin')?.closest('.user-area');
+    const signinBtn = userArea?.querySelector('#auth-btn-signin') as HTMLElement | null;
+    const userMenu = document.getElementById('user-menu');
+    const userEmailDisplay = document.getElementById('user-email-display');
+    if (!signinBtn || !userMenu) return;
+
+    if (hasSession) {
+      signinBtn.style.display = 'none';
+      userMenu.style.display = '';
+      if (userEmailDisplay && currentUserEmail) {
+        userEmailDisplay.textContent = currentUserEmail;
+      }
+    } else {
+      signinBtn.style.display = '';
+      userMenu.style.display = 'none';
+    }
+  }
+
+  let hasSession = false;
+  let currentUserEmail = '';
+
+  async function checkSession() {
+    try {
+      const session = await getSession();
+      hasSession = !!session;
+      currentUserEmail = session?.user?.email || '';
+    } catch {
+      hasSession = false;
+      currentUserEmail = '';
+    }
+    updateAuthUI();
+  }
+
+  // 初始加载 + SPA 导航后都检查 session
+  document.addEventListener('astro:page-load', () => {
+    checkSession();
+  });
+
+  // 监听 AuthModal 发出的登录成功事件
+  document.addEventListener('auth:signed-in', ((e: CustomEvent) => {
+    hasSession = true;
+    currentUserEmail = e.detail?.session?.user?.email || '';
+    updateAuthUI();
+  }) as EventListener);
+
+  // 退出登录 — 不刷新页面，直接更新 UI
+  async function handleSignOut() {
+    await signOut();
+    hasSession = false;
+    currentUserEmail = '';
+    updateAuthUI();
+    // 关闭用户下拉菜单
+    const userMenu = document.getElementById('user-menu-dropdown');
+    if (userMenu && Menu_close) Menu_close(userMenu);
+  }
+
+  // 用户菜单 & 退出登录 — 使用 Menu 组件
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Toggle user dropdown
+    const userBtn = target.closest('#auth-btn-user');
+    if (userBtn) {
+      e.stopPropagation();
+      const userMenu = document.getElementById('user-menu-dropdown');
+      if (!userMenu) return;
+      if (userMenu.classList.contains('is-open')) {
+        Menu_close(userMenu);
+      } else {
+        // 关闭 settings 菜单后再打开用户菜单
+        const settings = document.getElementById('settings-menu');
+        if (settings?.classList.contains('is-open')) Menu_close(settings);
+        Menu_open(userMenu, userBtn as HTMLElement);
+      }
+      return;
+    }
+
+    // Sign out via user menu item
+    const userMenuItem = target.closest('#user-menu-dropdown .menu-item');
+    if (userMenuItem) {
+      const value = userMenuItem.getAttribute('data-value');
+      if (value === 'signout') handleSignOut();
+      return;
+    }
+
+    // Close user dropdown when clicking outside
+    if (!target.closest('#user-menu-dropdown') && !target.closest('#auth-btn-user')) {
+      const userMenu = document.getElementById('user-menu-dropdown');
+      if (userMenu?.classList.contains('is-open')) Menu_close(userMenu);
     }
   });
 </script>

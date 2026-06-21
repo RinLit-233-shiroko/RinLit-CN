@@ -373,13 +373,19 @@ const role = roleMap[type];
       triggerEl.style.setProperty('--move-x', moveX + 'px');
       triggerEl.style.setProperty('--move-y', moveY + 'px');
 
-      // 5. 菜单的 transform-origin：按钮中心相对菜单位置
+      // 5. 非均匀缩放：让按钮按菜单的实际宽高比例展开，而非统一 scale
+      var scaleX = mW / (tRect.width || 1);
+      var scaleY = mH / (tRect.height || 1);
+      triggerEl.style.setProperty('--scale-x', String(scaleX));
+      triggerEl.style.setProperty('--scale-y', String(scaleY));
+
+      // 6. 菜单的 transform-origin：按钮中心相对菜单位置
       var originX = triggerCenterX - left;
       var originY = triggerCenterY - top;
       menuEl.style.setProperty('--origin-x', originX + 'px');
       menuEl.style.setProperty('--origin-y', originY + 'px');
 
-      // 6. 恢复可见，执行打开动画
+      // 7. 恢复可见，执行打开动画
       menuEl.style.visibility = 'visible';
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
@@ -402,6 +408,8 @@ const role = roleMap[type];
         trig.classList.remove('is-trigger-hidden');
         trig.style.removeProperty('--move-x');
         trig.style.removeProperty('--move-y');
+        trig.style.removeProperty('--scale-x');
+        trig.style.removeProperty('--scale-y');
         // 等过渡完成再清理 inline style，恢复 .pill 默认 transition
         var onRestoreEnd = function () {
           trig.style.transition = '';

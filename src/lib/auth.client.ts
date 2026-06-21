@@ -21,6 +21,11 @@ export async function signIn(email: string, password: string) {
     return await supabase.auth.signInWithPassword({ email, password });
 }
 
+export async function resetPasswordForEmail(email: string, redirectTo: string) {
+    const supabase = getClient();
+    return await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+}
+
 export async function signOut() {
     const supabase = getClient();
     return await supabase.auth.signOut();

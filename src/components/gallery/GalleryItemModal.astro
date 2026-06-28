@@ -1,0 +1,508 @@
+---
+import Modal from '../Modal.astro';
+import Button from '../Button.astro';
+import { getIcon } from '../../utils/icons';
+
+interface TagLike {
+  name: string;
+}
+
+interface GalleryItemLike {
+  id: string;
+  title: string | null;
+  description: string | null;
+  image_url: string;
+  width?: number | null;
+  height?: number | null;
+  created_at?: string | null;
+  user_id?: string | null;
+  contributor?: string | null;
+  contributorDisplayName?: string | null;
+  contributorEmail?: string | null;
+  tags?: TagLike[];
+  favorite_count?: number | null;
+  favoriteCount?: number | null;
+}
+
+interface Props {
+  items: GalleryItemLike[];
+}
+
+const { items = [] } = Astro.props;
+const userIcon = getIcon('user-circle', 20);
+const tagIcon = getIcon('tag', 14);
+
+const getContributorLabel = (item: GalleryItemLike) => {
+  if (item.contributorDisplayName) return item.contributorDisplayName;
+  if (item.contributorEmail) return item.contributorEmail;
+  if (item.contributor) return item.contributor;
+  return 'RinLit User';
+};
+
+const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.favoriteCount ?? 0;
+---
+
+<Modal id="gallery-item-modal" title="" class="gallery-item-modal" ariaLabel="Gallery item detail">
+  <div class="gallery-item-modal__viewport">
+    {items.map((item) => {
+      const contributor = getContributorLabel(item);
+      const tags = item.tags || [];
+      const favoriteCount = getFavoriteCount(item);
+
+      return (
+        <article
+          class="gallery-item-modal__panel"
+          data-gallery-modal-item={item.id}
+          data-image-width={item.width || ''}
+          data-image-height={item.height || ''}
+          hidden
+        >
+          <section class="gallery-item-modal__media" aria-label={item.title || 'Gallery image'}>
+            <img data-gallery-modal-image src={item.image_url} alt={item.title || 'Gallery image'} loading="lazy" />
+          </section>
+          <section class="gallery-item-modal__details">
+            <header class="gallery-item-modal__author">
+              <div class="gallery-item-modal__avatar" aria-hidden="true" set:html={userIcon}></div>
+              <strong>{contributor}</strong>
+            </header>
+
+            <div class="gallery-item-modal__copy">
+              <strong class="gallery-item-modal__title">{item.title || 'Untitled'}</strong>
+              {item.description ? <p>{item.description}</p> : <p class="gallery-item-modal__muted">暂无详情</p>}
+            </div>
+
+            <div class="gallery-item-modal__tags" aria-label="Tags">
+              {tags.length > 0 ? tags.map((tag) => <span><span class="gallery-item-modal__tag-icon" aria-hidden="true" set:html={tagIcon}></span>{tag.name}</span>) : <span class="gallery-item-modal__muted">No tags</span>}
+            </div>
+
+            <footer class="gallery-item-modal__meta">
+              <time data-gallery-modal-date={item.created_at || ''}>{item.created_at || ''}</time>
+              <Button icon="dots" flat class="gallery-item-modal__more" type="button" aria-label="更多" />
+            </footer>
+
+            <div class="gallery-item-modal__spacer"></div>
+
+            <div class="gallery-item-modal__favorite">
+              <Button
+                icon="heart"
+                flat
+                class="gallery-item-modal__favorite-button"
+                type="button"
+                data-gallery-favorite={item.id}
+                data-gallery-favorite-count={favoriteCount}
+                aria-pressed="false"
+                aria-label="收藏"
+                title="收藏"
+              >
+                <span class="gallery-item-modal__favorite-count" data-count={favoriteCount}>{favoriteCount}</span>
+              </Button>
+            </div>
+          </section>
+        </article>
+      );
+    })}
+  </div>
+</Modal>
+
+<style>
+  :global(.modal__card.gallery-item-modal) {
+    width: min(var(--gallery-modal-width, 1180px), calc(100vw - 40px)) !important;
+    max-width: 1400px !important;
+    height: 75vh !important;
+    max-height: 860px !important;
+    min-height: 520px !important;
+    border-radius: 28px;
+  }
+
+  :global(.modal__card.gallery-item-modal .modal__topbar) {
+    position: absolute;
+    inset: 0 0 auto;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  :global(.modal__card.gallery-item-modal .modal__topbar-title) {
+    display: none;
+  }
+
+  :global(.modal__card.gallery-item-modal .modal__close-wrap) {
+    pointer-events: auto;
+    margin-left: auto;
+    --pill-radius: 999px;
+  }
+
+  :global(.modal__card.gallery-item-modal .modal__close-wrap .btn) {
+    color: var(--text-strong);
+  }
+
+  :global(:root.dark .modal__card.gallery-item-modal .modal__close-wrap .btn) {
+    color: #ffffff;
+  }
+
+  :global(.modal__card.gallery-item-modal .modal__content) {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .gallery-item-modal__viewport,
+  .gallery-item-modal__panel {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .gallery-item-modal__panel {
+    display: grid;
+    grid-template-columns: minmax(280px, var(--gallery-modal-image-width, 720px)) 420px;
+    background: var(--bg-elevated);
+  }
+
+  .gallery-item-modal__panel[hidden] {
+    display: none;
+  }
+
+  .gallery-item-modal__media {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--color-primary-500) 22%, transparent), transparent 32%),
+      color-mix(in srgb, var(--surface) 72%, #111827);
+  }
+
+  .gallery-item-modal__media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    object-fit: contain;
+    background: color-mix(in srgb, #000000 8%, transparent);
+  }
+
+  .gallery-item-modal__details {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    border-left: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    padding: 20px 20px 18px;
+    overflow-y: auto;
+    background: color-mix(in srgb, var(--bg-elevated) 96%, transparent);
+  }
+
+  .gallery-item-modal__author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    padding: 4px 58px 4px 4px;
+  }
+
+  .gallery-item-modal__avatar {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--color-neutral-400) 38%, transparent);
+  }
+
+  .gallery-item-modal__avatar :global(svg) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .gallery-item-modal__author strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-strong);
+    font-size: 14px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gallery-item-modal__muted,
+  .gallery-item-modal__meta time {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .gallery-item-modal__copy {
+    display: grid;
+    gap: 10px;
+    padding: 0 4px;
+  }
+
+  .gallery-item-modal__title {
+    display: block;
+    margin: 0;
+    color: var(--text-strong);
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.22;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+  }
+
+  .gallery-item-modal__copy p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+    text-wrap: pretty;
+    white-space: pre-wrap;
+  }
+
+  .gallery-item-modal__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 0 4px;
+  }
+
+  .gallery-item-modal__tags span:not(.gallery-item-modal__muted) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 20px;
+    padding: 0;
+    color: var(--color-primary-600);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .gallery-item-modal__tag-icon {
+    color: currentColor;
+  }
+
+  .gallery-item-modal__tag-icon :global(svg) {
+    display: block;
+    width: 14px;
+    height: 14px;
+  }
+
+  .gallery-item-modal__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 4px;
+  }
+
+  .gallery-item-modal__more {
+    --pill-radius: 999px;
+  }
+
+  .gallery-item-modal__more :global(.btn) {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 13px;
+  }
+
+  .gallery-item-modal__spacer {
+    flex: 1 1 auto;
+    min-height: 16px;
+  }
+
+  .gallery-item-modal__favorite {
+    align-self: flex-end;
+    --pill-radius: 999px;
+  }
+
+  .gallery-item-modal__favorite :global(.btn) {
+    width: auto;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 16px;
+    gap: 7px;
+    font-size: 15px;
+  }
+
+  .gallery-item-modal__favorite :global(.btn--icon-only) {
+    width: 44px;
+    padding: 0;
+  }
+
+  .gallery-item-modal__favorite :global(.btn__text) {
+    flex: 0 0 auto;
+  }
+
+  .gallery-item-modal__favorite :global(.btn.is-favorite) {
+    color: var(--color-primary-600);
+  }
+
+  .gallery-item-modal__favorite :global(.btn:disabled) {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .gallery-item-modal__favorite :global(.btn.is-shaking) {
+    animation: gallery-modal-fav-shake 0.28s ease;
+  }
+
+  .gallery-item-modal__favorite-count {
+    display: block;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .gallery-item-modal__favorite-count[data-count="0"] {
+    display: none;
+  }
+
+  @keyframes gallery-modal-fav-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  @media (max-width: 760px) {
+    :global(.modal__card.gallery-item-modal) {
+      width: calc(100vw - 24px) !important;
+      height: 82vh !important;
+      min-height: 0 !important;
+      border-radius: 22px;
+    }
+
+    :global(.modal__card.gallery-item-modal .modal__content) {
+      overflow-y: auto;
+    }
+
+    .gallery-item-modal__panel {
+      min-height: 100%;
+      height: auto;
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(240px, 42vh) auto;
+    }
+
+    .gallery-item-modal__details {
+      border-left: 0;
+      border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+      overflow: visible;
+      padding: 16px;
+    }
+
+    .gallery-item-modal__author {
+      padding-right: 58px;
+    }
+
+    .gallery-item-modal__title {
+      font-size: 18px;
+    }
+  }
+</style>
+
+<script>
+  function formatGalleryModalDate(value: string) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(document.documentElement.lang || 'zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  function setGalleryModalSize(panel: HTMLElement) {
+    const modal = document.getElementById('gallery-item-modal');
+    if (!modal) return;
+
+    const width = Number(panel.dataset.imageWidth || '0');
+    const height = Number(panel.dataset.imageHeight || '0');
+    const detailWidth = 420;
+    const maxWidth = Math.min(1400, window.innerWidth - 40);
+    const modalHeight = Math.min(860, Math.max(520, Math.round(window.innerHeight * 0.75)));
+    const maxImageWidth = Math.max(280, maxWidth - detailWidth);
+    const ratio = width > 0 && height > 0 ? width / height : 1;
+    const imageWidth = Math.max(280, Math.min(Math.round(ratio * modalHeight), maxImageWidth));
+    const modalWidth = Math.min(maxWidth, imageWidth + detailWidth);
+
+    modal.style.setProperty('--gallery-modal-image-width', `${imageWidth}px`);
+    modal.style.setProperty('--gallery-modal-width', `${modalWidth}px`);
+  }
+
+  function openGalleryItemModal(itemId: string) {
+    const modal = (window as any).__modals?.['gallery-item-modal'];
+    const root = document.getElementById('gallery-item-modal');
+    if (!modal || !root || !itemId) return;
+
+    const panels = root.querySelectorAll<HTMLElement>('[data-gallery-modal-item]');
+    const activePanel = root.querySelector<HTMLElement>(`[data-gallery-modal-item="${CSS.escape(itemId)}"]`);
+    if (!activePanel) return;
+
+    panels.forEach((panel) => {
+      panel.hidden = panel !== activePanel;
+    });
+
+    root.querySelectorAll<HTMLTimeElement>('[data-gallery-modal-date]').forEach((time) => {
+      time.textContent = formatGalleryModalDate(time.dataset.galleryModalDate || '');
+    });
+
+    setGalleryModalSize(activePanel);
+    modal.open();
+  }
+
+  // 拖拽检测 — 拖拽后不触发打开弹窗
+  let _dragStartX = 0;
+  let _dragStartY = 0;
+  let _wasDragged = false;
+
+  document.addEventListener('pointerdown', (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('[data-gallery-item-id]');
+    if (!card) {
+      _wasDragged = false;
+      return;
+    }
+    _dragStartX = e.clientX;
+    _dragStartY = e.clientY;
+    _wasDragged = false;
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!_dragStartX && !_dragStartY) return;
+    const dx = e.clientX - _dragStartX;
+    const dy = e.clientY - _dragStartY;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      _wasDragged = true;
+    }
+  });
+
+  document.addEventListener('pointerup', () => {
+    _dragStartX = 0;
+    _dragStartY = 0;
+  });
+
+  document.addEventListener('click', (event) => {
+    if (_wasDragged) return;
+
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-gallery-favorite]')) return;
+
+    const card = target.closest<HTMLElement>('[data-gallery-item-id]');
+    if (!card) return;
+
+    openGalleryItemModal(card.dataset.galleryItemId || '');
+  });
+
+  window.addEventListener('resize', () => {
+    const root = document.getElementById('gallery-item-modal');
+    const activePanel = root?.querySelector<HTMLElement>('[data-gallery-modal-item]:not([hidden])');
+    if (activePanel) setGalleryModalSize(activePanel);
+  });
+</script>

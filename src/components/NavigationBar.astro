@@ -1,0 +1,95 @@
+---
+interface NavItem {
+  key: string;
+  label: string;
+  kind: 'link' | 'button';
+  href?: string;
+  active?: boolean;
+  hidden?: boolean;
+  attrs?: Record<string, string>;
+}
+
+interface Props {
+  className: string;
+  itemClassName: string;
+  items: NavItem[];
+}
+
+const { className, itemClassName, items } = Astro.props;
+---
+
+<nav class={className}>
+  {items.map((item) =>
+    item.kind === 'button' ? (
+      <button
+        class:list={[itemClassName, { 'is-active': item.active }]}
+        type="button"
+        hidden={item.hidden}
+        {...item.attrs}
+      >
+        {item.label}
+      </button>
+    ) : (
+      <a
+        class:list={[itemClassName, { 'is-active': item.active }]}
+        href={item.href}
+        hidden={item.hidden}
+        {...item.attrs}
+      >
+        {item.label}
+      </a>
+    )
+  )}
+</nav>
+
+<style>
+  .account-nav,
+  .gallery-admin-nav {
+    display: grid;
+    gap: 6px;
+  }
+
+  .account-nav__item {
+    all: unset;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 8px 0;
+    transition: color 160ms ease;
+  }
+
+  .account-nav__item:hover,
+  .account-nav__item.is-active {
+    color: var(--color-primary-600);
+  }
+
+  .gallery-admin-nav__item {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 8px 0;
+    transition: color 160ms ease;
+  }
+
+  .gallery-admin-nav__item:hover,
+  .gallery-admin-nav__item.is-active {
+    color: var(--color-primary-600);
+  }
+
+  @media (max-width: 860px) {
+    .gallery-admin-nav {
+      display: flex;
+      overflow-x: auto;
+      gap: 16px;
+      padding-bottom: 4px;
+    }
+
+    .gallery-admin-nav__item {
+      flex: 0 0 auto;
+    }
+  }
+</style>

@@ -18,6 +18,7 @@ interface Props {
   id?: string;
   class?: string;
   flat?: boolean;
+  [key: string]: unknown;
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   id = '',
   class: className = '',
   flat = false,
+  ...attrs
 } = Astro.props;
 
 const resolvedHref = to ? getRelativeLocaleUrl(Astro.currentLocale!, to) : href;
@@ -37,7 +39,7 @@ const svgHtml = getIcon(icon, 18);
 ---
 
 <Pill primary={primary} flat={flat} id={id} class={className}>
-  <Tag href={resolvedHref} class={`btn ${isIconOnly ? 'btn--icon-only' : ''}`}>
+  <Tag href={resolvedHref} class={`btn ${isIconOnly ? 'btn--icon-only' : ''}`} {...attrs}>
     {svgHtml && (
       <span class="btn__icon">
         <span set:html={svgHtml} />
@@ -102,7 +104,8 @@ const svgHtml = getIcon(icon, 18);
   }
 
   .btn__text {
-    display: block;
+    display: grid;
+    place-items: center;
     flex: 1 1 auto;
     min-width: 0;
     max-width: 100%;
@@ -121,7 +124,7 @@ const svgHtml = getIcon(icon, 18);
     max-width: 100%;
   }
 
-  .btn__text > :global(.btn-spinner:not([hidden])) {
+  .btn__text > :global([class*='spinner']:not([hidden])) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -131,7 +134,7 @@ const svgHtml = getIcon(icon, 18);
     overflow: visible;
   }
 
-  .btn__text > :global(*:not([hidden]):not(.btn-spinner)) {
+  .btn__text > :global(*:not([hidden]):not([class*='spinner'])) {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -142,7 +145,7 @@ const svgHtml = getIcon(icon, 18);
     display: none !important;
   }
 
-  .btn__text :global(.btn-spinner svg) {
+  .btn__text :global([class*='spinner'] svg) {
     display: block;
     width: 18px;
     height: 18px;

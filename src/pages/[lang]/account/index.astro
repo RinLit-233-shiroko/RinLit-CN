@@ -3,6 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Button from '../../../components/Button.astro';
 import Input from '../../../components/Input.astro';
 import SettingsCard from '../../../components/SettingsCard.astro';
+import NavigationBar from '../../../components/NavigationBar.astro';
 import { getIcon } from '../../../utils/icons';
 import { t, locales } from '../../../i18n/index';
 
@@ -27,13 +28,14 @@ const icons = {
   key: getIcon('key', 18),
   github: getIcon('brand-github', 18),
   chevron: getIcon('chevron-right', 16),
+  id: getIcon('id', 18),
 };
 ---
 
 <BaseLayout
   lang={lang}
   title={pageTitle}
-  description={isZh ? '管理 RinLit 账号。' : 'Manage your RinLit account.'}
+  description={__('auth.manageAccount')}
 >
   <section class="account-page">
     <div class="account-topbar">
@@ -59,13 +61,17 @@ const icons = {
           <span id="account-email">...</span>
         </div>
 
-        <nav class="account-nav" id="account-nav">
-          {navItems.map((item) => (
-            <button class:list={["account-nav__item", { "is-active": item.id === 'profile' }]} type="button" data-panel-target={item.id}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
+        <NavigationBar
+          className="account-nav"
+          itemClassName="account-nav__item"
+          items={navItems.map((item) => ({
+            key: item.id,
+            label: item.label,
+            kind: 'button',
+            active: item.id === 'profile',
+            attrs: { 'data-panel-target': item.id },
+          }))}
+        />
       </aside>
 
       <section class="account-content">
@@ -77,7 +83,7 @@ const icons = {
               <div class="card-icon" set:html={icons.user}></div>
               <div class="card-copy">
                 <h3>{__('auth.displayName')}</h3>
-                <p>{isZh ? '用于在 RinLit 中显示你的名称。' : 'Used as your display name in RinLit.'}</p>
+                <p>{__('auth.displayNameDesc')}</p>
               </div>
             </div>
 
@@ -95,7 +101,7 @@ const icons = {
               <div class="form-actions">
                 <p class="form-message" id="name-message" role="status"></p>
                 <Button primary flat class="form-submit" id="name-submit-btn">
-                  <span id="name-submit-label">{isZh ? '保存' : 'Save'}</span>
+                  <span id="name-submit-label">{__('auth.save')}</span>
                   <span class="btn-spinner" id="name-submit-spinner" hidden>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -105,10 +111,39 @@ const icons = {
               </div>
             </form>
           </SettingsCard>
+
+          <SettingsCard>
+            <div class="card-head">
+              <div class="card-icon" set:html={icons.id}></div>
+              <div class="card-copy">
+                <h3>{__('auth.accountInfo')}</h3>
+                <p>{__('auth.accountInfoDesc')}</p>
+              </div>
+            </div>
+
+            <dl class="account-detail-list">
+              <div class="account-detail-item">
+                <dt>{__('auth.accountId')}</dt>
+                <dd id="account-detail-id">...</dd>
+              </div>
+              <div class="account-detail-item">
+                <dt>{isZh ? '角色' : 'Role'}</dt>
+                <dd id="account-detail-role">...</dd>
+              </div>
+              <div class="account-detail-item">
+                <dt>{__('auth.createdAt')}</dt>
+                <dd id="account-detail-created-at">...</dd>
+              </div>
+              <div class="account-detail-item">
+                <dt>{__('auth.lastSignIn')}</dt>
+                <dd id="account-detail-last-sign-in">...</dd>
+              </div>
+            </dl>
+          </SettingsCard>
         </section>
 
         <section class="account-panel" id="panel-security" data-panel="security">
-          <h2 class="panel-title">{isZh ? '邮箱与密码' : 'Email and password'}</h2>
+          <h2 class="panel-title">{__('auth.emailPassword')}</h2>
 
           <div class="settings-list">
             <SettingsCard asRow href={`/${lang}/account/change-email`}>
@@ -124,7 +159,7 @@ const icons = {
               <div class="card-icon" set:html={icons.key}></div>
               <span class="row-copy">
                 <strong>{__('auth.updatePassword')}</strong>
-                <small>{isZh ? '需要验证旧密码' : 'Requires current password'}</small>
+                <small>{__('auth.requiresCurrentPassword')}</small>
               </span>
               <span class="row-chevron" set:html={icons.chevron}></span>
             </SettingsCard>
@@ -139,10 +174,10 @@ const icons = {
               <div class="card-icon" set:html={icons.github}></div>
               <div class="card-copy">
                 <h3>GitHub</h3>
-                <p id="github-provider-state">{isZh ? '读取中' : 'Loading'}</p>
+                <p id="github-provider-state">{__('auth.loading')}</p>
               </div>
               <Button id="github-link-btn" flat>
-                <span id="github-link-label">{isZh ? '连接' : 'Connect'}</span>
+                <span id="github-link-label">{__('auth.connect')}</span>
                 <span class="btn-spinner" id="github-link-spinner" hidden>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -163,24 +198,27 @@ const icons = {
     required: __('auth.error.required'),
     defaultError: __('auth.error.default'),
     signIn: __('auth.signIn'),
-    saving: isZh ? '保存中…' : 'Saving…',
-    saved: isZh ? '已保存。' : 'Saved.',
-    notSignedIn: isZh ? '登录后才能访问账号设置。' : 'Sign in to access account settings.',
-    connected: isZh ? '已连接' : 'Connected',
-    notConnected: isZh ? '未连接' : 'Not connected',
-    unavailable: isZh ? '不可用' : 'Unavailable',
-    reconnectGithub: isZh ? '重新连接' : 'Reconnect',
-    connectGithub: isZh ? '连接' : 'Connect',
-    signingOut: isZh ? '正在退出…' : 'Signing out…',
-    saveName: isZh ? '保存' : 'Save',
-    oauthStarting: isZh ? '正在跳转到 GitHub…' : 'Opening GitHub…',
+    saving: __('auth.saving'),
+    saved: __('auth.saved'),
+    notSignedIn: __('auth.notSignedIn'),
+    connected: __('auth.connected'),
+    notConnected: __('auth.notConnected'),
+    unavailable: __('auth.unavailable'),
+    reconnectGithub: __('auth.reconnect'),
+    connectGithub: __('auth.connect'),
+    signingOut: __('auth.signingOut'),
+    saveName: __('auth.save'),
+    oauthStarting: __('auth.oauthStarting'),
+    roleUser: 'user',
+    roleMaster: 'master',
+    neverSignedIn: __('auth.neverSignedIn'),
   })
 }}>
   window.__ACCOUNT_I18N = JSON.parse(__ACCOUNT_I18N);
 </script>
 
 <script>
-  import { getUser, updateDisplayName, linkGithubIdentity, signOut } from '../../../lib/auth.client';
+  import { getUser, getUserProfileRole, updateDisplayName, linkGithubIdentity, signOut } from '../../../lib/auth.client';
 
   const text = (window as any).__ACCOUNT_I18N || {};
   const PANEL_KEY = 'rinlit:account-panel';
@@ -193,6 +231,22 @@ const icons = {
 
   function getIdentity(provider: string) {
     return currentUser?.identities?.find((i: any) => i.provider === provider);
+  }
+
+  function formatDateTime(value: string | null | undefined) {
+    if (!value) return text.neverSignedIn || text.unavailable;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return text.unavailable;
+    return new Intl.DateTimeFormat(document.documentElement.lang || undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  }
+
+  function formatRole(role: string | null | undefined) {
+    if (role === 'master') return text.roleMaster;
+    if (role === 'user') return text.roleUser;
+    return text.unavailable;
   }
 
   function showLoginRequired() {
@@ -237,6 +291,10 @@ const icons = {
     const nameSubmitLabel = byId('name-submit-label');
     const nameSubmitSpinner = byId('name-submit-spinner');
     const nameSubmitBtn = byId('name-submit-btn');
+    const accountIdValue = byId('account-detail-id');
+    const accountRoleValue = byId('account-detail-role');
+    const accountCreatedAtValue = byId('account-detail-created-at');
+    const accountLastSignInValue = byId('account-detail-last-sign-in');
     const emailCardValue = byId('email-card-value');
     const githubProviderState = byId('github-provider-state');
     const githubLinkBtn = byId('github-link-btn');
@@ -258,6 +316,10 @@ const icons = {
       !nameSubmitLabel ||
       !nameSubmitSpinner ||
       !nameSubmitBtn ||
+      !accountIdValue ||
+      !accountRoleValue ||
+      !accountCreatedAtValue ||
+      !accountLastSignInValue ||
       !emailCardValue ||
       !githubProviderState ||
       !githubLinkBtn ||
@@ -288,9 +350,23 @@ const icons = {
       displayNameEl.textContent = displayName;
       emailEl.textContent = email;
       nameInput.value = displayName;
+      accountIdValue.textContent = user?.id || text.unavailable;
+      accountRoleValue.textContent = text.unavailable;
+      accountCreatedAtValue.textContent = formatDateTime(user?.created_at);
+      accountLastSignInValue.textContent = formatDateTime(user?.last_sign_in_at);
       emailCardValue.textContent = email;
       githubProviderState.textContent = githubIdentity ? text.connected : text.notConnected;
       githubLinkLabel.textContent = githubIdentity ? text.reconnectGithub : text.connectGithub;
+    }
+
+    async function renderProfileRole(userId: string) {
+      accountRoleValue.textContent = '...';
+      const { data, error } = await getUserProfileRole(userId);
+      if (error) {
+        accountRoleValue.textContent = text.unavailable;
+        return;
+      }
+      accountRoleValue.textContent = formatRole(data?.role);
     }
 
     async function loadAccount() {
@@ -300,6 +376,7 @@ const icons = {
         return;
       }
       renderUser(user);
+      renderProfileRole(user.id);
     }
 
     const onPanelClick = (event: Event) => {
@@ -472,27 +549,6 @@ const icons = {
     overflow-wrap: anywhere;
   }
 
-  .account-nav {
-    display: grid;
-    gap: 6px;
-  }
-
-  .account-nav__item {
-    all: unset;
-    cursor: pointer;
-    color: var(--text);
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1.25;
-    padding: 8px 0;
-    transition: color 160ms ease;
-  }
-
-  .account-nav__item:hover,
-  .account-nav__item.is-active {
-    color: var(--color-primary-600);
-  }
-
   .account-content {
     min-width: 0;
   }
@@ -502,11 +558,12 @@ const icons = {
   }
 
   .account-panel.is-active {
-    display: block;
+    display: grid;
+    gap: 16px;
   }
 
   .panel-title {
-    margin: 0 0 22px;
+    margin: 0 0 6px;
     color: var(--text-strong);
     font-size: 24px;
     line-height: 1.2;
@@ -597,6 +654,43 @@ const icons = {
   .form-message[data-type='success'] { color: #059669; }
   .form-message[data-type='error'] { color: #dc2626; }
 
+  .account-detail-list {
+    display: grid;
+    gap: 0;
+    margin: 22px 0 0;
+  }
+
+  .account-detail-item {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.34fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    padding: 13px 0;
+    border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  }
+
+  .account-detail-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .account-detail-item dt {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .account-detail-item dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--text-strong);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
   .form-submit,
   .form-submit :global(.btn) {
     width: auto;
@@ -681,6 +775,11 @@ const icons = {
 
     .form-actions {
       grid-template-columns: 1fr;
+    }
+
+    .account-detail-item {
+      grid-template-columns: 1fr;
+      gap: 4px;
     }
 
     .form-submit,

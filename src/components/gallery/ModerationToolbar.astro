@@ -1,0 +1,137 @@
+---
+interface FilterItem {
+  key: string;
+  label: string;
+}
+
+interface ViewItem {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+interface Props {
+  containerClass?: string;
+  filterGroupLabel: string;
+  layoutGroupLabel: string;
+  filterItems: FilterItem[];
+  viewItems: ViewItem[];
+  activeFilter: string;
+  activeView: string;
+  filterAttrName: string;
+  viewAttrName: string;
+}
+
+const {
+  containerClass = '',
+  filterGroupLabel,
+  layoutGroupLabel,
+  filterItems,
+  viewItems,
+  activeFilter,
+  activeView,
+  filterAttrName,
+  viewAttrName,
+} = Astro.props;
+---
+
+<div class={`moderation-toolbar ${containerClass}`.trim()}>
+  <div class="moderation-filter" role="group" aria-label={filterGroupLabel}>
+    {filterItems.map((item) => (
+      <button type="button" class:list={{ 'is-active': item.key === activeFilter }} {...{ [filterAttrName]: item.key }}>
+        {item.label}
+      </button>
+    ))}
+  </div>
+  <div class="moderation-layout" role="group" aria-label={layoutGroupLabel}>
+    {viewItems.map((item) => (
+      <button type="button" class:list={{ 'is-active': item.key === activeView }} aria-label={item.label} {...{ [viewAttrName]: item.key }} set:html={item.icon}></button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .moderation-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .submission-toolbar {
+    margin-top: 16px;
+  }
+
+  .moderation-filter,
+  .moderation-layout {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 4px;
+    background: color-mix(in srgb, var(--surface) 76%, var(--color-primary-100));
+  }
+
+  :root.dark .moderation-filter,
+  :root.dark .moderation-layout {
+    background: color-mix(in srgb, var(--surface) 88%, black);
+  }
+
+  .moderation-filter button,
+  .moderation-layout button {
+    min-height: 32px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  .moderation-filter button {
+    padding: 0 13px;
+  }
+
+  .moderation-layout button {
+    width: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+
+  .moderation-filter button.is-active,
+  .moderation-layout button.is-active {
+    color: var(--text-strong);
+    background: var(--surface);
+  }
+
+  .moderation-layout :global(svg) {
+    width: 17px;
+    height: 17px;
+    display: block;
+  }
+
+  @media (max-width: 640px) {
+    .moderation-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .moderation-filter,
+    .moderation-layout {
+      width: 100%;
+    }
+
+    .moderation-filter button {
+      flex: 1 1 0;
+    }
+
+    .moderation-layout {
+      justify-content: flex-end;
+    }
+  }
+</style>

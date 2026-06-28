@@ -16,9 +16,11 @@ const {
 import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
 import AuthModal from '../features/auth/AuthModal.astro';
+import { locales, defaultLocale } from '../i18n/index';
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
 
+const safeLang = locales.includes(lang as any) ? lang : defaultLocale;
 const currentPath = Astro.url.pathname;
 const pageTitle = title.includes('RinLit') ? title : `${title} — RinLit`;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).href;
@@ -26,7 +28,7 @@ const imageUrl = new URL(image, Astro.site ?? Astro.url.origin).href;
 ---
 
 <!doctype html>
-<html lang={lang}>
+<html lang={safeLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
@@ -71,11 +73,11 @@ const imageUrl = new URL(image, Astro.site ?? Astro.url.origin).href;
     <link rel="icon" href="/favicon/light.ico" />
   </head>
   <body class="min-h-screen bg-light text-dark font-sans">
-    <Header currentPath={currentPath} lang={lang} />
+    <Header currentPath={currentPath} lang={safeLang} />
     <main class="pb-28 md:pb-0">
       <slot />
     </main>
-    <Footer lang={lang} />
-    <AuthModal lang={lang} />
+    <Footer lang={safeLang} />
+    <AuthModal lang={safeLang} />
   </body>
 </html>

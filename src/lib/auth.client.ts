@@ -84,6 +84,15 @@ export async function getUser() {
     return { user, error };
 }
 
+export async function getUserProfileRole(userId: string) {
+    const supabase = getClient();
+    return await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+}
+
 export async function signOut() {
     const supabase = getClient();
     return await supabase.auth.signOut();

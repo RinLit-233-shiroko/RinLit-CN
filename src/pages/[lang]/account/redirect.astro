@@ -14,8 +14,8 @@ const isZh = lang === 'zh-cn';
 
 <BaseLayout
   lang={lang}
-  title={isZh ? '登录账号' : 'Sign in'}
-  description={isZh ? '登录后继续访问账号设置。' : 'Sign in to continue to account settings.'}
+  title={__('auth.signInRequiredTitle')}
+  description={__('auth.signInRequiredDescription')}
 >
   <section class="account-redirect-page">
     <main class="account-redirect-card">
@@ -24,8 +24,8 @@ const isZh = lang === 'zh-cn';
         <img class="account-logo__img account-logo__img--dark" src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png" alt="RinLit" />
         <span>{__('auth.account')}</span>
       </a>
-      <h1>{isZh ? '请先登录' : 'Sign in required'}</h1>
-      <p>{isZh ? '登录后将自动返回刚才的账号设置页面。' : 'After signing in, you will return to the account settings page.'}</p>
+      <h1>{__('auth.signInRequired')}</h1>
+      <p>{__('auth.signInRequiredDesc')}</p>
       <Button primary flat id="account-redirect-login">{__('auth.signIn')}</Button>
     </main>
   </section>
@@ -37,10 +37,12 @@ const isZh = lang === 'zh-cn';
   const loginBtn = document.getElementById('account-redirect-login') as HTMLElement;
 
   function getNextUrl() {
+    const lang = document.documentElement.lang;
+    const fallback = `/${lang}/account`;
     const params = new URLSearchParams(window.location.search);
-    const next = params.get('next') || `/${document.documentElement.lang}/account`;
-    if (!next.startsWith(`/${document.documentElement.lang}/account`)) {
-      return `/${document.documentElement.lang}/account`;
+    const next = params.get('next') || fallback;
+    if (!next.startsWith(`/${lang}/`) && next !== `/${lang}`) {
+      return fallback;
     }
     return next;
   }

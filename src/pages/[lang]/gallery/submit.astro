@@ -1,0 +1,889 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/Button.astro';
+import Modal from '../../../components/Modal.astro';
+import Input from '../../../components/Input.astro';
+import Textarea from '../../../components/Textarea.astro';
+import TagEditor from '../../../components/TagEditor.astro';
+import SettingsCard from '../../../components/SettingsCard.astro';
+import NavigationBar from '../../../components/NavigationBar.astro';
+import { getIcon } from '../../../utils/icons';
+import { t, locales } from '../../../i18n/index';
+
+export async function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const { lang = 'zh-cn' } = Astro.params;
+const __ = (key: string) => t(lang, key);
+const icons = {
+  image: getIcon('photo-up', 18),
+  tags: getIcon('tags', 18),
+  info: getIcon('info-circle', 18),
+  remove: getIcon('x', 18),
+  success: getIcon('circle-check', 48),
+};
+---
+
+<BaseLayout lang={lang} title={`${__('gallery.submitPage')} — RinLit`} description={__('gallery.submitDesc')}>
+  <section class="gallery-admin-page">
+    <div class="gallery-admin-topbar">
+      <a class="gallery-admin-brand" href={`/${lang}/gallery`} aria-label="Gallery">
+        <img class="gallery-admin-brand__img gallery-admin-brand__img--light" src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=False.png" alt="RinLit" />
+        <img class="gallery-admin-brand__img gallery-admin-brand__img--dark" src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png" alt="RinLit" />
+        <span>{__('gallery.submitPage')}</span>
+      </a>
+      <Button href={`/${lang}/gallery/manage`} flat>{__('gallery.manage')}</Button>
+    </div>
+
+    <main class="gallery-admin-main" id="gallery-submit-main" hidden>
+      <aside class="gallery-admin-sidebar" aria-label={__('gallery.submissionNotes')}>
+        <div class="gallery-admin-identity" id="gallery-submit-identity">
+          <strong id="gallery-submit-name">RinLit</strong>
+          <span id="gallery-submit-email">...</span>
+        </div>
+        <NavigationBar
+          className="gallery-admin-nav"
+          itemClassName="gallery-admin-nav__item"
+          items={[
+            { key: 'submit', label: __('gallery.newSubmission'), kind: 'link', href: `/${lang}/gallery/submit`, active: true },
+            { key: 'manage', label: __('gallery.manageSubmissions'), kind: 'link', href: `/${lang}/gallery/manage` },
+            { key: 'review', label: __('gallery.masterReview'), kind: 'link', href: `/${lang}/gallery/review`, hidden: true, attrs: { 'data-review-nav': 'true' } },
+          ]}
+        />
+      </aside>
+
+      <section class="gallery-admin-content">
+        <h1 class="panel-title">{__('gallery.newSubmission')}</h1>
+
+        <SettingsCard>
+          <div class="card-head">
+            <div class="card-icon" set:html={icons.image}></div>
+            <div class="card-copy">
+              <h2>{__('gallery.imageAndDetails')}</h2>
+              <p>{__('gallery.shareYourWork')}</p>
+            </div>
+          </div>
+
+          <form class="gallery-submit-form" id="gallery-submit-form">
+            <div class="upload-field">
+              <label class="upload-dropzone" for="gallery-image-input" id="gallery-dropzone">
+                <input id="gallery-image-input" name="image" type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif" required />
+                <span class="upload-dropzone__icon" set:html={icons.image}></span>
+                <strong id="gallery-file-name">{__('gallery.chooseImage')}</strong>
+                <small>{__('gallery.imageFormats')}</small>
+              </label>
+
+              <div class="upload-preview" id="gallery-image-preview" hidden>
+                <img id="gallery-preview-image" alt={__('gallery.selectedImagePreview')} />
+                <div class="upload-preview__body">
+                  <strong id="gallery-preview-name"></strong>
+                  <span id="gallery-preview-meta"></span>
+                </div>
+                <button class="upload-preview__clear" id="gallery-clear-image" type="button" aria-label={__('gallery.clearSelectedImage')}>×</button>
+              </div>
+              <p class="upload-result-url" id="gallery-preview-url" hidden></p>
+            </div>
+
+            <Input id="gallery-title-input" name="title" label={__('gallery.titleField')} placeholder={__('gallery.titlePlaceholder')} flat required />
+
+            <Textarea id="gallery-description-input" name="description" label={__('gallery.description')} placeholder={__('gallery.descriptionPlaceholder')} rows={5} flat />
+
+            <TagEditor
+              id="gallery-tag-field"
+              hiddenInputId="gallery-tags-input"
+              label={__('gallery.tagsField')}
+              placeholder={__('gallery.tagsPlaceholder')}
+              tagsLeftText={__('gallery.tagsLeft').replace('{count}', '10')}
+              suggestionsLabel={__('gallery.tagSuggestions')}
+              removeIcon={icons.remove}
+              duplicateMessage={__('gallery.submit.tagDuplicate')}
+              tooLongMessage={__('gallery.submit.tagTooLong')}
+              limitMessage={__('gallery.submit.tagLimit')}
+              flat
+            />
+
+            <div class="form-actions">
+              <p class="form-message" id="gallery-submit-message" role="status"></p>
+              <Button primary flat class="form-submit" id="gallery-submit-button">
+                <span id="gallery-submit-label">{__('gallery.submitForReview')}</span>
+                <span class="btn-spinner" id="gallery-submit-spinner" hidden>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                </span>
+              </Button>
+            </div>
+          </form>
+        </SettingsCard>
+
+        <SettingsCard>
+          <div class="card-head">
+            <div class="card-icon" set:html={icons.tags}></div>
+            <div class="card-copy">
+              <h2>{__('gallery.tagRules')}</h2>
+              <p>{__('gallery.tagRulesDesc')}</p>
+            </div>
+          </div>
+        </SettingsCard>
+      </section>
+    </main>
+
+    <section class="gallery-admin-state" id="gallery-submit-gate">
+      <span>{__('gallery.checkingAccess')}</span>
+    </section>
+  </section>
+
+  <Modal id="gallery-submit-success-modal" title="" class="gallery-success-modal" ariaLabel={__('gallery.submissionSuccess')}>
+    <div class="gallery-success-dialog">
+      <div class="gallery-success-dialog__icon" set:html={icons.success}></div>
+      <h3 class="gallery-success-dialog__title" id="gallery-success-title">{__('gallery.submittedForReview')}</h3>
+      <p class="gallery-success-dialog__desc" id="gallery-success-desc">{__('gallery.submittedDesc')}</p>
+      <div class="gallery-success-dialog__actions">
+        <Button primary flat class="gallery-success-dialog__close" id="gallery-success-close">{__('gallery.gotIt')}</Button>
+        <Button flat href={`/${lang}/gallery/manage`} class="gallery-success-dialog__manage">{__('gallery.viewSubmissions')}</Button>
+      </div>
+    </div>
+  </Modal>
+</BaseLayout>
+
+<script is:inline define:vars={{
+  __GALLERY_SUBMIT_I18N: JSON.stringify({
+    notSignedIn: __('gallery.submit.notSignedIn'),
+    userOnly: __('gallery.submit.userOnly'),
+    defaultError: __('gallery.submit.error'),
+    submitted: __('gallery.submit.submitted'),
+    published: __('gallery.submit.published'),
+    submittedTitle: __('gallery.submit.submittedTitle'),
+    submittedDesc: __('gallery.submit.submittedDesc'),
+    publishedTitle: __('gallery.submit.publishedTitle'),
+    publishedDesc: __('gallery.submit.publishedDesc'),
+    submitting: '',
+    titleRequired: __('gallery.submit.titleRequired'),
+    tagsRequired: __('gallery.submit.tagsRequired'),
+    submit: __('gallery.submitForReview'),
+    publish: __('gallery.publishDirectly'),
+    fileRequired: __('gallery.submit.fileRequired'),
+    chooseImage: __('gallery.chooseImage'),
+    selectedImage: __('gallery.submit.selectedImage'),
+    storageUrl: __('gallery.submit.storageUrl'),
+    tagDuplicate: __('gallery.submit.tagDuplicate'),
+    tagTooLong: __('gallery.submit.tagTooLong'),
+    tagsLeft: __('gallery.tagsLeft'),
+    tagLimit: __('gallery.submit.tagLimit'),
+    masterReview: __('gallery.masterReview'),
+  })
+}}>
+  window.__GALLERY_SUBMIT_I18N = JSON.parse(__GALLERY_SUBMIT_I18N);
+</script>
+
+<script>
+  import { getUser, getUserProfileRole, onAuthStateChange } from '../../../lib/auth.client';
+  import { validateGalleryFile, submitGalleryItem, fetchGalleryTagSuggestions } from '../../../lib/gallery.client';
+
+  const text = (window as any).__GALLERY_SUBMIT_I18N || {};
+  let currentUser: any = null;
+  let currentRole: 'user' | 'master' | null = null;
+  let previewObjectUrl = '';
+  let currentTags: string[] = [];
+  let cleanupGallerySubmit: (() => void) | null = null;
+
+  function showLoginRequired() {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.replace(`/${document.documentElement.lang}/account/redirect?next=${next}`);
+  }
+
+  function getDisplayName(user: any) {
+    return user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'RinLit';
+  }
+
+  function setMessage(el: HTMLElement, msg: string, type = 'neutral') {
+    el.textContent = msg;
+    el.setAttribute('data-type', type);
+  }
+
+  function formatFileSize(size: number) {
+    if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+    return `${(size / 1024 / 1024).toFixed(2)} MB`;
+  }
+
+  function revokePreviewUrl() {
+    if (!previewObjectUrl) return;
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = '';
+  }
+
+  function initGallerySubmitPage() {
+    cleanupGallerySubmit?.();
+
+    const main = document.getElementById('gallery-submit-main');
+    const gate = document.getElementById('gallery-submit-gate');
+    const name = document.getElementById('gallery-submit-name');
+    const email = document.getElementById('gallery-submit-email');
+    const form = document.getElementById('gallery-submit-form') as HTMLFormElement | null;
+    const fileInput = document.getElementById('gallery-image-input') as HTMLInputElement | null;
+    const fileName = document.getElementById('gallery-file-name');
+    const previewWrap = document.getElementById('gallery-image-preview');
+    const previewImage = document.getElementById('gallery-preview-image') as HTMLImageElement | null;
+    const previewName = document.getElementById('gallery-preview-name');
+    const previewMeta = document.getElementById('gallery-preview-meta');
+    const previewUrl = document.getElementById('gallery-preview-url');
+    const dropzone = document.getElementById('gallery-dropzone');
+    const clearImageButton = document.getElementById('gallery-clear-image');
+    const titleInput = document.getElementById('gallery-title-input') as HTMLInputElement | null;
+    const descriptionInput = document.getElementById('gallery-description-input') as HTMLTextAreaElement | null;
+    const tagsInput = document.getElementById('gallery-tags-input') as HTMLInputElement | null;
+    const tagField = document.getElementById('gallery-tag-field') as HTMLElement | null;
+    const tagEntry = tagField?.querySelector('[data-tag-editor-input]') as HTMLInputElement | null;
+    const message = document.getElementById('gallery-submit-message');
+    const submitButton = document.getElementById('gallery-submit-button');
+    const submitLabel = document.getElementById('gallery-submit-label');
+    const submitSpinner = document.getElementById('gallery-submit-spinner');
+    const successTitle = document.getElementById('gallery-success-title');
+    const successDesc = document.getElementById('gallery-success-desc');
+    const successClose = document.getElementById('gallery-success-close');
+
+    if (!main || !gate || !name || !email || !form || !fileInput || !fileName || !previewWrap || !previewImage || !previewName || !previewMeta || !previewUrl || !dropzone || !clearImageButton || !titleInput || !descriptionInput || !tagsInput || !tagField || !tagEntry || !message || !submitButton || !submitLabel || !submitSpinner || !successTitle || !successDesc || !successClose) return;
+
+    async function loadTagSuggestions() {
+      const { data, error } = await fetchGalleryTagSuggestions();
+      if (error) return;
+      const suggestions = ((data || []) as Array<{ name: string }>).map((tag) => tag.name).filter(Boolean);
+      tagField.dispatchEvent(new CustomEvent('tag-editor:set-suggestions', {
+        detail: { suggestions },
+      }));
+    }
+
+    const onTagChange = (event: Event) => {
+      currentTags = ((event as CustomEvent).detail?.tags || []) as string[];
+      setMessage(message, '', 'neutral');
+    };
+
+    const onTagError = (event: Event) => {
+      const detail = (event as CustomEvent).detail || {};
+      setMessage(message, detail.message || text.defaultError, 'error');
+    };
+
+    async function loadAccess() {
+      const { user, error } = await getUser();
+      if (error || !user) {
+        showLoginRequired();
+        return;
+      }
+
+      const { data, error: roleError } = await getUserProfileRole(user.id);
+      const role = data?.role;
+
+      const reviewNav = document.querySelector('[data-review-nav]') as HTMLElement | null;
+      if (reviewNav) reviewNav.hidden = role !== 'master';
+
+      if (roleError || (role !== 'user' && role !== 'master')) {
+        gate.textContent = text.userOnly;
+        return;
+      }
+
+      currentUser = user;
+      currentRole = role;
+      name.textContent = getDisplayName(user);
+      email.textContent = user.email || '';
+      submitLabel.textContent = role === 'master' ? text.publish : text.submit;
+      gate.hidden = true;
+      main.hidden = false;
+    }
+
+    function clearSelectedImage() {
+      fileInput.value = '';
+      revokePreviewUrl();
+      previewImage.removeAttribute('src');
+      previewName.textContent = '';
+      previewMeta.textContent = '';
+      previewUrl.textContent = '';
+      previewUrl.hidden = true;
+      previewWrap.hidden = true;
+      dropzone.hidden = false;
+      fileName.textContent = text.chooseImage || text.fileRequired;
+    }
+
+    const onFileChange = () => {
+      const file = fileInput.files?.[0];
+      previewUrl.textContent = '';
+      previewUrl.hidden = true;
+      if (!file) {
+        clearSelectedImage();
+        return;
+      }
+
+      const error = validateGalleryFile(file);
+      if (error) {
+        clearSelectedImage();
+        setMessage(message, error, 'error');
+        return;
+      }
+
+      revokePreviewUrl();
+      previewObjectUrl = URL.createObjectURL(file);
+      previewImage.src = previewObjectUrl;
+      previewName.textContent = file.name;
+      previewMeta.textContent = `${formatFileSize(file.size)} · ${file.type || 'image'}`;
+      previewWrap.hidden = false;
+      dropzone.hidden = true;
+      fileName.textContent = text.selectedImage;
+      setMessage(message, '', 'neutral');
+    };
+
+    const onClearImage = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      clearSelectedImage();
+      setMessage(message, '', 'neutral');
+    };
+
+    function openSuccessModal(role: 'user' | 'master') {
+      successTitle.textContent = role === 'master' ? text.publishedTitle : text.submittedTitle;
+      successDesc.textContent = role === 'master' ? text.publishedDesc : text.submittedDesc;
+      (window as any).__modals?.['gallery-submit-success-modal']?.open();
+    }
+
+    const onSubmit = async (event: Event) => {
+      event.preventDefault();
+      if (!currentUser || !currentRole) return;
+
+      const file = fileInput.files?.[0];
+      if (!file) {
+        setMessage(message, text.fileRequired, 'error');
+        return;
+      }
+
+      const fileError = validateGalleryFile(file);
+      if (fileError) {
+        setMessage(message, fileError, 'error');
+        return;
+      }
+
+      const title = (titleInput.value || '').trim();
+      if (!title) {
+        setMessage(message, text.titleRequired, 'error');
+        titleInput.focus();
+        return;
+      }
+
+      if (!currentTags.length) {
+        setMessage(message, text.tagsRequired, 'error');
+        tagEntry.focus();
+        return;
+      }
+
+      submitLabel.textContent = '';
+      submitLabel.hidden = true;
+      submitSpinner.hidden = false;
+      submitButton.setAttribute('aria-disabled', 'true');
+      setMessage(message, '', 'neutral');
+
+      try {
+        const result = await submitGalleryItem({
+          userId: currentUser.id,
+          role: currentRole,
+          file,
+          title: titleInput.value,
+          description: descriptionInput.value,
+          tags: currentTags,
+        });
+        form.reset();
+        currentTags = [];
+        tagField.dispatchEvent(new CustomEvent('tag-editor:reset'));
+        clearSelectedImage();
+        previewUrl.textContent = `${text.storageUrl}${result.imageUrl}`;
+        previewUrl.hidden = false;
+        setMessage(message, '', 'neutral');
+        openSuccessModal(currentRole);
+      } catch (error: any) {
+        setMessage(message, error?.message || text.defaultError, 'error');
+      }
+
+      submitLabel.textContent = currentRole === 'master' ? text.publish : text.submit;
+      submitLabel.hidden = false;
+      submitSpinner.hidden = true;
+      submitButton.removeAttribute('aria-disabled');
+    };
+
+    const onSuccessClose = () => {
+      (window as any).__modals?.['gallery-submit-success-modal']?.close();
+    };
+
+    fileInput.addEventListener('change', onFileChange);
+    clearImageButton.addEventListener('click', onClearImage);
+    successClose.addEventListener('click', onSuccessClose);
+    tagField.addEventListener('tag-editor:change', onTagChange);
+    tagField.addEventListener('tag-editor:error', onTagError);
+    form.addEventListener('submit', onSubmit);
+
+    const unsubscribeAuth = onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') showLoginRequired();
+    });
+
+    loadTagSuggestions();
+    loadAccess();
+
+    cleanupGallerySubmit = () => {
+      fileInput.removeEventListener('change', onFileChange);
+      clearImageButton.removeEventListener('click', onClearImage);
+      successClose.removeEventListener('click', onSuccessClose);
+      tagField.removeEventListener('tag-editor:change', onTagChange);
+      tagField.removeEventListener('tag-editor:error', onTagError);
+      form.removeEventListener('submit', onSubmit);
+      unsubscribeAuth();
+      revokePreviewUrl();
+    };
+  }
+
+  document.addEventListener('astro:before-swap', () => {
+    cleanupGallerySubmit?.();
+    cleanupGallerySubmit = null;
+  });
+  document.addEventListener('astro:page-load', initGallerySubmitPage);
+  initGallerySubmitPage();
+</script>
+
+<style>
+  .gallery-admin-page {
+    min-height: 100vh;
+    padding: 104px clamp(20px, 4vw, 48px) 80px;
+    background: var(--bg);
+  }
+
+  .gallery-admin-topbar {
+    max-width: 1400px;
+    margin: 0 auto 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    gap: 18px;
+  }
+
+  .gallery-admin-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    color: var(--text-strong);
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .gallery-admin-brand__img {
+    width: auto;
+    height: 42px;
+    display: block;
+  }
+
+  .gallery-admin-brand__img--light { display: var(--logo-light-display); }
+  .gallery-admin-brand__img--dark { display: var(--logo-dark-display); }
+
+  .gallery-admin-topbar :global(.pill),
+  .gallery-admin-topbar :global(.btn) {
+    width: auto;
+  }
+
+  .gallery-admin-topbar :global(.btn) {
+    height: 36px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .gallery-admin-main {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 800px);
+    justify-content: center;
+    gap: clamp(48px, 7vw, 80px);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .gallery-admin-identity {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 34px;
+  }
+
+  .gallery-admin-identity strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-strong);
+  }
+
+  .gallery-admin-identity span {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .gallery-admin-content {
+    min-width: 0;
+    display: grid;
+    gap: 16px;
+  }
+
+  .panel-title {
+    margin: 0 0 6px;
+    color: var(--text-strong);
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    font-weight: 800;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .card-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .card-icon,
+  .upload-dropzone__icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--color-primary-600);
+    background: color-mix(in srgb, var(--surface) 88%, var(--color-primary-500));
+  }
+
+  :root.dark .card-icon,
+  :root.dark .upload-dropzone__icon {
+    color: var(--color-primary-300);
+    background: color-mix(in srgb, var(--surface) 92%, black);
+  }
+
+  :global(.card-icon svg),
+  :global(.upload-dropzone__icon svg) {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+
+  .card-head h2 {
+    display: block;
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: var(--text-strong);
+  }
+
+  .card-head p {
+    display: block;
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+
+  .gallery-submit-form {
+    margin-top: 20px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .upload-field {
+    display: grid;
+    gap: 10px;
+  }
+
+  .upload-dropzone {
+    min-height: 164px;
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    padding: 24px;
+    border: 1px dashed color-mix(in srgb, var(--border) 82%, var(--color-primary-500));
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    color: var(--text-muted);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+
+  .upload-dropzone[hidden] {
+    display: none !important;
+  }
+
+  .upload-dropzone:hover {
+    border-color: color-mix(in srgb, var(--color-primary-500) 76%, var(--border));
+    background: color-mix(in srgb, var(--surface) 60%, var(--color-primary-100));
+  }
+
+  .upload-dropzone input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .upload-dropzone strong {
+    color: var(--text-strong);
+    font-size: 15px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+
+  .upload-dropzone small {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .upload-preview {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--surface) 84%, transparent);
+    padding: 10px;
+  }
+
+  .upload-preview[hidden] {
+    display: none;
+  }
+
+  .upload-preview img {
+    width: 96px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface) 80%, black);
+  }
+
+  .upload-preview__body {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .upload-preview__body strong,
+  .upload-preview__body span,
+  .upload-result-url {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .upload-preview__body strong {
+    color: var(--text-strong);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .upload-preview__body span,
+  .upload-result-url {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .upload-preview__clear {
+    width: 34px;
+    height: 34px;
+    border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    color: var(--text-strong);
+    font: inherit;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .upload-result-url {
+    margin: 0;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .form-message {
+    min-height: 18px;
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .form-message[data-type='success'] { color: #059669; }
+  .form-message[data-type='error'] { color: #dc2626; }
+
+  :global(.gallery-success-modal) {
+    width: 420px;
+  }
+
+  .gallery-success-dialog {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    padding: 10px 4px 4px;
+    text-align: center;
+  }
+
+  .gallery-success-dialog__icon {
+    width: 74px;
+    height: 74px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--color-primary-600);
+    background:
+      radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--color-primary-200) 70%, white), transparent 58%),
+      color-mix(in srgb, var(--surface) 76%, var(--color-primary-500));
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--color-primary-600) 20%, transparent);
+  }
+
+  :root.dark .gallery-success-dialog__icon {
+    color: var(--color-primary-300);
+    background:
+      radial-gradient(circle at 35% 28%, color-mix(in srgb, var(--color-primary-500) 36%, transparent), transparent 58%),
+      color-mix(in srgb, var(--bg-elevated) 78%, var(--color-primary-600));
+    box-shadow: 0 16px 42px color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+  }
+
+  .gallery-success-dialog__icon :global(svg) {
+    width: 46px;
+    height: 46px;
+    display: block;
+    stroke-width: 1.7;
+  }
+
+  .gallery-success-dialog__title {
+    margin: 4px 0 0;
+    color: var(--text-strong);
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    font-weight: 900;
+  }
+
+  .gallery-success-dialog__desc {
+    max-width: 320px;
+    margin: -4px 0 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.65;
+    font-weight: 650;
+    text-wrap: pretty;
+  }
+
+  .gallery-success-dialog__actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .gallery-success-dialog__actions :global(.pill),
+  .gallery-success-dialog__actions :global(.btn) {
+    width: 100%;
+  }
+
+  .gallery-success-dialog__actions :global(.btn) {
+    height: 38px;
+    font-size: 14px;
+    padding: 0 16px;
+  }
+
+  .form-submit,
+  .form-submit :global(.btn) {
+    width: auto;
+  }
+
+  .form-submit :global(.btn) {
+    min-width: 112px;
+    height: 38px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .btn-spinner svg {
+    animation: btn-spin 0.8s linear infinite;
+    display: block;
+  }
+
+  @keyframes btn-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .gallery-admin-state {
+    max-width: 800px;
+    margin: 0 auto;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    padding: 26px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  @media (max-width: 860px) {
+    .gallery-admin-main {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .gallery-admin-identity {
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .gallery-admin-page {
+      padding-inline: 14px;
+    }
+
+    .gallery-admin-topbar {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .form-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .upload-preview {
+      grid-template-columns: 82px minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .upload-preview img {
+      width: 82px;
+      height: 64px;
+    }
+
+    .gallery-success-dialog__actions {
+      grid-template-columns: 1fr;
+    }
+
+    .form-submit,
+    .form-submit :global(.btn) {
+      width: 100%;
+    }
+  }
+</style>

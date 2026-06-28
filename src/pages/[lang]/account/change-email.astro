@@ -15,12 +15,12 @@ const isZh = lang === 'zh-cn';
 
 <BaseLayout
   lang={lang}
-  title={isZh ? '更换邮箱' : 'Change Email'}
-  description={isZh ? '发送邮箱确认链接以更换账号邮箱。' : 'Send a confirmation link to change your account email.'}
+  title={__('auth.changeEmail')}
+  description={__('auth.changeEmailDesc')}
 >
   <section class="account-action-page">
     <div class="account-action-header">
-      <a class="account-logo" href={`/${lang}/account`} aria-label={isZh ? '返回账号' : 'Back to account'}>
+      <a class="account-logo" href={`/${lang}/account`} aria-label={__('auth.account')}>
         <img class="account-logo__img account-logo__img--light" src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=False.png" alt="RinLit" />
         <img class="account-logo__img account-logo__img--dark" src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png" alt="RinLit" />
         <span>{__('auth.account')}</span>
@@ -47,7 +47,7 @@ const isZh = lang === 'zh-cn';
         />
         <p class="account-action-message" id="change-email-message" role="status"></p>
         <Button primary flat class="account-action-submit" id="email-submit-btn">
-          <span id="email-submit-label">{isZh ? '发送确认邮件' : 'Send Confirmation'}</span>
+          <span id="email-submit-label">{__('auth.sendConfirmation')}</span>
           <span class="btn-spinner" id="email-submit-spinner" hidden>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -64,10 +64,10 @@ const isZh = lang === 'zh-cn';
     required: __('auth.error.required'),
     emailInvalid: __('auth.emailInvalid'),
     defaultError: __('auth.error.default'),
-    sending: isZh ? '发送中...' : 'Sending...',
-    sent: isZh ? '确认邮件已发送，请在新邮箱中完成确认。' : 'Confirmation email sent. Please confirm it from your new inbox.',
-    submit: isZh ? '发送确认邮件' : 'Send Confirmation',
-    currentEmail: isZh ? '当前邮箱：' : 'Current email: ',
+    sending: __('auth.sending'),
+    sent: __('auth.confirmationSent'),
+    submit: __('auth.sendConfirmation'),
+    currentEmail: __('auth.currentEmailLabel'),
   })
 }}>
   window.__CHANGE_EMAIL_I18N = JSON.parse(__CHANGE_EMAIL_I18N);

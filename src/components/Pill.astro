@@ -158,7 +158,7 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     width: 78px;
     height: 78px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.75);
+    background: var(--glow);
     filter: blur(32px);
     -webkit-filter: blur(32px);
     pointer-events: none;
@@ -208,8 +208,9 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     });
 
     function enter(pill, glow, rect, e) {
+      var pressScale = Number(getComputedStyle(pill).getPropertyValue('--pill-press-scale')) || 1.08;
       pill.classList.add('is-pressed');
-      pill.style.transform = 'scale(1.08)';
+      pill.style.transform = 'scale(' + pressScale + ')';
       glow.classList.add('is-visible');
       glow.style.left = (e.clientX - rect.left) + 'px';
       glow.style.top  = (e.clientY - rect.top) + 'px';
@@ -220,7 +221,8 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
         var cur = getComputedStyle(pill).transform;
         pill.classList.remove('is-pressed');
         pill.classList.add('pill--dragging');
-        pill.style.transform = cur !== 'none' ? cur : 'scale(1.08)';
+        var pressScale = Number(getComputedStyle(pill).getPropertyValue('--pill-press-scale')) || 1.08;
+        pill.style.transform = cur !== 'none' ? cur : 'scale(' + pressScale + ')';
         requestAnimationFrame(function () { computeDrag(pill, glow, sx, sy, e); });
         return;
       }
@@ -235,8 +237,9 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
       var tx = Math.sign(dx) * maxDisp * (1 - 1 / (1 + Math.abs(dx) / 80));
       var ty = Math.sign(dy) * maxDisp * (1 - 1 / (1 + Math.abs(dy) / 80));
 
-      var scaleX = 1 + 0.08 / (1 + Math.abs(dy) / 120);
-      var scaleY = 1 + 0.08 / (1 + Math.abs(dx) / 120);
+      var dragScale = Number(getComputedStyle(pill).getPropertyValue('--pill-drag-scale')) || 0.08;
+      var scaleX = 1 + dragScale / (1 + Math.abs(dy) / 120);
+      var scaleY = 1 + dragScale / (1 + Math.abs(dx) / 120);
 
       pill.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + scaleX + ', ' + scaleY + ')';
 

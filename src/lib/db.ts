@@ -3,12 +3,11 @@ import type { GalleryItem, Writing, GalleryItemStatus } from "./database.types";
 
 // ============ Gallery Items ============
 
-export async function getGalleryItems(language: string, status: GalleryItemStatus = 'published') {
+export async function getGalleryItems(status: GalleryItemStatus = 'PUBLISHED') {
     const supabase = createServerClient();
     return await supabase
         .from('gallery_items')
         .select('*')
-        .eq('language', language)
         .eq('status', status)
         .order('created_at', { ascending: false });
 }
@@ -33,7 +32,7 @@ export async function getGalleryItemsByUserId(userId: string) {
 
 // ============ Writings ============
 
-export async function getWritings(language: string, status: GalleryItemStatus = 'published') {
+export async function getWritings(language: string, status: GalleryItemStatus = 'PUBLISHED') {
     const supabase = createServerClient();
     return await supabase
         .from('writings')

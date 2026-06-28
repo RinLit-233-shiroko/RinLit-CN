@@ -78,15 +78,16 @@
 
     /* ---------- 语义化 Token ---------- */
     --bg: #ffffff;
-    --bg-elevated: #fbfaff;
+    --bg-elevated: rgba(251, 250, 255, 0.9);
     --bg-muted: #f1f0f5;
-    --bg-pill: rgba(251, 250, 255, 0.6);
+    --bg-pill: rgba(251, 250, 255, 1);
     --text: #2b2a33;
     --text-strong: #1d1c22;
     --text-muted: #6b687d;
     --border: rgba(29, 28, 34, 0.08);
     --border-strong: rgba(29, 28, 34, 0.14);
     --shadow: rgba(75, 75, 75, 0.06);
+    --glow: rgba(255, 255, 255, 1);
     --border-gradient: linear-gradient(
       135deg,
       rgba(255, 255, 255, 1) 0%,
@@ -148,9 +149,10 @@
 
     /* 语义 Token */
     --bg: #101216;
-    --bg-elevated: rgba(209, 209, 232, 0.1);
+    --bg-elevated: rgba(64, 65, 70, 0.5);
     --bg-muted: #25213e;
     --bg-pill: rgba(31, 24, 98, 0.18);
+    --glow: rgba(255, 255, 255, 0.58);
     --text: #e7e6f0;
     --text-strong: #ffffff;
     --text-muted: #a39fbf;

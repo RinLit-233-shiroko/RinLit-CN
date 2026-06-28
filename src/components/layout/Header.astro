@@ -161,7 +161,7 @@ const isActive = (href: string) => {
   }
 
   @media (min-width: 769px) {
-    :global(.nav-pill--logo-group:has(.back-btn--desktop.is-visible)) {
+    :global(.nav-pill--logo-group.nav-pill--has-back) {
       width: fit-content;
       padding: 6px 6px;
     }
@@ -169,16 +169,21 @@ const isActive = (href: string) => {
 
   .nav-pill__logo-link {
     display: flex;
+    flex: 0 0 40px;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
     text-decoration: none;
     overflow: hidden;
   }
 
   .nav-pill__logo-img {
+    flex: 0 0 auto;
     width: 40px;
     height: 40px;
     display: block;
+    object-fit: contain;
   }
 
   .nav-pill__logo--light { display: var(--logo-light-display); }
@@ -272,8 +277,8 @@ const isActive = (href: string) => {
     }
   }
 
-  :global(.back-btn--desktop):not(.is-visible),
-  :global(.back-btn--mobile):not(.is-visible) {
+  :global(.back-btn--desktop:not(.is-visible)),
+  :global(.back-btn--mobile:not(.is-visible)) {
     display: none !important;
   }
 
@@ -282,10 +287,10 @@ const isActive = (href: string) => {
   }
 
   @media (min-width: 769px) {
-    :global(.back-btn--desktop).is-visible {
+    :global(.back-btn--desktop.is-visible) {
       display: flex;
     }
-    :global(.back-btn--desktop).is-visible + .nav-pill__separator {
+    :global(.back-btn--desktop.is-visible) + .nav-pill__separator {
       display: block;
     }
     :global(.back-btn--mobile) {
@@ -294,10 +299,11 @@ const isActive = (href: string) => {
   }
 
   @media (max-width: 768px) {
-    :global(.back-btn--mobile).is-visible {
+    :global(.back-btn--mobile.is-visible) {
       display: flex;
     }
     :global(.back-btn--desktop),
+    :global(.back-btn--desktop.is-visible),
     .nav-pill__separator {
       display: none !important;
     }
@@ -564,6 +570,7 @@ const isActive = (href: string) => {
   document.addEventListener('astro:page-load', () => {
     const desktopBtn = document.getElementById('back-btn-desktop');
     const mobileBtn = document.getElementById('back-btn-mobile');
+    const logoGroup = desktopBtn?.closest('.nav-pill--logo-group');
 
     if (!desktopBtn || !mobileBtn) return;
 
@@ -595,6 +602,7 @@ const isActive = (href: string) => {
 
     desktopBtn.classList.toggle('is-visible', shouldShow);
     mobileBtn.classList.toggle('is-visible', shouldShow);
+    logoGroup?.classList.toggle('nav-pill--has-back', shouldShow);
   });
 
   document.addEventListener('click', (e) => {

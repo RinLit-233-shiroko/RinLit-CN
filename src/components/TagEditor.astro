@@ -1,0 +1,532 @@
+---
+import Pill from './Pill.astro';
+import AutofillMenu from './AutofillMenu.astro';
+
+interface TagSuggestion {
+  id?: string;
+  name: string;
+}
+
+interface Props {
+  id?: string;
+  name?: string;
+  label?: string;
+  placeholder?: string;
+  tagsLeftText?: string;
+  suggestionsLabel?: string;
+  flat?: boolean;
+  class?: string;
+  editorId?: string;
+  chipsId?: string;
+  inputId?: string;
+  countId?: string;
+  suggestionsId?: string;
+  hiddenInputId?: string;
+  maxTags?: number;
+  maxTagLength?: number;
+  suggestions?: Array<string | TagSuggestion>;
+  removeIcon?: string;
+  duplicateMessage?: string;
+  tooLongMessage?: string;
+  limitMessage?: string;
+}
+
+const {
+  id = 'tag-editor-field',
+  name = 'tags',
+  label = '',
+  placeholder = '',
+  tagsLeftText = '',
+  suggestionsLabel = '',
+  flat = false,
+  class: className = '',
+  editorId = 'tag-editor-control',
+  chipsId = 'tag-editor-chips',
+  inputId = 'tag-editor-entry',
+  countId = 'tag-editor-count',
+  suggestionsId = 'tag-editor-suggestions',
+  hiddenInputId = 'tag-editor-tags-input',
+  maxTags = 10,
+  maxTagLength = 32,
+  suggestions = [],
+  removeIcon = '×',
+  duplicateMessage = '',
+  tooLongMessage = '',
+  limitMessage = '',
+} = Astro.props;
+
+const initialSuggestions = suggestions.map((suggestion) => typeof suggestion === 'string' ? suggestion : suggestion.name).filter(Boolean);
+---
+
+<div class={`tag-field ${className}`} id={id} data-tag-editor-field>
+  {label && (
+    <label class="tag-field__label" for={inputId}>{label}</label>
+  )}
+  <Pill flat={flat} class="tag-editor-pill">
+    <div class="tag-editor" id={editorId} data-tag-editor-control>
+      <div class="tag-editor__chips" id={chipsId} data-tag-editor-chips></div>
+      <input id={inputId} type="text" placeholder={placeholder} autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls={suggestionsId} aria-expanded="false" data-tag-editor-input />
+      <span class="tag-editor__count" id={countId} data-tag-editor-count>{tagsLeftText}</span>
+    </div>
+  </Pill>
+  <AutofillMenu id={suggestionsId} ariaLabel={suggestionsLabel} />
+  <input id={hiddenInputId} name={name} type="hidden" data-tag-editor-hidden />
+</div>
+
+<script is:inline define:vars={{
+  config: {
+    fieldId: id,
+    maxTags,
+    maxTagLength,
+    tagsLeftText,
+    removeIcon,
+    duplicateMessage,
+    tooLongMessage,
+    limitMessage,
+    initialSuggestions,
+  }
+}}>
+  (function () {
+    var root = document.getElementById(config.fieldId);
+    if (!root || root.dataset.tagEditorBound === 'true') return;
+    root.dataset.tagEditorBound = 'true';
+
+    var editor = root.querySelector('[data-tag-editor-control]');
+    var chips = root.querySelector('[data-tag-editor-chips]');
+    var input = root.querySelector('[data-tag-editor-input]');
+    var count = root.querySelector('[data-tag-editor-count]');
+    var hidden = root.querySelector('[data-tag-editor-hidden]');
+    if (!editor || !chips || !input || !count || !hidden) return;
+    var menu = document.getElementById(input.getAttribute('aria-controls'));
+    if (!menu) return;
+
+    var originalMenuParent = menu.parentElement;
+    var originalMenuNext = menu.nextElementSibling;
+    var tags = [];
+    var suggestions = normalizeSuggestions(config.initialSuggestions);
+    var activeSuggestionIndex = -1;
+
+    function normalizeTag(value) {
+      return String(value || '').trim().replace(/\s+/g, ' ');
+    }
+
+    function splitTagInput(value) {
+      return String(value || '').split(/[\s，,]+/).map(normalizeTag).filter(Boolean);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, function (char) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char] || char;
+      });
+    }
+
+    function normalizeSuggestions(values) {
+      var seen = new Set();
+      return (values || []).map(normalizeTag).filter(function (value) {
+        var key = value.toLocaleLowerCase();
+        if (!value || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function emitChange() {
+      root.dispatchEvent(new CustomEvent('tag-editor:change', {
+        bubbles: true,
+        detail: { tags: tags.slice(), value: hidden.value },
+      }));
+    }
+
+    function emitError(message, type) {
+      if (!message) return;
+      root.dispatchEvent(new CustomEvent('tag-editor:error', {
+        bubbles: true,
+        detail: { message: message, type: type },
+      }));
+    }
+
+    function renderTags() {
+      hidden.value = tags.join(',');
+      chips.innerHTML = tags.map(function (tag) {
+        return '<button class="tag-chip" type="button" data-tag="' + escapeHtml(tag) + '"><span>' + escapeHtml(tag) + '</span><span class="tag-chip__remove" aria-hidden="true">' + config.removeIcon + '</span></button>';
+      }).join('');
+      count.textContent = String(config.tagsLeftText || '').replace('{count}', String(Math.max(0, config.maxTags - tags.length)));
+      emitChange();
+    }
+
+    function addTags(values) {
+      var changed = false;
+      for (var i = 0; i < values.length; i++) {
+        var tag = normalizeTag(values[i]);
+        if (!tag) continue;
+        if (tag.length > config.maxTagLength) {
+          emitError(config.tooLongMessage, 'tooLong');
+          continue;
+        }
+        if (tags.some(function (item) { return item.toLocaleLowerCase() === tag.toLocaleLowerCase(); })) {
+          emitError(config.duplicateMessage, 'duplicate');
+          continue;
+        }
+        if (tags.length >= config.maxTags) {
+          emitError(config.limitMessage, 'limit');
+          break;
+        }
+        tags.push(tag);
+        changed = true;
+      }
+      if (changed) renderTags();
+    }
+
+    function addTagsAndClear(values) {
+      addTags(values);
+      input.value = '';
+      renderSuggestions();
+    }
+
+    function getFilteredSuggestions() {
+      var query = normalizeTag(input.value).toLocaleLowerCase();
+      var selected = new Set(tags.map(function (tag) { return tag.toLocaleLowerCase(); }));
+      return suggestions.filter(function (tag) {
+        return !selected.has(tag.toLocaleLowerCase()) && (!query || tag.toLocaleLowerCase().includes(query));
+      }).slice(0, 8);
+    }
+
+    function setActiveSuggestion(index) {
+      var options = Array.from(menu.querySelectorAll('[data-autofill-value]'));
+      activeSuggestionIndex = options.length ? Math.max(0, Math.min(index, options.length - 1)) : -1;
+      options.forEach(function (option, optionIndex) {
+        var active = optionIndex === activeSuggestionIndex;
+        option.classList.toggle('is-active', active);
+        option.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      var activeOption = options[activeSuggestionIndex];
+      if (activeOption) input.setAttribute('aria-activedescendant', activeOption.id || '');
+      else input.removeAttribute('aria-activedescendant');
+    }
+
+    function mountMenu() {
+      if (menu.parentElement !== document.body) document.body.appendChild(menu);
+    }
+
+    function restoreMenu() {
+      if (!originalMenuParent || menu.parentElement === originalMenuParent) return;
+      if (originalMenuNext && originalMenuNext.parentNode === originalMenuParent) originalMenuParent.insertBefore(menu, originalMenuNext);
+      else originalMenuParent.appendChild(menu);
+    }
+
+    function positionMenu() {
+      mountMenu();
+      var rect = editor.getBoundingClientRect();
+      var padding = 8;
+      var width = rect.width;
+      menu.style.display = 'inline-flex';
+      menu.style.visibility = 'hidden';
+      menu.style.zIndex = '2147483647';
+      menu.style.setProperty('--menu-z-index', '2147483647');
+      menu.style.setProperty('--autofill-menu-width', width + 'px');
+
+      var menuHeight = menu.offsetHeight || 100;
+      var left = Math.min(Math.max(rect.left, padding), window.innerWidth - width - padding);
+      var top = rect.bottom + 8;
+      if (top + menuHeight > window.innerHeight - padding) top = Math.max(padding, rect.top - menuHeight - 8);
+
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+      menu.style.setProperty('--origin-x', '24px');
+      menu.style.setProperty('--origin-y', '0px');
+      menu.style.visibility = 'visible';
+    }
+
+    function closeSuggestions() {
+      var list = menu.querySelector('.menu__list');
+      if (list) list.innerHTML = '';
+      menu.classList.remove('is-open');
+      menu.classList.remove('menu--closing');
+      menu.style.display = 'none';
+      menu.style.left = '';
+      menu.style.top = '';
+      menu.style.visibility = '';
+      menu.style.zIndex = '';
+      menu.style.removeProperty('--menu-z-index');
+      menu.style.removeProperty('--autofill-menu-width');
+      restoreMenu();
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      activeSuggestionIndex = -1;
+    }
+
+    function openSuggestions() {
+      positionMenu();
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          menu.classList.remove('menu--closing');
+          menu.classList.add('is-open');
+        });
+      });
+    }
+
+    function renderSuggestions() {
+      var filtered = getFilteredSuggestions();
+      var list = menu.querySelector('.menu__list');
+      if (!list || !filtered.length || tags.length >= config.maxTags) {
+        closeSuggestions();
+        return;
+      }
+      list.innerHTML = filtered.map(function (tag, index) {
+        return '<li class="autofill-menu__option" role="none"><button class="autofill-menu__item" id="' + config.fieldId + '-suggestion-' + index + '" type="button" role="option" data-autofill-value="' + escapeHtml(tag) + '" aria-selected="false"><span>' + escapeHtml(tag) + '</span></button></li>';
+      }).join('');
+      input.setAttribute('aria-expanded', 'true');
+      openSuggestions();
+      setActiveSuggestion(-1);
+    }
+
+    function selectSuggestion(value) {
+      addTagsAndClear([value]);
+      input.focus();
+    }
+
+    function onInputKeydown(event) {
+      var options = Array.from(menu.querySelectorAll('[data-autofill-value]'));
+      if (event.key === 'ArrowDown' && options.length) {
+        event.preventDefault();
+        setActiveSuggestion(activeSuggestionIndex + 1);
+        return;
+      }
+      if (event.key === 'ArrowUp' && options.length) {
+        event.preventDefault();
+        setActiveSuggestion(activeSuggestionIndex <= 0 ? options.length - 1 : activeSuggestionIndex - 1);
+        return;
+      }
+      if (event.key === 'Escape') {
+        closeSuggestions();
+        return;
+      }
+      if (event.key === 'Enter' && activeSuggestionIndex >= 0 && options[activeSuggestionIndex]) {
+        event.preventDefault();
+        selectSuggestion(options[activeSuggestionIndex].getAttribute('data-autofill-value') || '');
+        return;
+      }
+      if (event.key === 'Enter' || event.key === ',' || event.key === '，' || event.key === ' ') {
+        event.preventDefault();
+        addTagsAndClear(splitTagInput(input.value));
+      }
+      if (event.key === 'Backspace' && !input.value && tags.length) {
+        tags.pop();
+        renderTags();
+        renderSuggestions();
+      }
+    }
+
+    function onInputPaste(event) {
+      var value = event.clipboardData && event.clipboardData.getData('text') || '';
+      if (!/[\s，,]/.test(value)) return;
+      event.preventDefault();
+      addTagsAndClear(splitTagInput(value));
+    }
+
+    function onInputBlur() {
+      window.setTimeout(function () {
+        addTagsAndClear(splitTagInput(input.value));
+        closeSuggestions();
+      }, 120);
+    }
+
+    function onMenuPointerDown(event) {
+      event.preventDefault();
+      var button = event.target.closest('[data-autofill-value]');
+      if (!button) return;
+      selectSuggestion(button.getAttribute('data-autofill-value') || '');
+    }
+
+    function onDocumentPointerDown(event) {
+      var target = event.target;
+      if (root.contains(target) || menu.contains(target)) return;
+      closeSuggestions();
+    }
+
+    function onChipClick(event) {
+      var button = event.target.closest('[data-tag]');
+      if (!button) return;
+      var tag = button.getAttribute('data-tag');
+      tags = tags.filter(function (item) { return item !== tag; });
+      renderTags();
+      renderSuggestions();
+    }
+
+    function setSuggestions(values) {
+      suggestions = normalizeSuggestions(values || []);
+      if (document.activeElement === input) renderSuggestions();
+    }
+
+    function reset() {
+      tags = [];
+      input.value = '';
+      renderTags();
+      closeSuggestions();
+    }
+
+    window.TagEditor = window.TagEditor || {};
+    window.TagEditor[config.fieldId] = { setSuggestions: setSuggestions, reset: reset, getTags: function () { return tags.slice(); } };
+
+    function onSetSuggestions(event) {
+      setSuggestions(event.detail && event.detail.suggestions || []);
+    }
+
+    input.addEventListener('keydown', onInputKeydown);
+    input.addEventListener('input', renderSuggestions);
+    input.addEventListener('focus', renderSuggestions);
+    input.addEventListener('paste', onInputPaste);
+    input.addEventListener('blur', onInputBlur);
+    menu.addEventListener('pointerdown', onMenuPointerDown);
+    document.addEventListener('pointerdown', onDocumentPointerDown);
+    chips.addEventListener('click', onChipClick);
+    root.addEventListener('tag-editor:set-suggestions', onSetSuggestions);
+    root.addEventListener('tag-editor:reset', reset);
+
+    function cleanup() {
+      closeSuggestions();
+      input.removeEventListener('keydown', onInputKeydown);
+      input.removeEventListener('input', renderSuggestions);
+      input.removeEventListener('focus', renderSuggestions);
+      input.removeEventListener('paste', onInputPaste);
+      input.removeEventListener('blur', onInputBlur);
+      menu.removeEventListener('pointerdown', onMenuPointerDown);
+      document.removeEventListener('pointerdown', onDocumentPointerDown);
+      chips.removeEventListener('click', onChipClick);
+      root.removeEventListener('tag-editor:set-suggestions', onSetSuggestions);
+      root.removeEventListener('tag-editor:reset', reset);
+      delete window.TagEditor[config.fieldId];
+    }
+
+    document.addEventListener('astro:before-swap', cleanup, { once: true });
+
+    renderTags();
+  })();
+</script>
+
+<style>
+  .tag-field {
+    position: relative;
+    display: grid;
+    gap: 6px;
+  }
+
+  .tag-field__label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    padding-left: 4px;
+  }
+
+  :global(.tag-editor-pill) {
+    --pill-radius: 24px;
+    --pill-press-scale: 1.01;
+    --pill-drag-scale: 0.01;
+    display: block;
+  }
+
+  .tag-editor {
+    min-height: 44px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+  }
+
+  .tag-editor__chips {
+    display: contents;
+  }
+
+  :global(.tag-chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    max-width: 100%;
+    height: 32px;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--color-primary-500), color-mix(in srgb, var(--color-primary-600) 86%, #000));
+    color: #ffffff;
+    padding: 0 4px 0 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--color-primary-600) 28%, transparent);
+    cursor: pointer;
+    transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+  }
+
+  :global(.tag-chip:hover) {
+    filter: brightness(1.04);
+    box-shadow: 0 4px 10px color-mix(in srgb, var(--color-primary-600) 34%, transparent);
+  }
+
+  :global(.tag-chip:active) {
+    transform: scale(0.98);
+  }
+
+  :global(.tag-chip span) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.tag-chip__remove) {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    line-height: 0;
+  }
+
+  :global(.tag-chip__remove svg) {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+
+  .tag-editor input {
+    flex: 1 1 190px;
+    min-width: 150px;
+    height: 32px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-strong);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tag-editor input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  .tag-editor__count {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .tag-editor input {
+      flex-basis: 100%;
+      min-width: 0;
+    }
+
+    .tag-editor__count {
+      width: 100%;
+      margin-left: 0;
+    }
+  }
+</style>

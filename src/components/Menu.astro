@@ -29,7 +29,7 @@ const {
   submenu = false,
   contextTarget = '',
   ariaLabel = '',
-  maxHeight = '',
+  maxHeight = '75vh',
   zIndex = '',
 } = Astro.props;
 
@@ -57,7 +57,7 @@ const role = roleMap[type];
   aria-label={ariaLabel || undefined}
   style={menuVars || undefined}
 >
-  <Pill>
+  <Pill panel>
     <div class="menu__content">
       <ul class="menu__list" role="none">
         <slot />
@@ -116,6 +116,30 @@ const role = roleMap[type];
     display: flex;
     flex-direction: column;
     gap: 2px;
+  }
+
+  :global(.menu__separator) {
+    display: block;
+    height: 1px;
+    margin: 0px 8px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  /* 滚动条 */
+  /* 与 Input.astro 同步 Pill 缩放比率 */
+  :global(.menu .pill--panel) {
+    --pill-press-scale: 1.01;
+    --pill-drag-scale: 0.01;
+  }
+
+  :global(.menu__content) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  :global(.menu__content::-webkit-scrollbar) {
+    display: none;
   }
 
 </style>

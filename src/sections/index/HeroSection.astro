@@ -68,10 +68,10 @@ const artifacts = [
     </div>
   </div>
 
-  <Link to="fields" class="scroll-cue" aria-label="Scroll to content">
+  <!-- <Link to="fields" class="scroll-cue" aria-label="Scroll to content">
     <span aria-hidden="true"></span>
     <b>{__('hero.scroll')}</b>
-  </Link>
+  </Link> -->
 </section>
 
 <style>
@@ -193,9 +193,10 @@ const artifacts = [
   .hero-content {
     position: relative;
     z-index: 30;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    display: flex;
+    flex-direction: column;
+    /* grid-template-columns: minmax(0, 1fr) auto; */
+    /* align-items: end; */
     gap: 32px;
     width: min(1216px, calc(100% - 48px));
     margin: 0 auto;
@@ -203,15 +204,15 @@ const artifacts = [
   }
 
   .hero-copy {
-    max-width: 760px;
+    /* max-width: 760px; */
   }
 
   .hero-copy h1 {
     margin: 0;
     font-family: 'Plus Jakarta Sans', Geist, ui-sans-serif, system-ui, sans-serif;
-    font-size: clamp(48px, 5.15vw, 64px);
+    font-size: clamp(48px, 5vw, 58px);
     line-height: 1.14;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0;
     white-space: pre-line;
   }
@@ -223,6 +224,7 @@ const artifacts = [
   .hero-actions {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 14px;
     white-space: nowrap;
   }

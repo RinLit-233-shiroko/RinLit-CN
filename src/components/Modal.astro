@@ -279,9 +279,16 @@ const { id = 'modal', title = '', class: cardClass = '', ariaLabel = '' } = Astr
     }
   }
 
-  document.querySelectorAll('.modal').forEach((el) => {
-    window.__modals[el.id] = new Modal(el as HTMLElement);
-  });
+  function initModals() {
+    window.__modals = window.__modals || {};
+    document.querySelectorAll('.modal').forEach((el) => {
+      window.__modals[el.id] = new Modal(el as HTMLElement);
+    });
+  }
+
+  window.__initModals = initModals;
+  initModals();
+  document.addEventListener('astro:page-load', initModals);
 
   // 全局委托 — 返回按钮 / 关闭按钮 / 背景遮罩
   document.addEventListener('click', (e) => {

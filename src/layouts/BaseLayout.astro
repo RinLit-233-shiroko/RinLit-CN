@@ -73,6 +73,8 @@ const imageUrl = new URL(image, Astro.site ?? Astro.url.origin).href;
     <link rel="icon" href="/favicon/light.ico" />
   </head>
   <body class="min-h-screen bg-light text-dark font-sans">
+    <div class="site-header-mask site-header-mask--top" aria-hidden="true"></div>
+    <div class="site-header-mask site-header-mask--bottom" aria-hidden="true"></div>
     <Header currentPath={currentPath} lang={safeLang} />
     <main class="pb-28 md:pb-0">
       <slot />

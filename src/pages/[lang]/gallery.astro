@@ -1,22 +1,1068 @@
 ---
-import { locales } from '../../i18n/index';
-import { t } from '../../i18n/index';
+import { locales, t } from '../../i18n/index';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/Button.astro';
+import Input from '../../components/Input.astro';
+import Menu from '../../components/Menu.astro';
+import MenuItem from '../../components/MenuItem.astro';
+import AutofillMenu from '../../components/AutofillMenu.astro';
+import GalleryImageCard from '../../components/gallery/GalleryImageCard.astro';
+import GalleryItemModal from '../../components/gallery/GalleryItemModal.astro';
+import { fetchPublishedGalleryItems } from '../../lib/gallery.client';
+import { createServerClient } from '../../lib/supabase';
+import { getIcon } from '../../utils/icons';
 
 export async function getStaticPaths() {
   return locales.map((lang) => ({ params: { lang } }));
 }
 
-const { lang } = Astro.params;
+const { lang = 'zh-cn' } = Astro.params;
 const __ = (key: string) => t(lang, key);
+const isZh = lang === 'zh-cn';
+const heartOutlineIcon = getIcon('heart', 18);
+const heartFilledIcon = getIcon('heart', 18, 'filled');
+const supabase = createServerClient();
+const galleryResult = await fetchPublishedGalleryItems();
+
+// 投稿人 display_name 批量查询
+const contributorIds = Array.from(new Set(((galleryResult.data || []) as any[]).map((row) => row.user_id).filter(Boolean)));
+const contributorProfilesResult = contributorIds.length
+  ? await supabase.from('profiles').select('id,display_name').in('id', contributorIds)
+  : { data: [], error: null };
+const contributorById = new Map((contributorProfilesResult.data || [])
+  .map((profile: any) => [profile.id, { displayName: profile.display_name || '' }]));
+
+// 整理画廊行数据
+const galleryRows = ((galleryResult.data || []) as any[]).map((row) => {
+  const favoriteRelation = Array.isArray(row.gallery_favorites) ? row.gallery_favorites[0] : row.gallery_favorites;
+  const contributor = contributorById.get(row.user_id);
+  const tags = (row.gallery_item_tags || [])
+    .flatMap((relation: any) => relation.gallery_tags || [])
+    .filter(Boolean)
+    .map((tag: any) => ({ name: tag.name }));
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    image_url: row.image_url,
+    width: row.width,
+    height: row.height,
+    created_at: row.created_at,
+    user_id: row.user_id,
+    contributorDisplayName: contributor?.displayName || '',
+    status: row.status,
+    favorite_count: Math.max(0, Number(favoriteRelation?.count || 0)),
+    tags,
+  };
+});
+const galleryErrorMessage = galleryResult.error?.message || '';
+const galleryItemIds = galleryRows.map((row) => row.id);
+
+// 标签列表（按使用数倒序，再按字母序）用于过滤器 + 搜索补全
+const tagCounts = new Map<string, number>();
+galleryRows.forEach((row) => row.tags.forEach((tag) => {
+  tagCounts.set(tag.name, (tagCounts.get(tag.name) || 0) + 1);
+}));
+const allTags = Array.from(tagCounts.entries())
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .map(([name]) => name);
+
+// 投稿人列表（按作品数倒序）用于搜索补全
+const contributorCounts = new Map<string, number>();
+galleryRows.forEach((row) => {
+  if (row.contributorDisplayName) {
+    contributorCounts.set(row.contributorDisplayName, (contributorCounts.get(row.contributorDisplayName) || 0) + 1);
+  }
+});
+const allContributors = Array.from(contributorCounts.entries())
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .map(([name]) => name);
+
+// 客户端排序/筛选所需的轻量元数据
+const galleryItemsData = galleryRows.map((row) => ({
+  id: row.id,
+  title: row.title || '',
+  createdAt: row.created_at || '',
+  favoriteCount: row.favorite_count,
+  contributor: row.contributorDisplayName || '',
+  tags: row.tags.map((tag) => tag.name),
+}));
+
+// 搜索补全候选：标签 + 投稿人
+const autofillSuggestions = JSON.stringify([
+  ...allTags.map((name) => ({ label: name, kind: 'tag' })),
+  ...allContributors.map((name) => ({ label: name, kind: 'contributor' })),
+]);
 ---
 
-<BaseLayout lang={lang} title={`${__('page.gallery')} — RinLit`}>
-  <main class="mx-auto flex min-h-screen max-w-5xl items-center px-6">
-    <div>
-      <p class="text-section-label font-display uppercase tracking-[0.25em] text-primary-600">{__('page.gallery')}</p>
-      <h1 class="mt-4 text-hero font-display tracking-tight text-dark">{__('page.gallery')}</h1>
-      <p class="mt-6 text-body-large text-neutral-800">{__('page.gallery.desc')}</p>
-    </div>
+<BaseLayout lang={lang} title={`${__('page.gallery')} — RinLit`} description={__('page.gallery.desc')}>
+  <main class="gallery-page">
+    <section class="gallery-hero">
+      <h1 class="gallery-hero__title">
+        {isZh ? (
+          <>
+            <span>欢迎来到 RinLit</span>
+            <span class="gallery-hero__gallery-word">
+              <span class="gallery-hero__kicker">原 Rin's Hub</span>
+              <span>Gallery</span>
+            </span>
+          </>
+        ) : (
+          <>
+            <span>Welcome to RinLit</span>
+            <span class="gallery-hero__gallery-word"><span>Gallery</span></span>
+          </>
+        )}
+      </h1>
+    </section>
+
+    <section class="gallery-toolbar" id="gallery-toolbar" aria-label={__('gallery.actions')}>
+      <div class="gallery-toolbar__search">
+        <Input
+          id="gallery-search-input"
+          name="gallery-search"
+          type="search"
+          placeholder={__('gallery.search.placeholder')}
+          flat
+        />
+        <AutofillMenu id="gallery-search-suggestions" ariaLabel={__('gallery.search.ariaLabel')} />
+      </div>
+
+      <div class="gallery-toolbar__control">
+        <Button id="gallery-sort-trigger" icon="arrows-sort" flat aria-haspopup="menu">{__('gallery.sort.recommended')}</Button>
+        <Menu id="gallery-sort-menu" type="menu" ariaLabel={__('gallery.sort.label')} zIndex="4000">
+          <MenuItem value="field:recommended" checked>{__('gallery.sort.recommended')}</MenuItem>
+          <li class="menu__separator" role="separator"></li>
+          <MenuItem value="field:time">{__('gallery.sort.time')}</MenuItem>
+          <MenuItem value="field:tag">{__('gallery.sort.tag')}</MenuItem>
+          <MenuItem value="field:fav">{__('gallery.sort.fav')}</MenuItem>
+          <li class="menu__separator" role="separator"></li>
+          <MenuItem value="dir:asc">{__('gallery.sort.asc')}</MenuItem>
+          <MenuItem value="dir:desc">{__('gallery.sort.desc')}</MenuItem>
+        </Menu>
+      </div>
+
+      <div class="gallery-toolbar__control">
+        <Button id="gallery-filter-trigger" icon="filter" flat aria-haspopup="menu">{__('gallery.all')}</Button>
+        <Menu id="gallery-filter-menu" type="checkbox" group="gallery-filter" ariaLabel={__('gallery.filter.label')} zIndex="4000">
+          {allTags.map((name) => <MenuItem value={name}># {name}</MenuItem>)}
+        </Menu>
+      </div>
+
+      <div class="gallery-toolbar__submit">
+        <Button href={`/${lang}/gallery/submit`} primary flat icon="plus">{__('gallery.submit')}</Button>
+      </div>
+    </section>
+
+    <section class="gallery-state gallery-state--loading" id="gallery-loading" aria-live="polite" hidden>
+      <span class="gallery-loading-ring" aria-hidden="true"></span>
+      <span>{__('gallery.loading')}</span>
+    </section>
+
+    <section class="gallery-state" id="gallery-empty" hidden={Boolean(galleryErrorMessage) || galleryRows.length > 0}>
+      <strong>{__('gallery.emptyTitle')}</strong>
+      <span>{__('gallery.emptyDesc')}</span>
+    </section>
+
+    <section class="gallery-state gallery-state--error" id="gallery-error" hidden={!galleryErrorMessage}>{galleryErrorMessage}</section>
+
+    <section class="gallery-state" id="gallery-no-results" hidden>
+      <strong>{__('gallery.noResultsTitle')}</strong>
+      <span>{__('gallery.noResultsDesc')}</span>
+    </section>
+
+    <section class="gallery-grid" id="gallery-grid" aria-label={__('page.gallery')} hidden={Boolean(galleryErrorMessage) || !galleryRows.length}>
+      {galleryRows.map((item) => <GalleryImageCard item={item} />)}
+    </section>
+
+    <GalleryItemModal items={galleryRows} />
   </main>
 </BaseLayout>
+
+<script is:inline define:vars={{
+  __HEART_OUTLINE: heartOutlineIcon,
+  __HEART_FILLED: heartFilledIcon,
+  __GALLERY_ITEM_IDS: galleryItemIds,
+  __GALLERY_ITEMS_DATA: galleryItemsData,
+  __GALLERY_AUTOFILL: autofillSuggestions,
+}}>
+  window.__HEART_OUTLINE = __HEART_OUTLINE;
+  window.__HEART_FILLED = __HEART_FILLED;
+  window.__GALLERY_ITEM_IDS = __GALLERY_ITEM_IDS;
+  window.__GALLERY_ITEMS_DATA = __GALLERY_ITEMS_DATA;
+  window.__GALLERY_AUTOFILL = __GALLERY_AUTOFILL;
+</script>
+
+<script>
+  import { getUser, onAuthStateChange } from '../../lib/auth.client';
+  import { addGalleryFavorite, fetchMyGalleryFavoriteItemIds, removeGalleryFavorite } from '../../lib/gallery.client';
+
+  // ======== 收藏功能（保留原有逻辑） ========
+  const heartOutline = (window as any).__HEART_OUTLINE || '';
+  const heartFilled = (window as any).__HEART_FILLED || '';
+  const galleryItemIds = ((window as any).__GALLERY_ITEM_IDS || []) as string[];
+
+  let currentUserId = '';
+  let favoriteItemIds = new Set<string>();
+  const pendingFavoriteItemIds = new Set<string>();
+
+  const favoriteText = document.documentElement.lang === 'en'
+    ? {
+      add: 'Add to favorites',
+      remove: 'Remove from favorites',
+      login: 'Sign in to favorite gallery items.',
+      failed: 'Favorite update failed.',
+    }
+    : {
+      add: '收藏',
+      remove: '取消收藏',
+      login: '登录后可以收藏作品。',
+      failed: '收藏状态更新失败。',
+    };
+
+  function getButtonFavoriteCount(button: HTMLButtonElement) {
+    return Number(button.dataset.galleryFavoriteCount || '0') || 0;
+  }
+
+  function setButtonFavoriteCount(button: HTMLButtonElement, count: number) {
+    const safeCount = Math.max(0, count);
+    const itemId = button.dataset.galleryFavorite || '';
+    document.querySelectorAll<HTMLButtonElement>(`[data-gallery-favorite="${CSS.escape(itemId)}"]`).forEach((targetButton) => {
+      targetButton.dataset.galleryFavoriteCount = String(safeCount);
+      targetButton.classList.toggle('btn--icon-only', safeCount === 0);
+
+      let text = targetButton.querySelector('.btn__text');
+      if (safeCount > 0) {
+        if (!text) {
+          text = document.createElement('span');
+          text.className = 'btn__text';
+          targetButton.appendChild(text);
+        }
+        text.textContent = String(safeCount);
+      } else {
+        if (text) text.remove();
+      }
+    });
+  }
+
+  function showLoginRequired() {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/${document.documentElement.lang}/account/redirect?next=${next}`;
+  }
+
+  function setButtonIcon(button: HTMLButtonElement, isFavorite: boolean) {
+    const itemId = button.dataset.galleryFavorite || '';
+    document.querySelectorAll<HTMLButtonElement>(`[data-gallery-favorite="${CSS.escape(itemId)}"]`).forEach((targetButton) => {
+      const icon = targetButton.querySelector('.btn__icon');
+      if (icon) icon.innerHTML = `<span>${isFavorite ? heartFilled : heartOutline}</span>`;
+    });
+  }
+
+  function setButtonState(button: HTMLButtonElement, isFavorite: boolean, isPending = false) {
+    const itemId = button.dataset.galleryFavorite || '';
+    document.querySelectorAll<HTMLButtonElement>(`[data-gallery-favorite="${CSS.escape(itemId)}"]`).forEach((targetButton) => {
+      targetButton.classList.toggle('is-favorite', isFavorite);
+      targetButton.disabled = isPending;
+      targetButton.setAttribute('aria-pressed', String(isFavorite));
+      targetButton.setAttribute('aria-label', isFavorite ? favoriteText.remove : favoriteText.add);
+      targetButton.title = isFavorite ? favoriteText.remove : favoriteText.add;
+    });
+    setButtonIcon(button, isFavorite);
+  }
+
+  function syncFavoriteButtons() {
+    document.querySelectorAll<HTMLButtonElement>('[data-gallery-favorite]').forEach((button) => {
+      const itemId = button.dataset.galleryFavorite || '';
+      const isFav = favoriteItemIds.has(itemId);
+      setButtonState(button, isFav, pendingFavoriteItemIds.has(itemId));
+      let count = getButtonFavoriteCount(button);
+      if (isFav && count === 0) count = 1;
+      setButtonFavoriteCount(button, count);
+    });
+  }
+
+  async function loadFavoriteState() {
+    const { user } = await getUser();
+    currentUserId = user?.id || '';
+    favoriteItemIds = new Set<string>();
+
+    if (!currentUserId || !galleryItemIds.length) {
+      syncFavoriteButtons();
+      return;
+    }
+
+    const { data, error } = await fetchMyGalleryFavoriteItemIds(currentUserId, galleryItemIds);
+    if (error) throw error;
+    favoriteItemIds = new Set((data || []).map((row) => row.gallery_item_id));
+    syncFavoriteButtons();
+  }
+
+  async function toggleFavorite(button: HTMLButtonElement) {
+    const galleryItemId = button.dataset.galleryFavorite || '';
+    if (!galleryItemId || pendingFavoriteItemIds.has(galleryItemId)) return;
+
+    if (!currentUserId) {
+      button.classList.add('is-shaking');
+      window.setTimeout(() => button.classList.remove('is-shaking'), 280);
+      showLoginRequired();
+      return;
+    }
+
+    const wasFavorite = favoriteItemIds.has(galleryItemId);
+    const previousCount = getButtonFavoriteCount(button);
+    pendingFavoriteItemIds.add(galleryItemId);
+    if (wasFavorite) favoriteItemIds.delete(galleryItemId);
+    else favoriteItemIds.add(galleryItemId);
+    setButtonFavoriteCount(button, previousCount + (wasFavorite ? -1 : 1));
+    setButtonState(button, !wasFavorite, true);
+
+    const result = wasFavorite
+      ? await removeGalleryFavorite(currentUserId, galleryItemId)
+      : await addGalleryFavorite(currentUserId, galleryItemId);
+
+    pendingFavoriteItemIds.delete(galleryItemId);
+
+    if (result.error) {
+      if (wasFavorite) favoriteItemIds.add(galleryItemId);
+      else favoriteItemIds.delete(galleryItemId);
+      setButtonFavoriteCount(button, previousCount);
+      setButtonState(button, wasFavorite, false);
+      button.setAttribute('data-error', favoriteText.failed);
+      window.setTimeout(() => button.removeAttribute('data-error'), 1800);
+      return;
+    }
+
+    setButtonState(button, !wasFavorite, false);
+  }
+
+  function bindFavoriteButtons() {
+    document.querySelectorAll<HTMLButtonElement>('[data-gallery-favorite]').forEach((button) => {
+      if (button.dataset.galleryFavoriteBound === 'true') return;
+      button.dataset.galleryFavoriteBound = 'true';
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleFavorite(button);
+      });
+    });
+  }
+
+  // ======== 工具栏：搜索 / 排序 / 筛选 ========
+  type GalleryItemData = {
+    id: string;
+    title: string;
+    createdAt: string;
+    favoriteCount: number;
+    contributor: string;
+    tags: string[];
+  };
+
+  const itemsData = ((window as any).__GALLERY_ITEMS_DATA || []) as GalleryItemData[];
+  const autofillSuggestions = (() => {
+    try {
+      return JSON.parse((window as any).__GALLERY_AUTOFILL || '[]') as Array<{ label: string; kind: string }>;
+    } catch {
+      return [] as Array<{ label: string; kind: string }>;
+    }
+  })();
+
+  let sortField = 'recommended';
+  let sortDir = 'desc';
+  let activeFilterTags = new Set<string>();
+  let currentQuery = '';
+
+  function computeSortKey() {
+    if (sortField === 'recommended') return 'recommended';
+    return sortField + '-' + sortDir;
+  }
+
+  const sortLabels: Record<string, string> = {};
+  const filterLabelAll = document.documentElement.lang === 'en' ? 'All' : '全部';
+
+  function getCardShell(id: string): HTMLElement | null {
+    const article = document.querySelector<HTMLElement>(`.gallery-card[data-gallery-item-id="${CSS.escape(id)}"]`);
+    return article?.closest<HTMLElement>('.gallery-card-shell') || null;
+  }
+
+  function firstTagName(item: GalleryItemData) {
+    return item.tags[0] || '';
+  }
+
+  function applyToolbar() {
+    const grid = document.getElementById('gallery-grid');
+    const noResults = document.getElementById('gallery-no-results');
+    if (!grid) return;
+
+    // 1. 筛选
+    const q = currentQuery.trim().toLowerCase();
+    const filtered = itemsData.filter((item) => {
+      if (activeFilterTags.size > 0 && !item.tags.some((tag) => activeFilterTags.has(tag))) return false;
+      if (q) {
+        const matchesTag = item.tags.some((tag) => tag.toLowerCase().includes(q));
+        const matchesContributor = item.contributor.toLowerCase().includes(q);
+        const matchesTitle = item.title.toLowerCase().includes(q);
+        if (!matchesTag && !matchesContributor && !matchesTitle) return false;
+      }
+      return true;
+    });
+
+    // 2. 排序
+    const sorted = filtered.slice();
+    switch (computeSortKey()) {
+      case 'time-desc':
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'time-asc':
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case 'tag-asc':
+        sorted.sort((a, b) => firstTagName(a).localeCompare(firstTagName(b)));
+        break;
+      case 'tag-desc':
+        sorted.sort((a, b) => firstTagName(b).localeCompare(firstTagName(a)));
+        break;
+      case 'fav-desc':
+        sorted.sort((a, b) => b.favoriteCount - a.favoriteCount);
+        break;
+      case 'fav-asc':
+        sorted.sort((a, b) => a.favoriteCount - b.favoriteCount);
+        break;
+      // 'recommended' 保持服务端默认顺序（已按 created_at desc）
+    }
+
+    // 3. 重排 DOM + 显隐
+    const visibleIds = new Set(sorted.map((i) => i.id));
+    itemsData.forEach((item) => {
+      const shell = getCardShell(item.id);
+      if (!shell) return;
+      shell.style.display = visibleIds.has(item.id) ? '' : 'none';
+    });
+    sorted.forEach((item) => {
+      const shell = getCardShell(item.id);
+      if (shell && shell.parentElement === grid) grid.appendChild(shell);
+    });
+
+    if (noResults) noResults.hidden = sorted.length > 0;
+  }
+
+  // ======== 排序 / 筛选菜单 ========
+  function initMenus() {
+    const sortTrigger = document.getElementById('gallery-sort-trigger');
+    const sortMenu = document.getElementById('gallery-sort-menu');
+    const filterTrigger = document.getElementById('gallery-filter-trigger');
+    const filterMenu = document.getElementById('gallery-filter-menu');
+
+    // 收集排序项 label 用于触发按钮显示
+    sortMenu?.querySelectorAll<HTMLElement>('.menu-item[data-value]').forEach((item) => {
+      const value = item.getAttribute('data-value') || '';
+      const label = item.querySelector('.menu-item__label')?.textContent || '';
+      sortLabels[value] = label;
+    });
+
+    function setSortChecked() {
+      if (!sortMenu) return;
+      const items = sortMenu.querySelectorAll<HTMLElement>('.menu-item[data-value]');
+      items.forEach((item) => {
+        const val = item.getAttribute('data-value') || '';
+        const isFieldItem = val.startsWith('field:');
+        const fieldName = isFieldItem ? val.slice(6) : '';
+        const dirName = isFieldItem ? '' : val.slice(4);
+        const shouldCheck = isFieldItem
+          ? fieldName === sortField
+          : dirName === sortDir && sortField !== 'recommended';
+        item.classList.toggle('menu-item--checked', shouldCheck);
+        item.setAttribute('aria-checked', String(shouldCheck));
+      });
+    }
+
+    function updateSortTriggerLabel() {
+      if (!sortTrigger) return;
+      const labelEl = sortTrigger.querySelector('.btn__text');
+      if (labelEl) {
+        if (sortField === 'recommended') {
+          labelEl.textContent = sortLabels['field:recommended'] || '';
+        } else {
+          labelEl.textContent = sortLabels['field:' + sortField] || '';
+        }
+      }
+    }
+
+    function updateFilterTriggerLabel() {
+      if (!filterTrigger) return;
+      const labelEl = filterTrigger.querySelector('.btn__text');
+      if (labelEl) {
+        if (activeFilterTags.size === 0) {
+          labelEl.textContent = filterLabelAll;
+        } else {
+          labelEl.textContent = `${filterLabelAll} (${activeFilterTags.size})`;
+        }
+      }
+    }
+
+    function toggleMenu(trigger: HTMLElement | null, menu: HTMLElement | null) {
+      if (!trigger || !menu) return;
+      if (menu.classList.contains('is-open')) {
+        (window as any).Menu_close(menu);
+        return;
+      }
+      [sortMenu, filterMenu].forEach((m) => {
+        if (m && m !== menu && m.classList.contains('is-open')) (window as any).Menu_close(m);
+      });
+      (window as any).Menu_open(menu, trigger);
+    }
+
+    sortTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu(sortTrigger as HTMLElement, sortMenu);
+    });
+    filterTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu(filterTrigger as HTMLElement, filterMenu);
+    });
+
+    // 排序菜单项点击（type="menu" 不自发 menu:change 事件）
+    sortMenu?.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest<HTMLElement>('.menu-item[data-value]');
+      if (!item) return;
+      const val = item.getAttribute('data-value') || '';
+      if (val.startsWith('field:')) {
+        sortField = val.slice(6);
+        if (sortField === 'recommended') sortDir = 'desc';
+      } else if (val.startsWith('dir:')) {
+        if (sortField === 'recommended') return; // 推荐模式下方向不可选
+        sortDir = val.slice(4);
+      } else {
+        return;
+      }
+      setSortChecked();
+      updateSortTriggerLabel();
+      applyToolbar();
+    });
+
+    // 点击外部关闭
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const inSort = sortMenu?.contains(target) || sortTrigger?.contains(target);
+      const inFilter = filterMenu?.contains(target) || filterTrigger?.contains(target);
+      if (!inSort && sortMenu?.classList.contains('is-open')) (window as any).Menu_close(sortMenu);
+      if (!inFilter && filterMenu?.classList.contains('is-open')) (window as any).Menu_close(filterMenu);
+    });
+
+    // Escape 关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (sortMenu?.classList.contains('is-open')) (window as any).Menu_close(sortMenu);
+      if (filterMenu?.classList.contains('is-open')) (window as any).Menu_close(filterMenu);
+    });
+
+    // 监听选择变化（筛选菜单仍用 menu:change）
+    document.addEventListener('menu:change', (e) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail.group === 'gallery-filter') {
+        if (detail.checked) {
+          activeFilterTags.add(detail.value);
+        } else {
+          activeFilterTags.delete(detail.value);
+        }
+        updateFilterTriggerLabel();
+        applyToolbar();
+      }
+    });
+
+    // 初始化排序选中态
+    setSortChecked();
+  }
+
+  // ======== 搜索补全菜单 ========
+  function initSearchAutofill() {
+    const input = document.getElementById('gallery-search-input') as HTMLInputElement | null;
+    const menu = document.getElementById('gallery-search-suggestions');
+    if (!input || !menu) return;
+
+    const list = menu.querySelector('.menu__list');
+    if (!list) return;
+
+    const originalParent = menu.parentElement;
+    let originalNext: Element | null = menu.nextElementSibling;
+    let activeIndex = -1;
+
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+    input.setAttribute('aria-controls', 'gallery-search-suggestions');
+
+    function escapeHtml(value: string) {
+      return String(value).replace(/[&<>'"]/g, (char) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char] || char);
+    }
+
+    function getFiltered() {
+      const q = (input.value || '').trim().toLowerCase();
+      if (!q) return autofillSuggestions.slice(0, 8);
+      return autofillSuggestions.filter((s) => s.label.toLowerCase().includes(q)).slice(0, 8);
+    }
+
+    function positionMenu() {
+      if (menu.parentElement !== document.body) {
+        originalNext = menu.nextElementSibling;
+        document.body.appendChild(menu);
+      }
+      const rect = input.getBoundingClientRect();
+      const padding = 8;
+      const width = rect.width;
+
+      menu.style.display = 'inline-flex';
+      menu.style.visibility = 'hidden';
+      menu.style.zIndex = '2147483647';
+      menu.style.setProperty('--menu-z-index', '2147483647');
+      menu.style.setProperty('--autofill-menu-width', width + 'px');
+
+      const menuHeight = menu.offsetHeight || 100;
+      let left = Math.min(Math.max(rect.left, padding), window.innerWidth - width - padding);
+      let top = rect.bottom + 8;
+      if (top + menuHeight > window.innerHeight - padding) {
+        top = Math.max(padding, rect.top - menuHeight - 8);
+      }
+
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+      menu.style.setProperty('--origin-x', '24px');
+      menu.style.setProperty('--origin-y', '0px');
+      menu.style.visibility = 'visible';
+    }
+
+    function openMenu() {
+      positionMenu();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          menu.classList.remove('menu--closing');
+          menu.classList.add('is-open');
+        });
+      });
+    }
+
+    function closeMenu() {
+      if (!menu.classList.contains('is-open') && !menu.classList.contains('menu--closing') && menu.style.display !== 'inline-flex') return;
+      list.innerHTML = '';
+      menu.classList.remove('is-open');
+      menu.classList.add('menu--closing');
+      window.setTimeout(() => {
+        menu.classList.remove('menu--closing');
+        menu.style.display = 'none';
+        menu.style.left = '';
+        menu.style.top = '';
+        menu.style.visibility = '';
+        menu.style.zIndex = '';
+        menu.style.removeProperty('--menu-z-index');
+        menu.style.removeProperty('--autofill-menu-width');
+        if (originalParent && menu.parentElement !== originalParent) {
+          if (originalNext && originalNext.parentElement === originalParent) {
+            originalParent.insertBefore(menu, originalNext);
+          } else {
+            originalParent.appendChild(menu);
+          }
+        }
+      }, 150);
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      activeIndex = -1;
+    }
+
+    function setActive(index: number) {
+      const options = Array.from(list.querySelectorAll<HTMLElement>('[data-autofill-value]'));
+      activeIndex = options.length ? Math.max(0, Math.min(index, options.length - 1)) : -1;
+      options.forEach((opt, i) => {
+        const active = i === activeIndex;
+        opt.classList.toggle('is-active', active);
+        opt.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      if (options[activeIndex]) input.setAttribute('aria-activedescendant', options[activeIndex].id || '');
+    }
+
+    function renderSuggestions() {
+      const filtered = getFiltered();
+      if (!filtered.length) {
+        closeMenu();
+        return;
+      }
+      list.innerHTML = filtered.map((s, i) => {
+        const prefix = s.kind === 'tag' ? '' : '@';
+        return `<li class="autofill-menu__option" role="none"><button class="autofill-menu__item" id="gallery-search-opt-${i}" type="button" role="option" data-autofill-value="${escapeHtml(s.label)}" aria-selected="false"><span>${prefix}${escapeHtml(s.label)}</span></button></li>`;
+      }).join('');
+      input.setAttribute('aria-expanded', 'true');
+      openMenu();
+      setActive(-1);
+    }
+
+    function selectSuggestion(value: string) {
+      input.value = value;
+      currentQuery = value;
+      applyToolbar();
+      input.focus();
+      closeMenu();
+    }
+
+    function onInput(event: Event) {
+      currentQuery = (event.target as HTMLInputElement).value;
+      applyToolbar();
+      renderSuggestions();
+    }
+
+    function onFocus() {
+      renderSuggestions();
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      const options = Array.from(list.querySelectorAll<HTMLElement>('[data-autofill-value]'));
+      if (event.key === 'ArrowDown' && options.length) {
+        event.preventDefault();
+        setActive(activeIndex + 1);
+        return;
+      }
+      if (event.key === 'ArrowUp' && options.length) {
+        event.preventDefault();
+        setActive(activeIndex <= 0 ? options.length - 1 : activeIndex - 1);
+        return;
+      }
+      if (event.key === 'Escape') {
+        closeMenu();
+        return;
+      }
+      if (event.key === 'Enter' && activeIndex >= 0 && options[activeIndex]) {
+        event.preventDefault();
+        selectSuggestion(options[activeIndex].getAttribute('data-autofill-value') || '');
+        return;
+      }
+    }
+
+    function onMenuPointerDown(event: PointerEvent) {
+      event.preventDefault();
+      const button = (event.target as HTMLElement).closest<HTMLElement>('[data-autofill-value]');
+      if (!button) return;
+      selectSuggestion(button.getAttribute('data-autofill-value') || '');
+    }
+
+    function onDocumentPointerDown(event: PointerEvent) {
+      const target = event.target as HTMLElement;
+      if (input.contains(target) || menu.contains(target)) return;
+      closeMenu();
+    }
+
+    input.addEventListener('input', onInput);
+    input.addEventListener('focus', onFocus);
+    input.addEventListener('keydown', onKeyDown);
+    menu.addEventListener('pointerdown', onMenuPointerDown);
+    document.addEventListener('pointerdown', onDocumentPointerDown);
+
+    document.addEventListener('astro:before-swap', () => {
+      closeMenu();
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('focus', onFocus);
+      input.removeEventListener('keydown', onKeyDown);
+      menu.removeEventListener('pointerdown', onMenuPointerDown);
+      document.removeEventListener('pointerdown', onDocumentPointerDown);
+    }, { once: true });
+  }
+
+  // ======== 初始化 ========
+  async function initGalleryPage() {
+    bindFavoriteButtons();
+    initMenus();
+    initSearchAutofill();
+    fixToolbarStickyPosition();
+    const errorBox = document.getElementById('gallery-error');
+    try {
+      await loadFavoriteState();
+    } catch (favoriteError: any) {
+      if (errorBox) {
+        errorBox.textContent = favoriteError?.message || favoriteText.failed;
+        errorBox.hidden = false;
+      }
+    }
+  }
+
+  /** 修正工具栏 sticky 位置 — 解决 Astro View Transitions 前进/后退后
+   *  position:sticky 不重新计算导致与 top-bar 重叠的问题 */
+  function fixToolbarStickyPosition() {
+    const toolbar = document.getElementById('gallery-toolbar');
+    if (!toolbar) return;
+    if (window.innerWidth > 768) {
+      toolbar.style.removeProperty('--toolbar-top');
+      return;
+    }
+    const topBar = document.querySelector('.top-bar');
+    if (topBar) {
+      const bottom = topBar.getBoundingClientRect().bottom;
+      toolbar.style.setProperty('--toolbar-top', (bottom + 8) + 'px');
+    } else {
+      toolbar.style.setProperty('--toolbar-top', '74px');
+    }
+    // 强制浏览器在下一帧重新计算 sticky 布局
+    requestAnimationFrame(() => {
+      toolbar.style.position = 'relative';
+      requestAnimationFrame(() => {
+        toolbar.style.position = '';
+      });
+    });
+  }
+
+  window.addEventListener('resize', fixToolbarStickyPosition);
+
+  const unsubscribeAuth = onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
+      currentUserId = '';
+      favoriteItemIds = new Set<string>();
+      syncFavoriteButtons();
+    }
+  });
+
+  document.addEventListener('astro:before-swap', () => {
+    unsubscribeAuth();
+    window.removeEventListener('resize', fixToolbarStickyPosition);
+  }, { once: true });
+  document.addEventListener('auth:signed-in', initGalleryPage);
+  document.addEventListener('astro:page-load', initGalleryPage);
+  initGalleryPage();
+</script>
+
+<style>
+  .gallery-page {
+    min-height: 100vh;
+    padding: 110px clamp(18px, 4vw, 56px) 80px;
+    background: var(--bg);
+  }
+
+  /* ======== Hero 介绍区（精简） ======== */
+  .gallery-hero {
+    max-width: 1400px;
+    margin: 0 auto 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .gallery-hero__kicker {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% - 0.2em);
+    transform: translateX(-50%);
+    margin: 0;
+    color: var(--color-secondary-500);
+    font-size: 14px;
+    /* font-size: clamp(13px, 1.35vw, 19px); */
+    font-weight: 550;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .gallery-hero__title {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0 0.18em;
+    color: var(--text-strong);
+    font-size: clamp(24px, 3.2vw, 36px);
+    line-height: 1.08;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .gallery-hero__gallery-word {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    color: var(--color-primary-500);
+  }
+
+  .gallery-hero__desc {
+    margin: 0;
+    max-width: 680px;
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  /* ======== 工具栏（sticky 悬浮在 Header 下方） ======== */
+  .gallery-toolbar {
+    position: sticky;
+    top: var(--toolbar-top, 80px);
+    z-index: 49;
+    max-width: 1400px;
+    margin: 0 auto 22px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gallery-toolbar__search {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .gallery-toolbar__search :global(.input-field-pill) {
+    width: 100%;
+  }
+
+  .gallery-toolbar__search :global(.input-field) {
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .gallery-toolbar__control {
+    flex: 0 0 auto;
+    position: relative;
+  }
+
+  .gallery-toolbar__submit {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .gallery-toolbar :global(.btn) {
+    height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .gallery-toolbar :global(.pill) {
+    width: auto;
+  }
+
+  /* ======== 网格 ======== */
+  .gallery-grid {
+    max-width: 1400px;
+    margin: 0 auto;
+    column-count: 4;
+    column-gap: 18px;
+  }
+
+  .gallery-grid :global(.gallery-card) {
+    cursor: zoom-in;
+  }
+
+  /* ======== 状态提示 ======== */
+  .gallery-state {
+    max-width: 1400px;
+    margin: 0 auto;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .gallery-state strong,
+  .gallery-state span {
+    display: block;
+  }
+
+  .gallery-state strong {
+    color: var(--text-strong);
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .gallery-state--loading {
+    min-height: 128px;
+    display: grid;
+    place-items: center;
+    gap: 14px;
+    text-align: center;
+  }
+
+  .gallery-state--loading[hidden] {
+    display: none;
+  }
+
+  .gallery-loading-ring {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 3px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-top-color: var(--color-primary-600);
+    animation: gallery-loading-spin 0.78s linear infinite;
+  }
+
+  @keyframes gallery-loading-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .gallery-state--error {
+    color: #dc2626;
+  }
+
+  /* ======== 响应式 ======== */
+  @media (max-width: 1200px) {
+    .gallery-grid {
+      column-count: 3;
+    }
+  }
+
+  @media (max-width: 980px) {
+    .gallery-grid {
+      column-count: 2;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .gallery-toolbar {
+      --toolbar-top: 74px;
+      top: var(--toolbar-top);
+      padding: 8px;
+      gap: 6px;
+    }
+
+    .gallery-toolbar__search {
+      flex: 1 1 auto;
+      min-width: 80px;
+    }
+
+    .gallery-toolbar__submit {
+      margin-left: 0;
+    }
+
+    .gallery-toolbar :global(.btn) {
+      padding: 0 10px;
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .gallery-page {
+      padding-inline: 14px;
+    }
+
+    .gallery-grid {
+      column-count: 2;
+      column-gap: 12px;
+    }
+
+    .gallery-toolbar :global(.btn) {
+      padding: 0 10px;
+    }
+
+    .gallery-toolbar__control :global(.btn__text),
+    .gallery-toolbar__submit :global(.btn__text) {
+      display: none;
+    }
+
+    .gallery-toolbar__control > :global(.pill),
+    .gallery-toolbar__submit > :global(.pill) {
+      width: 40px;
+      border-radius: 999px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .gallery-grid {
+      column-count: 1;
+    }
+  }
+</style>

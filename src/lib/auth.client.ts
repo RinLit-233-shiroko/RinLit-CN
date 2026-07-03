@@ -25,6 +25,23 @@ export async function signIn(email: string, password: string) {
     return await supabase.auth.signInWithPassword({ email, password });
 }
 
+export async function sendEmailOtp(email: string) {
+    const supabase = getClient();
+    return await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+    });
+}
+
+export async function verifyEmailOtp(email: string, token: string) {
+    const supabase = getClient();
+    return await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email',
+    });
+}
+
 export async function resetPasswordForEmail(email: string, redirectTo: string) {
     const supabase = getClient();
     return await supabase.auth.resetPasswordForEmail(email, { redirectTo });

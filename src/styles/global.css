@@ -88,6 +88,7 @@
     --border-strong: rgba(29, 28, 34, 0.14);
     --shadow: rgba(75, 75, 75, 0.06);
     --glow: rgba(255, 255, 255, 1);
+    --color-primary: var(--color-primary-500);
     --border-gradient: linear-gradient(
       135deg,
       rgba(255, 255, 255, 1) 0%,
@@ -95,6 +96,9 @@
       rgba(255, 255, 255, 0) 56%,
       rgba(255, 255, 255, 1) 100%
     );
+    --header-mask-top-height: 140px;
+    --header-mask-bottom-height: 132px;
+    --header-mask-color: rgba(255, 255, 255, 0.9);
 
     /* ---------- Logo / Icon 显示切换 ---------- */
     --logo-light-display: block;
@@ -108,6 +112,7 @@
     /* ---------- 统一 Pill / Button 背景材质 ---------- */
     --pill-highlight: rgba(255, 250, 255, 0.4);
     --pill-bg: rgba(251, 250, 255, 0.4);
+    --pill-bg-panel: rgba(251, 250, 255, 0.72);
     --pill-bg-hover: rgba(238, 238, 238, 0.6);
     --pill-bg-active: rgba(221, 221, 221, 0.3);
     --pill-primary-bg: color-mix(in srgb, var(--color-primary-500) 60%, transparent);
@@ -159,6 +164,7 @@
     --border: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.16);
     --shadow: rgba(0, 0, 0, 0.32);
+    --color-primary: var(--color-primary-400);
     --border-gradient: linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.22) 0%,
@@ -166,6 +172,7 @@
       rgba(255, 255, 255, 0) 56%,
       rgba(255, 255, 255, 0.22) 100%
     );
+    --header-mask-color: rgba(16, 18, 22, 0.9);
 
     /* Logo / Icon 显示切换 — 暗色反转 */
     --logo-light-display: none;
@@ -178,6 +185,7 @@
 
     /* Pill / Button — 暗色下统一使用 neutral-500 @ 30% */
     --pill-bg: rgba(194, 191, 208, 0.3);
+    --pill-bg-panel: rgba(72, 70, 78, 0.64);
     --pill-bg-hover: rgba(210, 209, 214, 0.34);
     --pill-bg-active: rgba(210, 209, 214, 0.3);
     --pill-primary-bg: color-mix(in srgb, var(--color-primary-500) 48%, transparent);
@@ -205,5 +213,42 @@
     text-wrap: pretty;
     color: var(--text);
     background: var(--bg);
+  }
+
+  .site-header-mask {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 48;
+    pointer-events: none;
+  }
+
+  .site-header-mask--top {
+    top: 0;
+    height: var(--header-mask-top-height);
+    background: linear-gradient(
+      to bottom,
+      var(--header-mask-color) 0%,
+      color-mix(in srgb, var(--header-mask-color) 72%, transparent) 38%,
+      transparent 100%
+    );
+  }
+
+  .site-header-mask--bottom {
+    display: none;
+    bottom: 0;
+    height: var(--header-mask-bottom-height);
+    background: linear-gradient(
+      to top,
+      var(--header-mask-color) 0%,
+      color-mix(in srgb, var(--header-mask-color) 72%, transparent) 38%,
+      transparent 100%
+    );
+  }
+
+  @media (max-width: 768px) {
+    .site-header-mask--bottom {
+      display: block;
+    }
   }
 }

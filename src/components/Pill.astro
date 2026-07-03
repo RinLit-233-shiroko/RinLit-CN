@@ -19,16 +19,19 @@
 interface Props {
   primary?: boolean;
   flat?: boolean;
+  panel?: boolean;
+  noDrag?: boolean;
   class?: string;
   id?: string;
 }
 
-const { primary = false, flat = false, class: className = '', id = '' } = Astro.props;
+const { primary = false, flat = false, panel = false, noDrag = false, class: className = '', id = '' } = Astro.props;
 ---
 
 <div
   id={id}
-  class={`pill ${primary ? 'pill--primary' : ''} ${flat ? 'pill--flat' : ''} ${className}`}
+  class={`pill ${primary ? 'pill--primary' : ''} ${flat ? 'pill--flat' : ''} ${panel ? 'pill--panel' : ''} ${className}`}
+data-no-drag={noDrag || undefined}
 >
   <!-- 视觉背景层：背景色/阴影/模糊/渐变边框/glow → 在此处被 overflow:hidden 裁剪 -->
   <span class="pill__bg-layer" aria-hidden="true">
@@ -56,6 +59,11 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     user-select: none;
     -webkit-user-drag: none;
     user-drag: none;
+  }
+
+  /* noDrag 时恢复浏览器默认触摸行为 */
+  .pill[data-no-drag] {
+    touch-action: auto;
   }
 
   /* 菜单触发按钮隐藏态 — 向菜单位置/大小过渡（覆盖 Pill 的弹簧曲线） */
@@ -123,6 +131,13 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     box-shadow: 0 2px 6px var(--pill-shadow);
   }
 
+  /* ======== panel 变体 — 更高模糊 + 更高 alpha 背景 ======== */
+  .pill--panel .pill__bg-layer {
+    background: var(--pill-bg-panel);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
   /* ======== hover 背景状态（仅支持 hover 的设备，如 PC 鼠标） ======== */
   @media (hover: hover) {
     .pill:not(.pill--primary):hover .pill__bg-layer {
@@ -149,6 +164,15 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
 
   .pill--flat.pill--primary:active .pill__bg-layer {
     background: var(--pill-primary-bg);
+  }
+
+  /* ======== panel 变体 hover/active 保持 panel 背景 ======== */
+  .pill--panel:not(.pill--primary):hover .pill__bg-layer {
+    background: var(--pill-bg-panel);
+  }
+
+  .pill--panel:not(.pill--primary):active .pill__bg-layer {
+    background: var(--pill-bg-panel);
   }
 
   /* ======== Press Glow ======== */
@@ -183,6 +207,7 @@ const { primary = false, flat = false, class: className = '', id = '' } = Astro.
     document.addEventListener('pointerdown', function (e) {
       var pill = $(e.target, '.pill');
       if (!pill) return;
+      if (pill.hasAttribute('data-no-drag')) return;
       var glow = pill.querySelector('.pill__glow');
       if (!glow) return;
       if (pill.classList.contains('pill--dragging')) return;

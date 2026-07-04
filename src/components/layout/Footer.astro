@@ -1,6 +1,7 @@
 ---
 import { t } from '../../i18n/index';
 import Link from '../Link.astro';
+import Pill from '../Pill.astro';
 
 interface Props {
   lang?: string;
@@ -9,68 +10,290 @@ interface Props {
 const { lang } = Astro.props;
 const __ = (key: string) => t(lang, key);
 const year = new Date().getFullYear();
+
+const navItems = [
+  { label: __('nav.fields'), href: 'fields', meta: __('footer.nav.fields') },
+  { label: __('nav.gallery'), href: 'gallery', meta: __('footer.nav.gallery') },
+  { label: __('nav.writing'), href: 'writing', meta: __('footer.nav.writing') },
+  { label: __('nav.me'), href: 'me', meta: __('footer.nav.me') },
+];
 ---
 
 <footer class="site-footer">
-  <div class="mx-auto max-w-6xl px-6">
-    <div class="flex flex-col items-center gap-6">
-      <img
-        class="footer-logo footer-logo--light"
-        src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=True.png"
-        alt="RinLit"
-      />
-      <img
-        class="footer-logo footer-logo--dark"
-        src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=True.png"
-        alt="RinLit"
-      />
+  <div class="footer-inner">
+    <div class="footer-panel">
+      <div class="footer-brand">
+        <Link to="" class="footer-logo-link" aria-label="RinLit Home">
+          <img
+            class="footer-logo footer-logo--light"
+            src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=True.png"
+            alt="RinLit"
+          />
+          <img
+            class="footer-logo footer-logo--dark"
+            src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=True.png"
+            alt="RinLit"
+          />
+        </Link>
 
-      <nav class="flex flex-wrap justify-center gap-6 text-body">
-        <Link to="fields" class="footer-link">{__('nav.fields')}</Link>
-        <Link to="gallery" class="footer-link">{__('nav.gallery')}</Link>
-        <Link to="writing" class="footer-link">{__('nav.writing')}</Link>
-        <Link to="me" class="footer-link">{__('nav.me')}</Link>
+        <p class="footer-tagline">{__('footer.tagline')}</p>
+      </div>
+
+      <nav class="footer-nav" aria-label="Footer navigation">
+        {navItems.map((item) => (
+          <Pill panel flat class="footer-link-pill" data-href={item.href}>
+            <span class="footer-link__label">{item.label}</span>
+            <span class="footer-link__meta">{item.meta}</span>
+          </Pill>
+        ))}
       </nav>
 
-      <p class="footer-copy text-caption">
+      <div class="footer-bottom">
+        <p class="footer-copy">
         {__('footer.copyright').replace('{year}', String(year))}
-      </p>
+        </p>
+        <p class="footer-note">{__('footer.note')}</p>
+      </div>
     </div>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    background: var(--footer-bg);
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 14% 0%, color-mix(in srgb, var(--color-primary-300) 30%, transparent), transparent 34%),
+      linear-gradient(180deg, var(--bg) 0%, var(--footer-bg) 42%, var(--footer-bg) 100%);
     color: var(--text);
-    padding-top: 48px;
-    padding-bottom: 112px;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    padding: 72px 24px 124px;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+
+  :global(:root.dark) .site-footer {
+    background:
+      radial-gradient(circle at 16% 0%, rgba(140, 126, 205, 0.18), transparent 36%),
+      radial-gradient(circle at 86% 18%, rgba(65, 53, 99, 0.22), transparent 34%),
+      linear-gradient(180deg, var(--bg) 0%, #151525 44%, #101216 100%);
+  }
+
+  .site-footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: min(1180px, calc(100% - 48px));
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+    transform: translateX(-50%);
+  }
+
+  .footer-inner {
+    position: relative;
+    z-index: 1;
+    width: min(1180px, 100%);
+    margin: 0 auto;
+  }
+
+  .footer-panel {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.1fr);
+    gap: 56px;
+    align-items: start;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 22px;
+  }
+
+  :global(.footer-logo-link) {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  :global(.footer-logo-link:focus-visible) {
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 72%, transparent);
+    outline-offset: 6px;
+  }
+
+  .footer-logo {
+    height: 34px;
+    width: auto;
+  }
+
+  .footer-logo--light {
+    display: var(--logo-light-display);
+  }
+
+  .footer-logo--dark {
+    display: var(--logo-dark-display);
+  }
+
+  .footer-tagline {
+    max-width: 420px;
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.75;
+    font-weight: 600;
+  }
+
+  .footer-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  :global(.footer-link-pill) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    min-height: 76px;
+    border-radius: 24px;
+    padding: 16px 18px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
+
+  :global(.footer-link-pill) .footer-link__label {
+    color: var(--text-strong);
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  :global(.footer-link-pill) .footer-link__meta {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+
+  .footer-bottom {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+
+  .footer-copy,
+  .footer-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+
+  .footer-note {
+    text-align: right;
   }
 
   @media (min-width: 769px) {
     .site-footer {
-      padding-bottom: 48px;
+      padding-bottom: 56px;
     }
   }
 
-  .footer-logo {
-    height: 32px;
-    width: auto;
-  }
-  .footer-logo--light { display: var(--logo-light-display); }
-  .footer-logo--dark { display: var(--logo-dark-display); }
+  @media (max-width: 860px) {
+    .footer-panel {
+      grid-template-columns: 1fr;
+      gap: 36px;
+    }
 
-  .footer-link {
-    color: inherit;
-    text-decoration: none;
-    transition: opacity 0.2s ease;
-  }
-  .footer-link:hover {
-    opacity: 0.7;
+    .footer-bottom {
+      grid-column: auto;
+    }
   }
 
-  .footer-copy {
-    opacity: 0.5;
+  @media (max-width: 640px) {
+    .site-footer {
+      padding: 56px 20px 148px;
+      background:
+        radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-primary-300) 24%, transparent), transparent 38%),
+        linear-gradient(180deg, var(--bg) 0%, var(--footer-bg) 46%, var(--footer-bg) 100%);
+    }
+
+    :global(:root.dark) .site-footer {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(140, 126, 205, 0.2), transparent 42%),
+        linear-gradient(180deg, var(--bg) 0%, #151525 48%, #101216 100%);
+    }
+
+    .site-footer::before {
+      width: calc(100% - 40px);
+    }
+
+    .footer-brand {
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+    }
+
+    .footer-logo {
+      height: 30px;
+    }
+
+    .footer-tagline {
+      max-width: 320px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .footer-nav {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    :global(.footer-link-pill) {
+      min-height: 64px;
+      border-radius: 22px;
+      padding: 14px 16px;
+    }
+
+    .footer-bottom {
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding-top: 22px;
+      text-align: center;
+    }
+
+    .footer-note {
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 360px) {
+    :global(.footer-link-pill) .footer-link__meta {
+      font-size: 12px;
+    }
   }
 </style>
+
+<script is:inline>
+  (function () {
+    var pills = document.querySelectorAll('.footer-link-pill');
+    pills.forEach(function (pill) {
+      var href = pill.getAttribute('data-href');
+      if (!href) return;
+      pill.addEventListener('click', function (e) {
+        if (e.defaultPrevented) return;
+        window.location.href = href;
+      });
+      pill.addEventListener('dragstart', function (e) {
+        e.preventDefault();
+      });
+    });
+  })();
+</script>

@@ -16,7 +16,7 @@ const __ = (key: string) => t(lang, key);
       <h2 class="text-title-large font-sans font-bold tracking-tight text-dark">
         {__('about.title')}
       </h2>
-      <p class="mt-3 text-body-large text-neutral-500">
+      <p class="mt-3 text-body-large text-neutral-600">
         {__('about.subtitle')}
       </p>
       <div class="mt-8">
@@ -24,30 +24,218 @@ const __ = (key: string) => t(lang, key);
       </div>
     </div>
 
-    <div class="business-card mx-auto mt-16 max-w-md overflow-hidden rounded-3xl p-16 shadow-lg">
-      <div class="flex items-center justify-center">
-        <img
-          src="/images/logo/Type=Square,%20Mode=Light,%20Monochrome=False.png"
-          alt="RinLit"
-          class="bc-logo bc-logo--light h-28 w-auto opacity-90"
-        />
-        <img
-          src="/images/logo/Type=Square,%20Mode=Dark,%20Monochrome=False.png"
-          alt="RinLit"
-          class="bc-logo bc-logo--dark h-28 w-auto opacity-90"
-        />
+    <div class="business-card-scene mx-auto mt-16">
+      <div class="business-card-tilt" data-business-card-tilt>
+        <button class="business-card" type="button" aria-label="RinLit business card" aria-pressed="false" data-business-card>
+          <span class="business-card__face business-card__face--front">
+            <img
+              class="business-card__image business-card__image--light"
+              src="/images/business_card/Property%201=Front.png"
+              alt="RinLit business card front"
+              draggable="false"
+            />
+            <img
+              class="business-card__image business-card__image--dark"
+              src="/images/business_card/Face=Front,%20Mode=Dark.png"
+              alt="RinLit business card front"
+              draggable="false"
+            />
+          </span>
+          <span class="business-card__face business-card__face--back">
+            <img
+              class="business-card__image business-card__image--light"
+              src="/images/business_card/Property%201=Back.png"
+              alt="RinLit business card back"
+              draggable="false"
+            />
+            <img
+              class="business-card__image business-card__image--dark"
+              src="/images/business_card/Face=Back,%20Mode=Dark.png"
+              alt="RinLit business card back"
+              draggable="false"
+            />
+          </span>
+        </button>
       </div>
     </div>
   </div>
 </section>
 
+<script is:inline>
+  (() => {
+    var bound = false;
+
+    function setAspectRatio() {
+      var tilts = document.querySelectorAll('[data-business-card-tilt]');
+      for (var i = 0; i < tilts.length; i++) {
+        var card = tilts[i].querySelector('[data-business-card]');
+        if (!card) continue;
+        var frontImg = card.querySelector('.business-card__face--front .business-card__image--light');
+        if (frontImg) {
+          if (frontImg.complete && frontImg.naturalWidth > 0) {
+            card.style.aspectRatio = frontImg.naturalWidth + ' / ' + frontImg.naturalHeight;
+          } else {
+            frontImg.addEventListener('load', function () {
+              card.style.aspectRatio = frontImg.naturalWidth + ' / ' + frontImg.naturalHeight;
+            });
+          }
+        }
+      }
+    }
+
+    function bindEvents() {
+      if (bound) return;
+      bound = true;
+
+      var tilts = document.querySelectorAll('[data-business-card-tilt]');
+
+      for (var i = 0; i < tilts.length; i++) {
+        var tilt = tilts[i];
+        var card = tilt.querySelector('[data-business-card]');
+        if (!card) continue;
+
+        var touchStartX = 0;
+        var touchStartY = 0;
+        var isDragging = false;
+
+        function resetTilt() {
+          tilt.style.setProperty('--rotate-x', '0deg');
+          tilt.style.setProperty('--rotate-y', '0deg');
+          isDragging = false;
+        }
+
+        function updateTilt(clientX, clientY) {
+          var rect = tilt.getBoundingClientRect();
+          var x = (clientX - rect.left) / rect.width - 0.5;
+          var y = (clientY - rect.top) / rect.height - 0.5;
+          tilt.style.setProperty('--rotate-x', (-y * 12).toFixed(2) + 'deg');
+          tilt.style.setProperty('--rotate-y', (x * 14).toFixed(2) + 'deg');
+        }
+
+        card.addEventListener('click', function () {
+          if (isDragging) return;
+          var flipped = card.toggleAttribute('data-flipped');
+          card.setAttribute('aria-pressed', String(flipped));
+        });
+
+        tilt.addEventListener('pointermove', function (event) {
+          updateTilt(event.clientX, event.clientY);
+        });
+
+        tilt.addEventListener('touchstart', function (event) {
+          var touch = event.touches[0];
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+          isDragging = false;
+          updateTilt(touch.clientX, touch.clientY);
+        }, { passive: true });
+
+        tilt.addEventListener('touchmove', function (event) {
+          var touch = event.touches[0];
+          var dx = touch.clientX - touchStartX;
+          var dy = touch.clientY - touchStartY;
+          if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            isDragging = true;
+            event.preventDefault();
+          }
+          updateTilt(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        tilt.addEventListener('touchend', resetTilt);
+        tilt.addEventListener('touchcancel', resetTilt);
+        tilt.addEventListener('pointerleave', resetTilt);
+        card.addEventListener('blur', resetTilt);
+      }
+    }
+
+    setAspectRatio();
+    bindEvents();
+
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) setAspectRatio();
+    });
+  })();
+</script>
+
 <style>
-  .business-card {
-    background: var(--bg);
-    border: 2px solid var(--border);
-    transition: background-color 0.25s ease, border-color 0.25s ease;
+  .bg-light :global(.pill) {
+    display: inline-block;
   }
 
-  .bc-logo--light { display: var(--logo-light-display); }
-  .bc-logo--dark { display: var(--logo-dark-display); }
+  .business-card-scene {
+    width: min(100%, 36rem);
+    perspective: 1000px;
+  }
+
+  .business-card-tilt {
+    --rotate-x: 0deg;
+    --rotate-y: 0deg;
+
+    transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y));
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .business-card {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    padding: 0;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgb(0 0 0 / 14%);
+    transform-style: preserve-3d;
+    transition: transform 0.9s cubic-bezier(0.66, -0.2, 0.33, 1.2), box-shadow 0.25s ease;
+  }
+
+  .business-card-scene:hover .business-card,
+  .business-card:focus-visible {
+    box-shadow: 0 26px 60px rgb(0 0 0 / 18%);
+    outline: none;
+  }
+
+  .business-card[data-flipped] {
+    transform: rotateY(180deg);
+  }
+
+  .business-card__face {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    backface-visibility: hidden;
+  }
+
+  .business-card__face--back {
+    transform: rotateY(180deg);
+  }
+
+  .business-card__face img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .business-card__image--dark {
+    display: none;
+  }
+
+  :global(:root.dark) .business-card__image--light {
+    display: none;
+  }
+
+  :global(:root.dark) .business-card__image--dark {
+    display: block;
+  }
 </style>

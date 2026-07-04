@@ -31,9 +31,9 @@
   "gallery.submit": "Submit",
   "gallery.go": "Go",
 
-  "about.title": "About",
-  "about.subtitle": "Learn about me",
-  "about.cta": "Learn More",
+  "about.title": "About Me",
+  "about.subtitle": "Building software, design systems, and all sorts of fun projects ( ´ ▽ ` )ﾉ",
+  "about.cta": "Get to know me",
 
   "page.fields": "Fields",
   "page.fields.desc": "Creative fields / sub-site collection",
@@ -300,5 +300,11 @@
   "notFound.fields": "Explore Fields",
   "notFound.actions": "404 page actions",
 
+  "footer.tagline": "A personal creative space for software, design, writing, and experimental ideas.",
+  "footer.nav.fields": "Software / Design / Experiments",
+  "footer.nav.gallery": "Collections and visual notes",
+  "footer.nav.writing": "Essays and expressive notes",
+  "footer.nav.me": "Bio and contact",
+  "footer.note": "Made with Astro",
   "footer.copyright": "© {year} RinLit. All rights reserved."
 }

@@ -1,0 +1,45 @@
+---
+interface Props {
+  class?: string;
+  style?: string;
+}
+
+const { class: className = '', style = '' } = Astro.props;
+---
+
+<div class={`skeleton ${className}`} style={style} aria-hidden="true"></div>
+
+<style>
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: inherit;
+    background: color-mix(in srgb, var(--bg-muted) 78%, var(--bg) 22%);
+  }
+
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--glow) 44%, transparent) 48%,
+      transparent 100%
+    );
+    animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton::after {
+      animation: none;
+    }
+  }
+</style>

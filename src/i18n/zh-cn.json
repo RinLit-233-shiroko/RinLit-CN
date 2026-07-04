@@ -1,5 +1,5 @@
 {
-  "site.title": "RinLit — 构建软件、设计系统和实验性想法",
+  "site.title": "RinLit — 做软件和设计，还有、些有意思的项目",
 
   "nav.fields": "领域",
   "nav.gallery": "收藏",
@@ -26,14 +26,14 @@
 
   "fields.title": "探索我的领域",
 
-  "gallery.title": "画廊",
-  "gallery.subtitle": "我的收藏、想法或小作品",
+  "gallery.title": "RinLit Gallery",
+  "gallery.subtitle": "我的收藏、想法以及跟群友的日常存档",
   "gallery.submit": "投稿",
   "gallery.go": "前往",
 
-  "about.title": "关于",
-  "about.subtitle": "了解我",
-  "about.cta": "了解更多",
+  "about.title": "关于我",
+  "about.subtitle": "做软件、设计系统，也喜欢折腾各种有趣的项目 ( ´ ▽ ` )ﾉ",
+  "about.cta": "认识我",
 
   "page.fields": "领域",
   "page.fields.desc": "创作领域 / 子官网集合",
@@ -41,8 +41,8 @@
   "page.fields.design": "设计",
   "page.fields.experiment": "实验",
 
-  "page.gallery": "画廊",
-  "page.gallery.desc": "视觉收藏",
+  "page.gallery": "Gallery",
+  "page.gallery.desc": "原 Rin's Hub ——只是 RinLit 和她的**群友一起发电的地方",
 
   "page.writing": "随笔",
   "page.writing.desc": "随笔 / 感性表达",
@@ -300,5 +300,11 @@
   "notFound.fields": "探索领域",
   "notFound.actions": "404 页面操作",
 
+  "footer.tagline": "一个用于收集软件、设计、随笔和实验性想法的个人创作空间。",
+  "footer.nav.fields": "软件 / 设计 / 实验",
+  "footer.nav.gallery": "收藏与灵感存档",
+  "footer.nav.writing": "文字和感性表达",
+  "footer.nav.me": "Bio 与联系方式",
+  "footer.note": "Made with Astro",
   "footer.copyright": "© {year} RinLit. 保留所有权利。"
 }

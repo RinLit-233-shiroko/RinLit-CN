@@ -1,6 +1,7 @@
 ---
 import { t } from '../../i18n/index';
 import Button from '../../components/Button.astro';
+import Skeleton from '../../components/Skeleton.astro';
 
 export interface Props {
   lang?: string;
@@ -8,6 +9,7 @@ export interface Props {
 
 const { lang } = Astro.props;
 const __ = (key: string) => t(lang, key);
+const skeletonItems = [178, 132, 206, 154, 190, 142, 170, 218, 196, 168, 224, 184];
 ---
 
 <section class="bg-light py-24 transition-colors duration-300">
@@ -20,19 +22,283 @@ const __ = (key: string) => t(lang, key);
         {__('gallery.subtitle')}
       </p>
       <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <Button to="gallery" primary flat>{__('gallery.submit')}</Button>
-        <Button to="gallery" flat>{__('gallery.go')}</Button>
+        <Button to="gallery" flat>{__('gallery.submit')}</Button>
+        <Button to="gallery" primary flat>{__('gallery.go')}</Button>
       </div>
     </div>
 
-    <div class="gallery-preview mt-12 w-full rounded-2xl shadow-sm" style="aspect-ratio: 1440/520">
+    <div class="gallery-preview mt-12 w-full" data-gallery-preview>
+      <div class="gallery-preview__skeleton" data-gallery-preview-skeleton>
+        {skeletonItems.map((height) => (
+          <Skeleton class="gallery-preview__skeleton-item" style={`height: ${height}px`} />
+        ))}
+      </div>
+      <div class="gallery-preview__grid" data-gallery-preview-grid aria-hidden="true"></div>
     </div>
   </div>
 </section>
 
-<style>
+<script>
+  import { fetchPublishedGalleryItems } from '../../lib/gallery.client';
+
+  const ITEMS_PER_COLUMN = 3;
+  const SAMPLE_POOL = 80;
+
+  function getDaySeed() {
+    const now = new Date();
+    return (now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()) >>> 0;
+  }
+
+  function mulberry32(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffle(array, rng) {
+    const arr = array.slice();
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rng() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function getPreviewColumnCount() {
+    if (window.matchMedia('(max-width: 900px)').matches) return 2;
+    if (window.matchMedia('(max-width: 1200px)').matches) return 3;
+    return 4;
+  }
+
+  function makeGalleryPreviewItem(item) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'gallery-preview__item';
+    if (item.width && item.height) {
+      wrapper.style.aspectRatio = `${item.width} / ${item.height}`;
+    }
+
+    const image = document.createElement('img');
+    image.className = 'gallery-preview__image';
+    image.src = item.image_url;
+    image.alt = item.title || '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+
+    wrapper.appendChild(image);
+    return wrapper;
+  }
+
+  function getEstimatedItemHeight(item, columnWidth) {
+    if (!item.width || !item.height || item.width <= 0 || item.height <= 0) return 180;
+    return Math.max(160, columnWidth * (item.height / item.width));
+  }
+
+  function renderMasonryItems(grid, items, columnCount) {
+    const gap = parseFloat(getComputedStyle(grid).getPropertyValue('--gallery-preview-gap')) || 18;
+    const columnWidth = (grid.clientWidth - gap * (columnCount - 1)) / columnCount;
+    const columns = Array.from({ length: columnCount }, () => {
+      const column = document.createElement('div');
+      column.className = 'gallery-preview__column';
+      return column;
+    });
+    const columnHeights = Array.from({ length: columnCount }, () => 0);
+
+    for (const item of items) {
+      const targetIndex = columnHeights.indexOf(Math.min(...columnHeights));
+      columns[targetIndex].appendChild(makeGalleryPreviewItem(item));
+      columnHeights[targetIndex] += getEstimatedItemHeight(item, columnWidth) + gap;
+    }
+
+    grid.replaceChildren(...columns);
+  }
+
+  async function initGalleryPreview() {
+    const preview = document.querySelector('[data-gallery-preview]');
+    const grid = document.querySelector('[data-gallery-preview-grid]');
+    const skeleton = document.querySelector('[data-gallery-preview-skeleton]');
+    if (!preview || !grid || !skeleton || preview.dataset.loaded === 'true') return;
+
+    preview.hidden = false;
+    grid.replaceChildren();
+    grid.setAttribute('aria-hidden', 'true');
+    skeleton.hidden = false;
+
+    try {
+      const { data, error } = await fetchPublishedGalleryItems(SAMPLE_POOL);
+      if (error) throw error;
+
+      const items = ((data || []).filter((item) => item.image_url));
+      if (!items.length) {
+        preview.hidden = true;
+        return;
+      }
+
+      const rng = mulberry32(getDaySeed());
+      const previewLimit = getPreviewColumnCount() * ITEMS_PER_COLUMN;
+      const picked = shuffle(items, rng).slice(0, previewLimit);
+
+      renderMasonryItems(grid, picked, getPreviewColumnCount());
+      preview.dataset.loaded = 'true';
+      skeleton.hidden = true;
+      grid.removeAttribute('aria-hidden');
+    } catch {
+      preview.hidden = true;
+    }
+  }
+
+  initGalleryPreview();
+  document.addEventListener('astro:page-load', initGalleryPreview);
+</script>
+
+<style is:global>
   .gallery-preview {
-    background: var(--bg-muted);
-    transition: background-color 0.25s ease;
+    position: relative;
+    overflow: hidden;
+    height: 540px;
+    --gallery-preview-gap: 18px;
+    --gallery-preview-radius: 24px;
+    --gallery-preview-min-item: 160px;
+    background: transparent;
+  }
+
+  .gallery-preview::before,
+  .gallery-preview::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    height: 18%;
+    pointer-events: none;
+  }
+
+  .gallery-preview::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+  }
+
+  .gallery-preview::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+  }
+
+  .gallery-preview[hidden] {
+    display: none;
+  }
+
+  .gallery-preview__skeleton,
+  .gallery-preview__grid {
+    width: 100%;
+    height: 100%;
+  }
+
+  .gallery-preview__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--gallery-preview-gap);
+    overflow: hidden;
+  }
+
+  .gallery-preview__skeleton {
+    column-count: 4;
+    column-gap: var(--gallery-preview-gap);
+  }
+
+  .gallery-preview .gallery-preview__column {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--gallery-preview-gap);
+  }
+
+  .gallery-preview__skeleton[hidden] {
+    display: none;
+  }
+
+  .gallery-preview .gallery-preview__skeleton-item,
+  .gallery-preview .gallery-preview__item {
+    display: block;
+    width: 100%;
+    break-inside: avoid;
+    border-radius: var(--gallery-preview-radius);
+    overflow: hidden;
+    background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+  }
+
+  .gallery-preview .gallery-preview__item {
+    position: relative;
+    min-height: var(--gallery-preview-min-item);
+  }
+
+  .gallery-preview .gallery-preview__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: gallery-preview-image-in 0.6s ease forwards;
+  }
+
+  .gallery-preview .gallery-preview__item:nth-child(2) .gallery-preview__image { animation-delay: 0.04s; }
+  .gallery-preview .gallery-preview__item:nth-child(3) .gallery-preview__image { animation-delay: 0.08s; }
+  .gallery-preview .gallery-preview__item:nth-child(4) .gallery-preview__image { animation-delay: 0.12s; }
+  .gallery-preview .gallery-preview__item:nth-child(5) .gallery-preview__image { animation-delay: 0.16s; }
+  .gallery-preview .gallery-preview__item:nth-child(6) .gallery-preview__image { animation-delay: 0.2s; }
+  .gallery-preview .gallery-preview__item:nth-child(7) .gallery-preview__image { animation-delay: 0.24s; }
+  .gallery-preview .gallery-preview__item:nth-child(8) .gallery-preview__image { animation-delay: 0.28s; }
+
+  @keyframes gallery-preview-image-in {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .gallery-preview__skeleton {
+      column-count: 3;
+    }
+
+    .gallery-preview__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 900px) {
+    .gallery-preview {
+      height: 500px;
+      --gallery-preview-gap: 14px;
+      --gallery-preview-radius: 20px;
+    }
+
+    .gallery-preview__skeleton {
+      column-count: 2;
+    }
+
+    .gallery-preview__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .gallery-preview {
+      height: 460px;
+      --gallery-preview-gap: 12px;
+      --gallery-preview-radius: 18px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gallery-preview .gallery-preview__image {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
 </style>

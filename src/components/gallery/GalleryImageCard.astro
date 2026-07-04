@@ -29,7 +29,7 @@ const favoriteCount = item.favorite_count ?? item.favoriteCount ?? 0;
 const aspectRatio = item.width && item.height ? `${item.width} / ${item.height}` : undefined;
 ---
 
-<Pill flat class={`gallery-card-shell ${compact ? 'gallery-card-shell--compact' : ''}`}>
+<Pill panel flat class={`gallery-card-shell ${compact ? 'gallery-card-shell--compact' : ''}`}>
   <article class:list={["gallery-card", { "gallery-card--compact": compact }]} data-gallery-item-id={item.id} style={aspectRatio ? { aspectRatio } : undefined} draggable="false">
     <img class="gallery-card__image" src={item.image_url} alt={item.title || 'Gallery image'} loading="lazy" draggable="false" />
     <div class="gallery-card__text-blur" aria-hidden="true"></div>

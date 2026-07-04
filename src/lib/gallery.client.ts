@@ -4,6 +4,7 @@ import type { AccountRole, Database, GalleryItemModerationRequestStatus, Gallery
 export const GALLERY_BUCKET = 'gallery';
 export const GALLERY_MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const GALLERY_ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+export const GALLERY_STORAGE_CACHE_CONTROL_SECONDS = 30 * 60;
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -133,13 +134,16 @@ export async function fetchGalleryTagSuggestions(limit = 100) {
     .limit(limit);
 }
 
-export async function fetchPublishedGalleryItems() {
+export async function fetchPublishedGalleryItems(limit?: number) {
   const supabase = getClient();
-  return await supabase
+  let query = supabase
     .from('gallery_items')
     .select('id,title,description,image_url,width,height,created_at,user_id,status,gallery_item_tags(gallery_tags(id,name)),gallery_favorites(count)')
     .eq('status', 'PUBLISHED')
     .order('created_at', { ascending: false });
+
+  if (limit && limit > 0) query = query.limit(limit);
+  return await query;
 }
 
 export async function fetchMyGalleryFavoriteItemIds(userId: string, galleryItemIds: string[]) {
@@ -195,7 +199,7 @@ export async function submitGalleryItem(params: {
   const filePath = `${params.userId}/${crypto.randomUUID()}.${getStorageExtension(params.file)}`;
   const { error: uploadError } = await supabase.storage
     .from(GALLERY_BUCKET)
-    .upload(filePath, params.file, { contentType: params.file.type, upsert: false });
+    .upload(filePath, params.file, { contentType: params.file.type, cacheControl: String(GALLERY_STORAGE_CACHE_CONTROL_SECONDS), upsert: false });
 
   if (uploadError) throw uploadError;
 
@@ -337,4 +341,5 @@ export async function decideGalleryModerationRequest(params: {
     if (itemError) throw itemError;
     if (updatedItem?.status !== nextStatus) throw new Error('稿件状态更新结果与预期不一致。');
   }
+
 }

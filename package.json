@@ -11,6 +11,7 @@
     "generate-types": "wrangler types"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.1.1",
     "@astrojs/node": "^11.0.0",
     "@supabase/supabase-js": "^2.49.0",
     "@tabler/icons": "^3.44.0",

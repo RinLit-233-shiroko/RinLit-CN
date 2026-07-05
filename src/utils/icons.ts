@@ -1,24 +1,24 @@
 type IconVariant = 'outline' | 'filled';
 
-const outlineIcons = import.meta.glob<string>('../../node_modules/@tabler/icons/icons/outline/*.svg', {
-  eager: true,
-  import: 'default',
-  query: '?raw',
-});
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const filledIcons = import.meta.glob<string>('../../node_modules/@tabler/icons/icons/filled/*.svg', {
-  eager: true,
-  import: 'default',
-  query: '?raw',
-});
-
-const iconSets: Record<IconVariant, Record<string, string>> = {
-  outline: outlineIcons,
-  filled: filledIcons,
-};
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ICONS_BASE = path.resolve(__dirname, '..', '..', 'node_modules', '@tabler', 'icons', 'icons');
+const cache = new Map<string, string>();
 
 function readRaw(name: string, variant: IconVariant): string | null {
-  return iconSets[variant][`../../node_modules/@tabler/icons/icons/${variant}/${name}.svg`] ?? null;
+  const key = `${variant}:${name}`;
+  if (cache.has(key)) return cache.get(key)!;
+
+  try {
+    const raw = fs.readFileSync(path.join(ICONS_BASE, variant, `${name}.svg`), 'utf-8');
+    cache.set(key, raw);
+    return raw;
+  } catch {
+    return null;
+  }
 }
 
 export function getIcon(

@@ -366,9 +366,14 @@ const __ = (key: string) => t(lang, key);
 </style>
 
 <script>
-  import { signIn, signUp, resetPasswordForEmail, signInWithGithub, sendEmailOtp, verifyEmailOtp } from '../../lib/auth.client';
-
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  let authClientPromise: Promise<typeof import('../../lib/auth.client')> | null = null;
+
+  function loadAuthClient() {
+    authClientPromise ||= import('../../lib/auth.client');
+    return authClientPromise;
+  }
 
   const ERROR_I18N_CODES: Record<string, string> = {
     invalid_credentials: 'invalid_credentials',
@@ -765,6 +770,7 @@ const __ = (key: string) => t(lang, key);
           displayName = dnInput?.value.trim() || undefined;
         }
 
+        const { signIn, signUp } = await loadAuthClient();
         const { error, data } = this.mode === 'signin'
           ? await signIn(this.emailValue, password)
           : await signUp(this.emailValue, password, displayName);
@@ -821,6 +827,7 @@ const __ = (key: string) => t(lang, key);
         const lang = window.location.pathname.split('/')[1] || 'zh-cn';
         const redirectTo = `${window.location.origin}/${lang}/account/update-password`;
 
+        const { resetPasswordForEmail } = await loadAuthClient();
         const { error } = await resetPasswordForEmail(email, redirectTo);
 
         if (error) {
@@ -852,6 +859,7 @@ const __ = (key: string) => t(lang, key);
       this.setOtpSendLoading(true);
 
       try {
+        const { sendEmailOtp } = await loadAuthClient();
         const { error } = await sendEmailOtp(this.emailValue);
         if (error) {
           this.setError('auth-error-otp', getAuthErrorMessage(error));
@@ -935,6 +943,7 @@ const __ = (key: string) => t(lang, key);
       this.setOtpLoading(true);
 
       try {
+        const { verifyEmailOtp } = await loadAuthClient();
         const { error, data } = await verifyEmailOtp(this.emailValue, token);
 
         if (error) {
@@ -1065,6 +1074,7 @@ const __ = (key: string) => t(lang, key);
         if (!btn) return;
         e.preventDefault();
         try {
+          const { signInWithGithub } = await loadAuthClient();
           const { error } = await signInWithGithub();
           if (error) {
             const i18n = (window as any).__AUTH_I18N || {};

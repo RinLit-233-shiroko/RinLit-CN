@@ -635,7 +635,12 @@ const isActive = (href: string) => {
 </script>
 
 <script>
-  import { getSession, signOut, onAuthStateChange } from '../../lib/auth.client';
+  let authClientPromise: Promise<typeof import('../../lib/auth.client')> | null = null;
+
+  function loadAuthClient() {
+    authClientPromise ||= import('../../lib/auth.client');
+    return authClientPromise;
+  }
 
   function updateAuthUI() {
     const userArea = document.getElementById('auth-btn-signin')?.closest('.user-area');
@@ -661,6 +666,7 @@ const isActive = (href: string) => {
 
   async function checkSession() {
     try {
+      const { getSession } = await loadAuthClient();
       const session = await getSession();
       hasSession = !!session;
       currentUserLabel = session?.user?.user_metadata?.display_name || session?.user?.email || '';
@@ -676,18 +682,26 @@ const isActive = (href: string) => {
     checkSession();
   });
 
-  // 监听 Supabase auth 状态变化（OAuth 弹窗登录后自动触发）
-  onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      hasSession = true;
-      currentUserLabel = session.user?.user_metadata?.display_name || session.user?.email || '';
-      updateAuthUI();
-    } else if (event === 'SIGNED_OUT') {
-      hasSession = false;
-      currentUserLabel = '';
-      updateAuthUI();
-    }
-  });
+  async function bindAuthStateChange() {
+    const { onAuthStateChange } = await loadAuthClient();
+    onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        hasSession = true;
+        currentUserLabel = session.user?.user_metadata?.display_name || session.user?.email || '';
+        updateAuthUI();
+      } else if (event === 'SIGNED_OUT') {
+        hasSession = false;
+        currentUserLabel = '';
+        updateAuthUI();
+      }
+    });
+  }
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => bindAuthStateChange().catch(() => null), { timeout: 2400 });
+  } else {
+    window.setTimeout(() => bindAuthStateChange().catch(() => null), 600);
+  }
 
   document.addEventListener('auth:signed-in', ((e: CustomEvent) => {
     hasSession = true;
@@ -705,6 +719,7 @@ const isActive = (href: string) => {
   }
 
   async function handleSignOut() {
+    const { signOut } = await loadAuthClient();
     await signOut().catch(() => null);
     hasSession = false;
     currentUserLabel = '';

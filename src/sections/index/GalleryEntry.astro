@@ -37,10 +37,7 @@ const skeletonItems = [178, 132, 206, 154, 190, 142, 170, 218, 196, 168, 224, 18
     </div>
   </div>
 </section>
-
 <script>
-  import { fetchPublishedGalleryItems } from '../../lib/gallery.client';
-
   const ITEMS_PER_COLUMN = 3;
   const SAMPLE_POOL = 80;
 
@@ -129,6 +126,7 @@ const skeletonItems = [178, 132, 206, 154, 190, 142, 170, 218, 196, 168, 224, 18
     skeleton.hidden = false;
 
     try {
+      const { fetchPublishedGalleryItems } = await import('../../lib/gallery.client');
       const { data, error } = await fetchPublishedGalleryItems(SAMPLE_POOL);
       if (error) throw error;
 
@@ -151,8 +149,17 @@ const skeletonItems = [178, 132, 206, 154, 190, 142, 170, 218, 196, 168, 224, 18
     }
   }
 
-  initGalleryPreview();
-  document.addEventListener('astro:page-load', initGalleryPreview);
+  function scheduleGalleryPreview() {
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => initGalleryPreview(), { timeout: 1600 });
+      return;
+    }
+
+    window.setTimeout(initGalleryPreview, 300);
+  }
+
+  scheduleGalleryPreview();
+  document.addEventListener('astro:page-load', scheduleGalleryPreview);
 </script>
 
 <style is:global>

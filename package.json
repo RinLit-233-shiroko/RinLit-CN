@@ -4,6 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
+    "icons:build": "node scripts/build-icons.mjs",
+    "predev": "node scripts/build-icons.mjs",
+    "prebuild": "node scripts/build-icons.mjs",
     "dev": "astro dev",
     "dev public": "astro dev --host",
     "build": "astro build",

@@ -22,10 +22,7 @@ const isZh = lang === 'zh-cn';
 const heartOutlineIcon = getIcon('heart', 18);
 const heartFilledIcon = getIcon('heart', 18, 'filled');
 const supabase = createServerClient();
-const shouldFetchGalleryAtBuild = import.meta.env.PUBLIC_ENABLE_STATIC_GALLERY === 'true';
-const galleryResult = shouldFetchGalleryAtBuild
-  ? await fetchPublishedGalleryItems()
-  : { data: [], error: null };
+const galleryResult = await fetchPublishedGalleryItems();
 
 // 投稿人 display_name 批量查询
 const contributorIds = Array.from(new Set(((galleryResult.data || []) as any[]).map((row) => row.user_id).filter(Boolean)));

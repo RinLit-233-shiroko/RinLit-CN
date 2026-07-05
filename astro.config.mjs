@@ -12,6 +12,6 @@ export default defineConfig({
     },
   },
 
-  output: "server",
-  adapter: cloudflare(),
+  output: 'static',
+  adapter: netlify(),
 });

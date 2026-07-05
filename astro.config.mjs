@@ -1,7 +1,4 @@
 import { defineConfig } from 'astro/config';
-import node from "@astrojs/node";
-
-import cloudflare from '@astrojs/cloudflare';
 
 export default defineConfig({
   i18n: {
@@ -12,6 +9,5 @@ export default defineConfig({
     },
   },
 
-  output: "server",
-  adapter: cloudflare(),
+  output: "static",
 });

@@ -2,7 +2,7 @@
   "site.title": "RinLit — 做软件和设计，还有、些有意思的项目",
 
   "nav.fields": "领域",
-  "nav.gallery": "收藏",
+  "nav.gallery": "Gallery",
   "nav.writing": "随笔",
   "nav.me": "我",
   "nav.language": "语言",
@@ -300,11 +300,14 @@
   "notFound.fields": "探索领域",
   "notFound.actions": "404 页面操作",
 
-  "footer.tagline": "一个用于收集软件、设计、随笔和实验性想法的个人创作空间。",
-  "footer.nav.fields": "软件 / 设计 / 实验",
-  "footer.nav.gallery": "收藏与灵感存档",
-  "footer.nav.writing": "文字和感性表达",
-  "footer.nav.me": "Bio 与联系方式",
+  "construction.status": "还在搭建中",
+  "construction.desc": "页面正在建设中，内容将陆续补充。",
+
+  "footer.tagline": "做软件和设计，还有、些有意思的项目",
+  "footer.nav.fields": "我的项目、作品，以及我所掌握的能力",
+  "footer.nav.gallery": "图片收藏和日常",
+  "footer.nav.writing": "随笔和碎碎念",
+  "footer.nav.me": "关于我和联系方式",
   "footer.note": "Made with Astro",
   "footer.copyright": "© {year} RinLit. 保留所有权利。"
 }

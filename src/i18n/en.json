@@ -1,5 +1,5 @@
 {
-  "site.title": "RinLit — Building software, design systems, and experimental ideas",
+  "site.title": "RinLit — My personal website.",
 
   "nav.fields": "Fields",
   "nav.gallery": "Gallery",
@@ -300,11 +300,14 @@
   "notFound.fields": "Explore Fields",
   "notFound.actions": "404 page actions",
 
-  "footer.tagline": "A personal creative space for software, design, writing, and experimental ideas.",
-  "footer.nav.fields": "Software / Design / Experiments",
-  "footer.nav.gallery": "Collections and visual notes",
-  "footer.nav.writing": "Essays and expressive notes",
-  "footer.nav.me": "Bio and contact",
+  "construction.status": "Still in progress",
+  "construction.desc": "This page is under construction. Content will be added gradually.",
+
+  "footer.tagline": "Building software and design, plus some fun projects.",
+  "footer.nav.fields": "My projects, works, and the skills I've picked up",
+  "footer.nav.gallery": "Image collections and everyday notes",
+  "footer.nav.writing": "Essays and ramblings",
+  "footer.nav.me": "About me and contact",
   "footer.note": "Made with Astro",
   "footer.copyright": "© {year} RinLit. All rights reserved."
 }

@@ -50,6 +50,14 @@ const svgHtml = getIcon(icon, 18);
 </Pill>
 
 <style>
+  /* ======== 让包裹按钮的 pill 收缩到内容宽度 ========
+     .pill 默认是 block（全宽），而 .btn 是 inline-flex（内容宽），
+     会导致背景全宽、按钮左对齐。这里只对含按钮的 pill 生效，
+     不影响 panel 等其它 pill 用法。 */
+  :global(.pill:has(> .btn)) {
+    display: inline-block;
+  }
+
   /* ======== 按钮基础布局 ======== */
   .btn {
     display: inline-flex;

@@ -10,13 +10,7 @@ export interface Props {
 const { lang } = Astro.props;
 const __ = (key: string) => t(lang, key);
 
-const artifacts = [
-  { label: __('hero.artifact.software'), className: 'artifact--class', href: 'fields/software' },
-  { label: __('hero.artifact.design'),    className: 'artifact--rinui', href: 'fields/design' },
-  { label: __('hero.artifact.gallery'),   className: 'artifact--pbi',   href: 'gallery' },
-  { label: __('hero.artifact.lab'),       className: 'artifact--lab',   href: 'fields/experiment' },
-  { label: __('hero.artifact.writing'),   className: 'artifact--notes', href: 'writing' },
-];
+const artifacts: { label: string; className: string; href: string }[] = [];
 ---
 
 <section class="hero-shell" aria-label="RinLit overview">
@@ -124,10 +118,7 @@ const artifacts = [
     background:
       linear-gradient(120deg, rgba(90, 90, 100, 0.22), rgba(160, 160, 170, 0.05) 48%, rgba(60, 60, 70, 0.24)),
       linear-gradient(180deg, rgba(130, 130, 140, 0.08), rgba(16, 16, 22, 0.22));
-    box-shadow:
-      0 34px 68px rgba(0, 0, 0, 0.36),
-      inset 0 1px 0 rgba(170, 170, 180, 0.12);
-  }
+    }
 
   :global(:root.dark) .artifact {
     background: linear-gradient(180deg, rgba(140, 126, 205, 0.18), rgba(74, 60, 140, 0.08));
@@ -324,10 +315,7 @@ const artifacts = [
     background:
       linear-gradient(120deg, rgba(116, 112, 144, 0.22), rgba(255, 255, 255, 0.06) 48%, rgba(94, 91, 120, 0.22)),
       linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(74, 72, 96, 0.1));
-    box-shadow:
-      0 34px 68px rgba(54, 52, 76, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  }
+    }
 
   .artifact {
     position: relative;

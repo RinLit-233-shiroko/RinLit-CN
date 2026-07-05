@@ -1,0 +1,106 @@
+---
+import { t } from '../i18n/index';
+
+interface Props {
+  lang?: string;
+}
+
+const { lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
+---
+
+<main class="construction-page">
+  <div class="construction-panel">
+    <div class="construction-panel__bar">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="construction-panel__body">
+      <strong>{__('construction.status')}</strong>
+      <span>{__('construction.desc')}</span>
+    </div>
+  </div>
+</main>
+
+<style>
+  .construction-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 132px 24px 96px;
+    color: var(--text);
+    background:
+      radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--color-primary-200) 34%, transparent), transparent 28%),
+      linear-gradient(180deg, var(--bg) 0%, var(--surface-muted) 100%);
+  }
+
+  :global(:root.dark) .construction-page {
+    background:
+      radial-gradient(circle at 18% 18%, rgba(140, 126, 205, 0.18), transparent 30%),
+      linear-gradient(180deg, var(--bg) 0%, #111217 100%);
+  }
+
+  .construction-panel {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    box-shadow: 0 24px 70px rgba(17, 18, 24, 0.12);
+    backdrop-filter: blur(18px);
+  }
+
+  :global(:root.dark) .construction-panel {
+    background: color-mix(in srgb, #191a22 86%, transparent);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+  }
+
+  .construction-panel__bar {
+    display: flex;
+    gap: 7px;
+    border-bottom: 1px solid var(--border);
+    padding: 16px 18px;
+  }
+
+  .construction-panel__bar span {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--border-strong);
+  }
+
+  .construction-panel__body {
+    display: grid;
+    gap: 14px;
+    padding: 28px;
+  }
+
+  .construction-panel__body p,
+  .construction-panel__body span {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.7;
+    font-weight: 650;
+    text-wrap: pretty;
+  }
+
+  .construction-panel__body strong {
+    color: var(--text-strong);
+    font-size: 26px;
+    line-height: 1.1;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+
+  @media (max-width: 760px) {
+    .construction-page {
+      align-items: start;
+      padding: 112px 20px 72px;
+    }
+
+    .construction-panel {
+      border-radius: 24px;
+    }
+  }
+</style>

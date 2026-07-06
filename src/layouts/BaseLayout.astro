@@ -15,6 +15,7 @@ const {
 
 import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
+import PageLoader from '../components/layout/PageLoader.astro';
 import AuthModal from '../features/auth/AuthModal.astro';
 import { locales, defaultLocale } from '../i18n/index';
 import '../styles/global.css';
@@ -75,11 +76,14 @@ const imageUrl = new URL(image, Astro.site ?? Astro.url.origin).href;
   <body class="min-h-screen bg-light text-dark font-sans">
     <div class="site-header-mask site-header-mask--top" aria-hidden="true"></div>
     <div class="site-header-mask site-header-mask--bottom" aria-hidden="true"></div>
-    <Header currentPath={currentPath} lang={safeLang} />
+    <Header currentPath={currentPath} lang={safeLang} transition:persist />
     <main class="pb-28 md:pb-0">
-      <slot />
+      <div class="page-transition-container">
+        <slot />
+      </div>
     </main>
     <Footer lang={safeLang} />
+    <PageLoader />
     <AuthModal lang={safeLang} />
   </body>
 </html>

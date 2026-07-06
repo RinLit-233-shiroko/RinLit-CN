@@ -357,12 +357,12 @@ const aspectRatio = item.width && item.height ? `${item.width} / ${item.height}`
     }
 
     .gallery-card {
-      min-height: 0;
+      min-height: clamp(176px, 54vw, 260px);
     }
 
     .gallery-card__image {
       height: auto;
-      min-height: clamp(176px, 54vw, 260px);
+      min-height: inherit;
       object-fit: cover;
     }
 
@@ -443,5 +443,6 @@ const aspectRatio = item.width && item.height ? `${item.width} / ${item.height}`
     }
     updateDrag();
     window.addEventListener('resize', updateDrag);
+    document.addEventListener('astro:page-load', updateDrag);
   })();
 </script>

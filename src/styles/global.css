@@ -252,3 +252,113 @@
     }
   }
 }
+
+/* ==============================================
+   iOS 风格 View Transitions 自定义动画
+   - 旧页面: scale(1)→(0.96), translateY(0)→8px, opacity 1→0
+   - 新页面: 走同样路径的反向 (镜像)
+   ============================================== */
+@keyframes rinlit-vt-old-out {
+  to {
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+  }
+}
+
+@keyframes rinlit-vt-new-in {
+  from {
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+  }
+}
+
+.page-transition-container {
+  transform-origin: center var(--page-transition-origin-y, 50vh);
+}
+
+html.is-route-leaving .page-transition-container {
+  animation: rinlit-vt-old-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+html.is-route-entering .page-transition-container {
+  animation: rinlit-vt-new-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+::view-transition-old(root) {
+  animation: none;
+  opacity: 0;
+}
+
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* 尊重"减弱动画"系统偏好 */
+@media (prefers-reduced-motion: reduce) {
+  html.is-route-leaving .page-transition-container,
+  html.is-route-entering .page-transition-container,
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* ==============================================
+   Header 不参与 iOS 风格过渡
+   - .nav-header 已在 Header.astro 中设置 view-transition-name: rinlit-header
+   - 这里让其 old/new 快照瞬间切换 (old 立即透明, new 立即显示)
+   - 配合 transition:persist (DOM 保留), 视觉上完全不动
+   ============================================== */
+::view-transition-old(rinlit-header) {
+  animation: none;
+  opacity: 0;
+}
+
+::view-transition-new(rinlit-header) {
+  animation: none;
+  opacity: 1;
+}
+
+/* ==============================================
+   页面切换进度环
+   切换耗时超过阈值才显示，避免快速切换时的闪烁
+   ============================================== */
+.page-loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+}
+
+.page-loader.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease, visibility 0s;
+}
+
+.page-loader__ring {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-top-color: var(--color-primary);
+  animation: rinlit-loader-spin 0.8s linear infinite;
+}
+
+@keyframes rinlit-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-loader__ring {
+    animation-duration: 1.6s;
+  }
+}

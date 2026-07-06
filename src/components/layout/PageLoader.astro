@@ -1,0 +1,55 @@
+<div class="page-loader" id="page-loader">
+  <div class="page-loader__ring"></div>
+</div>
+
+<script>
+  const leaveDuration = 300;
+  const enterDuration = 300;
+  let enterTimer = null;
+
+  function getLoader() {
+    return document.getElementById('page-loader');
+  }
+
+  function wait(duration) {
+    return new Promise((resolve) => setTimeout(resolve, duration));
+  }
+
+  function setTransitionOrigin() {
+    const originY = window.scrollY + window.innerHeight / 2;
+    document.documentElement.style.setProperty('--page-transition-origin-y', `${originY}px`);
+  }
+
+  document.addEventListener('astro:before-preparation', (event) => {
+    const originalLoader = event.loader;
+
+    event.loader = async () => {
+      clearTimeout(enterTimer);
+      document.documentElement.classList.remove('is-route-entering');
+      setTransitionOrigin();
+      document.documentElement.classList.add('is-route-leaving');
+      await wait(leaveDuration);
+      getLoader()?.classList.add('is-visible');
+      try {
+        await originalLoader();
+      } catch (error) {
+        document.documentElement.classList.remove('is-route-leaving');
+        getLoader()?.classList.remove('is-visible');
+        throw error;
+      }
+    };
+  });
+
+  document.addEventListener('astro:before-swap', () => {
+    getLoader()?.classList.remove('is-visible');
+  });
+
+  document.addEventListener('astro:after-swap', () => {
+    document.documentElement.classList.remove('is-route-leaving');
+    document.documentElement.classList.add('is-route-entering');
+
+    enterTimer = setTimeout(() => {
+      document.documentElement.classList.remove('is-route-entering');
+    }, enterDuration);
+  });
+</script>

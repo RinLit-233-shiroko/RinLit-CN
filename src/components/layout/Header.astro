@@ -103,6 +103,7 @@ const isActive = (href: string) => {
               <span id="user-account-display"></span>
             </Button>
             <Menu id="user-menu-dropdown">
+              <MenuItem value="gallery">{__('gallery.manage')}</MenuItem>
               <MenuItem value="account">{__('auth.account')}</MenuItem>
               <MenuItem value="signout">{__('auth.signOut')}</MenuItem>
             </Menu>
@@ -138,6 +139,7 @@ const isActive = (href: string) => {
     top: 24px;
     left: 0;
     right: 0;
+    view-transition-name: rinlit-header;
     z-index: 50;
     max-width: 1448px;  /* 24*2 */
     margin: 0 auto;
@@ -758,6 +760,11 @@ const isActive = (href: string) => {
       e.preventDefault();
       e.stopPropagation();
       const value = userMenuItem.getAttribute('data-value');
+      if (value === 'gallery') {
+        const path = window.location.pathname;
+        const lang = path.startsWith('/en') ? 'en' : 'zh-cn';
+        window.location.href = '/' + lang + '/gallery/manage';
+      }
       if (value === 'account') {
         const path = window.location.pathname;
         const lang = path.startsWith('/en') ? 'en' : 'zh-cn';

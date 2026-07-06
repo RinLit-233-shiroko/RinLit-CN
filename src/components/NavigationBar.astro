@@ -81,6 +81,7 @@ const { className, itemClassName, items } = Astro.props;
   }
 
   @media (max-width: 860px) {
+    .account-nav,
     .gallery-admin-nav {
       display: flex;
       overflow-x: auto;
@@ -88,6 +89,7 @@ const { className, itemClassName, items } = Astro.props;
       padding-bottom: 4px;
     }
 
+    .account-nav__item,
     .gallery-admin-nav__item {
       flex: 0 0 auto;
     }

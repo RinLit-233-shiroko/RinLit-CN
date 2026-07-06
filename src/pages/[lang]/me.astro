@@ -10,6 +10,9 @@ export async function getStaticPaths() {
 
 const { lang } = Astro.params;
 const __ = (key: string) => t(lang, key);
+
+/* 🧪 测试 PageLoader — 模拟慢加载 */
+await new Promise((resolve) => setTimeout(resolve, 2000));
 ---
 
 <BaseLayout lang={lang} title={`${__('page.me')} — RinLit`}>

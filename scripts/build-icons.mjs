@@ -24,7 +24,7 @@ const ICONS_BASE = join(ROOT, 'node_modules', '@tabler', 'icons', 'icons');
 
 const SOURCE_EXT = /\.(astro|ts|tsx|js|jsx|mjs)$/;
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.astro', 'generated']);
-const ICON_NAME = '[a-z][a-z0-9-]+';
+const ICON_NAME = '[a-z][a-z0-9-]*';
 
 const PATTERNS = [
   new RegExp(`getIcon\\s*\\(\\s*['"\`](${ICON_NAME})['"\`]`),

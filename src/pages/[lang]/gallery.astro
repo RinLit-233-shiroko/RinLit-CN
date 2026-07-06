@@ -789,14 +789,15 @@ const autofillSuggestions = JSON.stringify([
       toolbar.style.removeProperty('--toolbar-top');
       return;
     }
-    const topBar = document.querySelector('.top-bar');
-    if (topBar) {
-      const bottom = topBar.getBoundingClientRect().bottom;
-      toolbar.style.setProperty('--toolbar-top', (bottom + 8) + 'px');
-    } else {
-      toolbar.style.setProperty('--toolbar-top', '74px');
-    }
-    // 强制浏览器在下一帧重新计算 sticky 布局
+    const fallbackTop = 74;
+    const headerControls = Array.from(document.querySelectorAll<HTMLElement>('.top-bar, .top-bar .toolbar'));
+    const headerBottom = headerControls.reduce((bottom, element) => {
+      const styles = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      if (styles.display === 'none' || styles.visibility === 'hidden' || rect.width <= 0 || rect.height <= 0) return bottom;
+      return Math.max(bottom, rect.bottom);
+    }, 0);
+    toolbar.style.setProperty('--toolbar-top', Math.max(fallbackTop, headerBottom + 8) + 'px');
     requestAnimationFrame(() => {
       toolbar.style.position = 'relative';
       requestAnimationFrame(() => {

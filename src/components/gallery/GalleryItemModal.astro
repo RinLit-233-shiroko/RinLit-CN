@@ -84,6 +84,9 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
                 <div class="gallery-item-modal__more-wrap">
                   <Button icon="dots" flat class="gallery-item-modal__more" type="button" aria-label="更多" data-gallery-more={item.id} />
                   <Menu id={`more-menu-${String(item.id).replace(/-/g, '_')}`} class="gallery-item-modal__more-menu" zIndex={1000}>
+                    <MenuItem icon="download" data-gallery-download={item.id} data-gallery-download-url={item.image_url}>
+                      下载原图
+                    </MenuItem>
                     <MenuItem icon="id">
                       复制 Gallery Item ID
                     </MenuItem>
@@ -500,6 +503,28 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
     await navigator.share(shareData);
   }
 
+  async function downloadGalleryItem(button: HTMLElement) {
+    const url = button.getAttribute('data-gallery-download-url');
+    if (!url) return;
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const ext = url.split('.').pop()?.split('?')[0] || 'jpg';
+      const itemId = button.getAttribute('data-gallery-download') || 'image';
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${itemId}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.alert('下载失败');
+    }
+  }
+
   function openGalleryItemModal(itemId: string) {
     (window as any).__initModals?.();
     const modal = (window as any).__modals?.['gallery-item-modal'];
@@ -617,6 +642,15 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
     if (menuItem) {
       const menu = menuItem.closest<HTMLElement>('.gallery-item-modal__more-menu');
       if (!menu) return;
+      (window as any).Menu_close(menu);
+
+      // 下载原图
+      if (menuItem.hasAttribute('data-gallery-download')) {
+        downloadGalleryItem(menuItem);
+        return;
+      }
+
+      // 复制 Gallery Item ID（原有逻辑）
       const itemId = menu.id.replace(/^more-menu-/, '').replace(/_/g, '-');
       if (itemId) {
         navigator.clipboard.writeText(itemId).then(() => {
@@ -635,7 +669,6 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
           }
         });
       }
-      (window as any).Menu_close(menu);
       return;
     }
 

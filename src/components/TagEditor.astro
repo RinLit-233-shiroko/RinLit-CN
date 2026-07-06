@@ -87,18 +87,27 @@ const initialSuggestions = suggestions.map((suggestion) => typeof suggestion ===
   }
 }}>
   (function () {
-    var root = document.getElementById(config.fieldId);
-    if (!root || root.dataset.tagEditorBound === 'true') return;
-    root.dataset.tagEditorBound = 'true';
+    function initTagEditor() {
+      var root = document.getElementById(config.fieldId);
+      if (!root || root.dataset.tagEditorBound === 'true') {
+        return;
+      }
+      root.dataset.tagEditorBound = 'true';
 
     var editor = root.querySelector('[data-tag-editor-control]');
     var chips = root.querySelector('[data-tag-editor-chips]');
     var input = root.querySelector('[data-tag-editor-input]');
     var count = root.querySelector('[data-tag-editor-count]');
     var hidden = root.querySelector('[data-tag-editor-hidden]');
-    if (!editor || !chips || !input || !count || !hidden) return;
+    if (!editor || !chips || !input || !count || !hidden) {
+      delete root.dataset.tagEditorBound;
+      return;
+    }
     var menu = document.getElementById(input.getAttribute('aria-controls'));
-    if (!menu) return;
+    if (!menu) {
+      delete root.dataset.tagEditorBound;
+      return;
+    }
 
     var originalMenuParent = menu.parentElement;
     var originalMenuNext = menu.nextElementSibling;
@@ -396,11 +405,16 @@ const initialSuggestions = suggestions.map((suggestion) => typeof suggestion ===
       root.removeEventListener('tag-editor:set-suggestions', onSetSuggestions);
       root.removeEventListener('tag-editor:reset', reset);
       delete window.TagEditor[config.fieldId];
+      delete root.dataset.tagEditorBound;
     }
 
     document.addEventListener('astro:before-swap', cleanup, { once: true });
 
     renderTags();
+    }
+
+    document.addEventListener('astro:page-load', initTagEditor);
+    initTagEditor();
   })();
 </script>
 
@@ -423,9 +437,12 @@ const initialSuggestions = suggestions.map((suggestion) => typeof suggestion ===
     --pill-press-scale: 1.01;
     --pill-drag-scale: 0.01;
     display: block;
+    width: 100%;
   }
 
   .tag-editor {
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
     display: flex;
     flex-wrap: wrap;

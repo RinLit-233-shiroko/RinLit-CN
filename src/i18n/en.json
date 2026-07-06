@@ -249,6 +249,7 @@
   "gallery.clearSelectedImage": "Clear selected image",
   "gallery.submissionSuccess": "Submission success",
   "gallery.manageDesc": "Manage your RinLit Gallery submissions.",
+  "gallery.manage.emptyDesc": "Upload your first artwork here. Approved submissions will appear in Gallery.",
   "gallery.reviewDesc": "Review submission and removal requests.",
   "gallery.manageNav": "Submission management navigation",
   "gallery.reviewNav": "Review navigation",

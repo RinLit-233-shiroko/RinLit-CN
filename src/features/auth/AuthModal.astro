@@ -757,6 +757,15 @@ const __ = (key: string) => t(lang, key);
         return;
       }
 
+      if (this.mode === 'signup') {
+        const dnInput = el.querySelector('#auth-display-name') as HTMLInputElement;
+        const displayName = dnInput?.value.trim() || '';
+        if (!displayName) {
+          this.setError('auth-error-password', i18n.__required || 'Please fill in all fields.');
+          return;
+        }
+      }
+
       this.clearErrors();
       this.setLoading(true);
 

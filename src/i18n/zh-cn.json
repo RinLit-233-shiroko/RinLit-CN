@@ -249,6 +249,7 @@
   "gallery.clearSelectedImage": "取消已选择图片",
   "gallery.submissionSuccess": "投稿成功",
   "gallery.manageDesc": "管理你的 RinLit Gallery 投稿。",
+  "gallery.manage.emptyDesc": "从这里开始上传你的第一张作品，审核通过后会展示在 Gallery 中。",
   "gallery.reviewDesc": "审核用户投稿与撤稿申请。",
   "gallery.manageNav": "投稿管理导航",
   "gallery.reviewNav": "投稿审核导航",

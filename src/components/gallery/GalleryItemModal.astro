@@ -1,6 +1,8 @@
 ---
 import Modal from '../Modal.astro';
 import Button from '../Button.astro';
+import Menu from '../Menu.astro';
+import MenuItem from '../MenuItem.astro';
 import { getIcon } from '../../utils/icons';
 
 interface TagLike {
@@ -77,7 +79,17 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
 
             <footer class="gallery-item-modal__meta">
               <time data-gallery-modal-date={item.created_at || ''}>{item.created_at || ''}</time>
-              <Button icon="dots" flat class="gallery-item-modal__more" type="button" aria-label="更多" />
+              <div class="gallery-item-modal__actions">
+                <Button icon="external-link" flat class="gallery-item-modal__share" type="button" aria-label="分享" title="分享" data-gallery-share={item.id} data-gallery-share-title={item.title || 'RinLit Gallery'} />
+                <div class="gallery-item-modal__more-wrap">
+                  <Button icon="dots" flat class="gallery-item-modal__more" type="button" aria-label="更多" data-gallery-more={item.id} />
+                  <Menu id={`more-menu-${String(item.id).replace(/-/g, '_')}`} class="gallery-item-modal__more-menu" zIndex={1000}>
+                    <MenuItem icon="id">
+                      复制 Gallery Item ID
+                    </MenuItem>
+                  </Menu>
+                </div>
+              </div>
             </footer>
 
             <div class="gallery-item-modal__spacer"></div>
@@ -299,15 +311,32 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
     padding: 0 4px;
   }
 
+  .gallery-item-modal__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gallery-item-modal__share,
   .gallery-item-modal__more {
     --pill-radius: 999px;
   }
 
+  .gallery-item-modal__share :global(.btn),
   .gallery-item-modal__more :global(.btn) {
     width: 32px;
     height: 32px;
     padding: 0;
     font-size: 13px;
+  }
+
+  .gallery-item-modal__more-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .gallery-item-modal__more-menu {
+    min-width: 180px;
   }
 
   .gallery-item-modal__spacer {
@@ -437,6 +466,40 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
     modal.style.setProperty('--gallery-modal-width', `${modalWidth}px`);
   }
 
+  function getGalleryItemShareUrl(itemId: string) {
+    const url = new URL(window.location.href);
+    const segments = url.pathname.split('/').filter(Boolean);
+    const galleryIndex = segments.indexOf('gallery');
+    const prefix = galleryIndex >= 0 ? segments.slice(0, galleryIndex + 1) : ['gallery'];
+    url.pathname = '/' + prefix.map((segment) => encodeURIComponent(segment)).join('/');
+    url.search = '';
+    url.searchParams.set('id', itemId);
+    url.hash = '';
+    return url.toString();
+  }
+
+  function getGalleryItemIdFromUrl() {
+    return new URL(window.location.href).searchParams.get('id') || '';
+  }
+
+  async function shareGalleryItem(button: HTMLElement) {
+    const itemId = button.getAttribute('data-gallery-share');
+    if (!itemId) return;
+    const shareData = {
+      title: button.getAttribute('data-gallery-share-title') || document.title,
+      url: getGalleryItemShareUrl(itemId),
+    };
+    if (!navigator.share) {
+      window.alert('当前浏览器不支持系统分享');
+      return;
+    }
+    if (navigator.canShare && !navigator.canShare(shareData)) {
+      window.alert('当前浏览器无法分享此链接');
+      return;
+    }
+    await navigator.share(shareData);
+  }
+
   function openGalleryItemModal(itemId: string) {
     (window as any).__initModals?.();
     const modal = (window as any).__modals?.['gallery-item-modal'];
@@ -457,6 +520,11 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
 
     setGalleryModalSize(activePanel);
     modal.open();
+  }
+
+  function openGalleryItemModalFromUrl() {
+    const itemId = getGalleryItemIdFromUrl();
+    if (itemId) openGalleryItemModal(itemId);
   }
 
   // 拖拽检测 — 拖拽后不触发打开弹窗
@@ -493,7 +561,7 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
     if (_wasDragged) return;
 
     const target = event.target as HTMLElement;
-    if (target.closest('[data-gallery-favorite]')) return;
+    if (target.closest('[data-gallery-favorite], [data-gallery-share], [data-gallery-more]')) return;
 
     const card = target.closest<HTMLElement>('[data-gallery-item-id]');
     if (!card) return;
@@ -506,4 +574,83 @@ const getFavoriteCount = (item: GalleryItemLike) => item.favorite_count ?? item.
     const activePanel = root?.querySelector<HTMLElement>('[data-gallery-modal-item]:not([hidden])');
     if (activePanel) setGalleryModalSize(activePanel);
   });
+
+  function closeGalleryMoreMenus() {
+    const openMenus = document.querySelectorAll('.gallery-item-modal__more-menu.is-open');
+    for (let i = 0; i < openMenus.length; i++) {
+      (window as any).Menu_close(openMenus[i]);
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const shareBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-gallery-share]');
+    if (shareBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      shareGalleryItem(shareBtn).catch((error) => {
+        if (error?.name !== 'AbortError') window.alert('分享失败');
+      });
+      return;
+    }
+
+    const moreBtn = (e.target as HTMLElement).closest<HTMLElement>('[data-gallery-more]');
+    if (moreBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const itemId = moreBtn.getAttribute('data-gallery-more');
+      if (!itemId) return;
+      const menuId = 'more-menu-' + itemId.replace(/-/g, '_');
+      const menu = document.getElementById(menuId);
+      if (menu) {
+        if (menu.classList.contains('is-open')) {
+          (window as any).Menu_close(menu);
+          return;
+        }
+        closeGalleryMoreMenus();
+        const pill = moreBtn.closest<HTMLElement>('.pill');
+        (window as any).Menu_open(menu, pill || moreBtn);
+      }
+      return;
+    }
+
+    const menuItem = (e.target as HTMLElement).closest<HTMLElement>('.gallery-item-modal__more-menu .menu-item');
+    if (menuItem) {
+      const menu = menuItem.closest<HTMLElement>('.gallery-item-modal__more-menu');
+      if (!menu) return;
+      const itemId = menu.id.replace(/^more-menu-/, '').replace(/_/g, '-');
+      if (itemId) {
+        navigator.clipboard.writeText(itemId).then(() => {
+          const label = menuItem.querySelector('.menu-item__label');
+          if (label) {
+            const origText = label.textContent || '复制 Gallery Item ID';
+            label.textContent = '✓ 已复制';
+            setTimeout(() => { label.textContent = origText; }, 2000);
+          }
+        }).catch(() => {
+          const label = menuItem.querySelector('.menu-item__label');
+          if (label) {
+            const origText = label.textContent || '复制 Gallery Item ID';
+            label.textContent = '复制失败';
+            setTimeout(() => { label.textContent = origText; }, 2000);
+          }
+        });
+      }
+      (window as any).Menu_close(menu);
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    if (!target.closest('.gallery-item-modal__more-menu') && !target.closest('[data-gallery-more]')) {
+      closeGalleryMoreMenus();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeGalleryMoreMenus();
+    }
+  });
+
+  document.addEventListener('astro:page-load', openGalleryItemModalFromUrl);
+  openGalleryItemModalFromUrl();
 </script>

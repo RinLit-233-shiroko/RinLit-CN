@@ -384,6 +384,12 @@ const role = roleMap[type];
       menuEl._triggerEl = triggerEl;
       triggerEl.classList.add('is-trigger-hidden');
 
+      if (menuEl.parentElement !== document.body) {
+        menuEl._origParent = menuEl.parentElement;
+        menuEl._origNextSib = menuEl.nextElementSibling;
+        document.body.appendChild(menuEl);
+      }
+
       // 1. 先显示但保持透明，让浏览器计算菜单真实宽高
       menuEl.style.display = 'inline-flex';
       menuEl.style.visibility = 'hidden';
@@ -484,6 +490,16 @@ const role = roleMap[type];
       setTimeout(function () {
         menuEl.classList.remove('menu--closing');
         menuEl.style.display = 'none';
+
+        if (menuEl._origParent) {
+          if (menuEl._origNextSib) {
+            menuEl._origParent.insertBefore(menuEl, menuEl._origNextSib);
+          } else {
+            menuEl._origParent.appendChild(menuEl);
+          }
+          delete menuEl._origParent;
+          delete menuEl._origNextSib;
+        }
       }, 150);
     };
 

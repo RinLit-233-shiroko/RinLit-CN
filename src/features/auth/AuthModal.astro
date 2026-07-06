@@ -432,13 +432,17 @@ const __ = (key: string) => t(lang, key);
     }
 
     constructor() {
+      this.rebindModal();
+      this.bindDelegated();
+      this.bindPageListener();
+    }
+
+    /** 重新绑定 Modal 实例并覆盖 goBack */
+    rebindModal() {
       this.modal = (window as any).__modals?.['auth-modal'];
-      // 用历史栈导航替换 Modal 原生的线性 goBack
       if (this.modal) {
         this.modal.goBack = () => { this._handleBack(); };
       }
-      this.bindDelegated();
-      this.bindPageListener();
     }
 
     /** 导航到指定页面（记录历史栈） */
@@ -470,12 +474,6 @@ const __ = (key: string) => t(lang, key);
     private onPageChanged(page: number) {
       const i18n = (window as any).__AUTH_I18N || {};
       const el = this.$el;
-
-      // 重置所有页面的返回按钮状态
-      if (el) {
-        const backWrap = el.querySelector('.modal__back-wrap') as HTMLElement;
-        if (backWrap) backWrap.hidden = false;
-      }
 
       if (page === 0) {
         // 回到邮箱页：恢复邮箱字段、更新标题
@@ -1146,4 +1144,9 @@ const __ = (key: string) => t(lang, key);
 
   const authModal = new AuthModal();
   (window as any).__authModal = authModal;
+
+  // SPA 导航后 Modal 实例会被 initModals() 重建，需要重新绑定 goBack 覆盖
+  document.addEventListener('astro:page-load', () => {
+    authModal.rebindModal();
+  });
 </script>

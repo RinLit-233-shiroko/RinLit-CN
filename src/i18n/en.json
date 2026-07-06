@@ -299,6 +299,11 @@
   "gallery.manage.tableTime": "Time",
   "gallery.manage.tableReason": "Notes",
   "gallery.manage.tableActions": "Actions",
+  "gallery.favoritesPage": "My Favorites",
+  "gallery.favorites": "Favorites",
+  "gallery.favoritesDesc": "View your favorited Gallery works.",
+  "gallery.favorites.emptyTitle": "No favorited works yet",
+  "gallery.favorites.emptyDesc": "Click the heart icon on works in Gallery to save them here.",
 
   "notFound.eyebrow": "Lost signal",
   "notFound.title": "This page is not here yet",

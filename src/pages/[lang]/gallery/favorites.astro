@@ -1,0 +1,1071 @@
+---
+import { locales, t } from '../../../i18n/index';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/Button.astro';
+import Input from '../../../components/Input.astro';
+import Menu from '../../../components/Menu.astro';
+import MenuItem from '../../../components/MenuItem.astro';
+import AutofillMenu from '../../../components/AutofillMenu.astro';
+import NavigationBar from '../../../components/NavigationBar.astro';
+import GalleryImageCard from '../../../components/gallery/GalleryImageCard.astro';
+import GalleryItemModal from '../../../components/gallery/GalleryItemModal.astro';
+import { fetchPublishedGalleryItems } from '../../../lib/gallery.client';
+import { createServerClient } from '../../../lib/supabase';
+import { getIcon } from '../../../utils/icons';
+
+export async function getStaticPaths() {
+  return locales.map((lang) => ({ params: { lang } }));
+}
+
+const { lang = 'zh-cn' } = Astro.params;
+const __ = (key: string) => t(lang, key);
+const isZh = lang === 'zh-cn';
+const heartOutlineIcon = getIcon('heart', 18);
+const heartFilledIcon = getIcon('heart', 18, 'filled');
+const supabase = createServerClient();
+const galleryResult = await fetchPublishedGalleryItems();
+const contributorIds = Array.from(new Set(((galleryResult.data || []) as any[]).map((row) => row.user_id).filter(Boolean)));
+const contributorProfilesResult = contributorIds.length
+  ? await supabase.from('profiles').select('id,display_name').in('id', contributorIds)
+  : { data: [], error: null };
+const contributorById = new Map((contributorProfilesResult.data || [])
+  .map((profile: any) => [profile.id, { displayName: profile.display_name || '' }]));
+const galleryRows = ((galleryResult.data || []) as any[]).map((row) => {
+  const favoriteRelation = Array.isArray(row.gallery_favorites) ? row.gallery_favorites[0] : row.gallery_favorites;
+  const contributor = contributorById.get(row.user_id);
+  const tags = (row.gallery_item_tags || [])
+    .flatMap((relation: any) => relation.gallery_tags || [])
+    .filter(Boolean)
+    .map((tag: any) => ({ name: tag.name }));
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    image_url: row.image_url,
+    width: row.width,
+    height: row.height,
+    created_at: row.created_at,
+    user_id: row.user_id,
+    contributorDisplayName: contributor?.displayName || '',
+    status: row.status,
+    favorite_count: Math.max(0, Number(favoriteRelation?.count || 0)),
+    tags,
+  };
+});
+const galleryItemIds = galleryRows.map((row) => row.id);
+const tagCounts = new Map<string, number>();
+galleryRows.forEach((row) => row.tags.forEach((tag) => {
+  tagCounts.set(tag.name, (tagCounts.get(tag.name) || 0) + 1);
+}));
+const allTags = Array.from(tagCounts.entries())
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .map(([name]) => name);
+const contributorCounts = new Map<string, number>();
+galleryRows.forEach((row) => {
+  if (row.contributorDisplayName) {
+    contributorCounts.set(row.contributorDisplayName, (contributorCounts.get(row.contributorDisplayName) || 0) + 1);
+  }
+});
+const allContributors = Array.from(contributorCounts.entries())
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .map(([name]) => name);
+const galleryItemsData = galleryRows.map((row) => ({
+  id: row.id,
+  title: row.title || '',
+  createdAt: row.created_at || '',
+  favoriteCount: row.favorite_count,
+  contributor: row.contributorDisplayName || '',
+  tags: row.tags.map((tag) => tag.name),
+}));
+const autofillSuggestions = JSON.stringify([
+  ...allTags.map((name) => ({ label: name, kind: 'tag' })),
+  ...allContributors.map((name) => ({ label: name, kind: 'contributor' })),
+]);
+---
+
+<BaseLayout lang={lang} title={`${__('gallery.favoritesPage')} — RinLit`} description={__('gallery.favoritesDesc')}>
+  <section class="gallery-admin-page">
+    <div class="gallery-admin-topbar">
+      <a class="gallery-admin-brand" href={`/${lang}/gallery`} aria-label="Gallery">
+        <img class="gallery-admin-brand__img gallery-admin-brand__img--light" src="/images/logo/Type=Horizontal, Mode=Light, Monochrome=False.png" alt="RinLit" />
+        <img class="gallery-admin-brand__img gallery-admin-brand__img--dark" src="/images/logo/Type=Horizontal, Mode=Dark, Monochrome=False.png" alt="RinLit" />
+        <span>{__('gallery.favoritesPage')}</span>
+      </a>
+      <Button href={`/${lang}/gallery/submit`} primary flat>{__('gallery.submit')}</Button>
+    </div>
+
+    <main class="gallery-admin-main" id="gallery-favorites-main" hidden>
+      <aside class="gallery-admin-sidebar" aria-label={__('gallery.manageNav')}>
+        <div class="gallery-admin-identity">
+          <strong id="gallery-favorites-name">RinLit</strong>
+          <span id="gallery-favorites-email">...</span>
+        </div>
+        <NavigationBar
+          className="gallery-admin-nav"
+          itemClassName="gallery-admin-nav__item"
+          items={[
+            { key: 'submit', label: __('gallery.newSubmission'), kind: 'link', href: `/${lang}/gallery/submit` },
+            { key: 'manage', label: __('gallery.manageSubmissions'), kind: 'link', href: `/${lang}/gallery/manage` },
+            { key: 'favorites', label: __('gallery.favorites'), kind: 'link', href: `/${lang}/gallery/favorites`, active: true },
+            { key: 'review', label: __('gallery.masterReview'), kind: 'link', href: `/${lang}/gallery/review`, hidden: true, attrs: { 'data-review-nav': 'true' } },
+          ]}
+        />
+      </aside>
+
+      <section class="gallery-favorites-content">
+        <h1 class="panel-title">{__('gallery.favoritesPage')}</h1>
+
+        <section class="gallery-toolbar" id="gallery-favorites-toolbar" aria-label={__('gallery.actions')}>
+          <div class="gallery-toolbar__search">
+            <Input
+              id="gallery-favorites-search-input"
+              name="gallery-favorites-search"
+              type="search"
+              placeholder={__('gallery.search.placeholder')}
+              flat
+            />
+            <AutofillMenu id="gallery-favorites-search-suggestions" ariaLabel={__('gallery.search.ariaLabel')} />
+          </div>
+
+          <div class="gallery-toolbar__control">
+            <Button id="gallery-favorites-sort-trigger" icon="arrows-sort" flat aria-haspopup="menu">{__('gallery.sort.recommended')}</Button>
+            <Menu id="gallery-favorites-sort-menu" type="menu" ariaLabel={__('gallery.sort.label')} zIndex="4000">
+              <MenuItem value="field:recommended" checked>{__('gallery.sort.recommended')}</MenuItem>
+              <li class="menu__separator" role="separator"></li>
+              <MenuItem value="field:time">{__('gallery.sort.time')}</MenuItem>
+              <MenuItem value="field:tag">{__('gallery.sort.tag')}</MenuItem>
+              <MenuItem value="field:fav">{__('gallery.sort.fav')}</MenuItem>
+              <li class="menu__separator" role="separator"></li>
+              <MenuItem value="dir:asc">{__('gallery.sort.asc')}</MenuItem>
+              <MenuItem value="dir:desc">{__('gallery.sort.desc')}</MenuItem>
+            </Menu>
+          </div>
+
+          <div class="gallery-toolbar__control">
+            <Button id="gallery-favorites-filter-trigger" icon="filter" flat aria-haspopup="menu">{__('gallery.all')}</Button>
+            <Menu id="gallery-favorites-filter-menu" type="checkbox" group="gallery-favorites-filter" ariaLabel={__('gallery.filter.label')} zIndex="4000">
+              {allTags.map((name) => <MenuItem value={name}># {name}</MenuItem>)}
+            </Menu>
+          </div>
+        </section>
+
+        <section class="gallery-state gallery-state--loading" id="gallery-favorites-loading" aria-live="polite">
+          <span class="gallery-loading-ring" aria-hidden="true"></span>
+          <span>{__('gallery.loading')}</span>
+        </section>
+
+        <section class="gallery-state" id="gallery-favorites-empty" hidden>
+          <strong>{__('gallery.favorites.emptyTitle')}</strong>
+          <span>{__('gallery.favorites.emptyDesc')}</span>
+        </section>
+
+        <section class="gallery-state gallery-state--error" id="gallery-favorites-error" hidden>{galleryResult.error?.message || ''}</section>
+
+        <section class="gallery-state" id="gallery-favorites-no-results" hidden>
+          <strong>{__('gallery.noResultsTitle')}</strong>
+          <span>{__('gallery.noResultsDesc')}</span>
+        </section>
+
+        <section class="gallery-grid" id="gallery-favorites-grid" aria-label={__('gallery.favoritesPage')} hidden>
+          {galleryRows.map((item) => <GalleryImageCard item={item} />)}
+        </section>
+      </section>
+    </main>
+
+    <section class="gallery-admin-state" id="gallery-favorites-gate">
+      <span>{__('gallery.checkingAccess')}</span>
+    </section>
+  </section>
+
+  <GalleryItemModal items={galleryRows} />
+</BaseLayout>
+
+<script is:inline define:vars={{
+  __HEART_OUTLINE: heartOutlineIcon,
+  __HEART_FILLED: heartFilledIcon,
+  __GALLERY_ITEM_IDS: galleryItemIds,
+  __GALLERY_ITEMS_DATA: galleryItemsData,
+  __GALLERY_AUTOFILL: autofillSuggestions,
+  __GALLERY_FAVORITES_I18N: JSON.stringify({
+    notSignedIn: __('gallery.submit.notSignedIn'),
+    defaultError: __('gallery.submit.error'),
+    loading: '',
+    emptyTitle: __('gallery.favorites.emptyTitle'),
+    emptyDesc: __('gallery.favorites.emptyDesc'),
+    noResultsTitle: __('gallery.noResultsTitle'),
+    noResultsDesc: __('gallery.noResultsDesc'),
+    add: isZh ? '收藏' : 'Add to favorites',
+    remove: isZh ? '取消收藏' : 'Remove from favorites',
+    login: isZh ? '登录后可以收藏作品。' : 'Sign in to favorite gallery items.',
+    failed: isZh ? '收藏状态更新失败。' : 'Favorite update failed.',
+    sortRecommended: __('gallery.sort.recommended'),
+    all: __('gallery.all'),
+  }),
+}}>
+  window.__HEART_OUTLINE = __HEART_OUTLINE;
+  window.__HEART_FILLED = __HEART_FILLED;
+  window.__GALLERY_ITEM_IDS = __GALLERY_ITEM_IDS;
+  window.__GALLERY_ITEMS_DATA = __GALLERY_ITEMS_DATA;
+  window.__GALLERY_AUTOFILL = __GALLERY_AUTOFILL;
+  window.__GALLERY_FAVORITES_I18N = JSON.parse(__GALLERY_FAVORITES_I18N);
+</script>
+
+<script>
+  import { getUser, getUserProfileRole, onAuthStateChange } from '../../../lib/auth.client';
+  import { addGalleryFavorite, fetchMyGalleryFavoriteItemIds, removeGalleryFavorite } from '../../../lib/gallery.client';
+
+  const text = (window as any).__GALLERY_FAVORITES_I18N || {};
+  const heartOutline = (window as any).__HEART_OUTLINE || '';
+  const heartFilled = (window as any).__HEART_FILLED || '';
+
+  let currentUserId = '';
+  let favoriteItemIds = new Set<string>();
+  const pendingFavoriteItemIds = new Set<string>();
+  const galleryItemIds = ((window as any).__GALLERY_ITEM_IDS || []) as string[];
+  const itemsData = ((window as any).__GALLERY_ITEMS_DATA || []) as GalleryItemData[];
+  const autofillSuggestions = (() => {
+    try {
+      return JSON.parse((window as any).__GALLERY_AUTOFILL || '[]') as Array<{ label: string; kind: string }>;
+    } catch {
+      return [] as Array<{ label: string; kind: string }>;
+    }
+  })();
+  let cleanupFavoritesPage: (() => void) | null = null;
+
+  type GalleryItemData = {
+    id: string;
+    title: string;
+    createdAt: string;
+    favoriteCount: number;
+    contributor: string;
+    tags: string[];
+  };
+
+  function showLoginRequired() {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/${document.documentElement.lang}/account/redirect?next=${next}`;
+  }
+
+  function getDisplayName(user: any) {
+    return user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'RinLit';
+  }
+
+  // ======== 收藏按钮逻辑 ========
+  function getButtonFavoriteCount(button: HTMLButtonElement) {
+    return Number(button.dataset.galleryFavoriteCount || '0') || 0;
+  }
+
+  function setButtonFavoriteCount(button: HTMLButtonElement, count: number) {
+    const safeCount = Math.max(0, count);
+    const itemId = button.dataset.galleryFavorite || '';
+    document.querySelectorAll<HTMLButtonElement>(`[data-gallery-favorite="${CSS.escape(itemId)}"]`).forEach((targetButton) => {
+      targetButton.dataset.galleryFavoriteCount = String(safeCount);
+      targetButton.classList.toggle('btn--icon-only', safeCount === 0);
+
+      let label = targetButton.querySelector('.btn__text');
+      if (safeCount > 0) {
+        if (!label) {
+          label = document.createElement('span');
+          label.className = 'btn__text';
+          targetButton.appendChild(label);
+        }
+        label.textContent = String(safeCount);
+      } else {
+        if (label) label.remove();
+      }
+    });
+  }
+
+  function setButtonIcon(button: HTMLButtonElement, isFavorite: boolean) {
+    const itemId = button.dataset.galleryFavorite || '';
+    document.querySelectorAll<HTMLButtonElement>(`[data-gallery-favorite="${CSS.escape(itemId)}"]`).forEach((targetButton) => {
+      const icon = targetButton.querySelector('.btn__icon');
+      if (icon) icon.innerHTML = `<span>${isFavorite ? heartFilled : heartOutline}</span>`;
+    });
+  }
+
+  function setButtonState(button: HTMLButtonElement, isFavorite: boolean, isPending = false) {
+    const itemId = button.dataset.galleryFavorite || '';
+    document.querySelectorAll<HTMLButtonElement>(`[data-gallery-favorite="${CSS.escape(itemId)}"]`).forEach((targetButton) => {
+      targetButton.classList.toggle('is-favorite', isFavorite);
+      targetButton.disabled = isPending;
+      targetButton.setAttribute('aria-pressed', String(isFavorite));
+      targetButton.setAttribute('aria-label', isFavorite ? text.remove : text.add);
+      targetButton.title = isFavorite ? text.remove : text.add;
+    });
+    setButtonIcon(button, isFavorite);
+  }
+
+  function syncFavoriteButtons() {
+    document.querySelectorAll<HTMLButtonElement>('[data-gallery-favorite]').forEach((button) => {
+      const itemId = button.dataset.galleryFavorite || '';
+      const isFav = favoriteItemIds.has(itemId);
+      setButtonState(button, isFav, pendingFavoriteItemIds.has(itemId));
+      let count = getButtonFavoriteCount(button);
+      if (isFav && count === 0) count = 1;
+      setButtonFavoriteCount(button, count);
+    });
+  }
+
+  async function loadFavoriteState() {
+    if (!currentUserId || !galleryItemIds.length) {
+      syncFavoriteButtons();
+      return;
+    }
+    const { data, error } = await fetchMyGalleryFavoriteItemIds(currentUserId, galleryItemIds);
+    if (error) throw error;
+    favoriteItemIds = new Set((data || []).map((row: any) => row.gallery_item_id));
+    syncFavoriteButtons();
+  }
+
+  async function toggleFavorite(button: HTMLButtonElement) {
+    const galleryItemId = button.dataset.galleryFavorite || '';
+    if (!galleryItemId || pendingFavoriteItemIds.has(galleryItemId)) return;
+
+    if (!currentUserId) {
+      button.classList.add('is-shaking');
+      window.setTimeout(() => button.classList.remove('is-shaking'), 280);
+      showLoginRequired();
+      return;
+    }
+
+    const wasFavorite = favoriteItemIds.has(galleryItemId);
+    const previousCount = getButtonFavoriteCount(button);
+    pendingFavoriteItemIds.add(galleryItemId);
+    if (wasFavorite) favoriteItemIds.delete(galleryItemId);
+    else favoriteItemIds.add(galleryItemId);
+    setButtonFavoriteCount(button, previousCount + (wasFavorite ? -1 : 1));
+    setButtonState(button, !wasFavorite, true);
+
+    const result = wasFavorite
+      ? await removeGalleryFavorite(currentUserId, galleryItemId)
+      : await addGalleryFavorite(currentUserId, galleryItemId);
+
+    pendingFavoriteItemIds.delete(galleryItemId);
+
+    if (result.error) {
+      if (wasFavorite) favoriteItemIds.add(galleryItemId);
+      else favoriteItemIds.delete(galleryItemId);
+      setButtonFavoriteCount(button, previousCount);
+      setButtonState(button, wasFavorite, false);
+      button.setAttribute('data-error', text.failed);
+      window.setTimeout(() => button.removeAttribute('data-error'), 1800);
+      return;
+    }
+
+    setButtonState(button, !wasFavorite, false);
+  }
+
+  function bindFavoriteButtons() {
+    document.querySelectorAll<HTMLButtonElement>('[data-gallery-favorite]').forEach((button) => {
+      if (button.dataset.galleryFavoriteBound === 'true') return;
+      button.dataset.galleryFavoriteBound = 'true';
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleFavorite(button);
+      });
+    });
+  }
+
+  // ======== 工具栏：搜索 / 排序 / 筛选 ========
+  let sortField = 'recommended';
+  let sortDir = 'desc';
+  let activeFilterTags = new Set<string>();
+  let currentQuery = '';
+
+  const sortLabels: Record<string, string> = {};
+  const filterLabelAll = text.all;
+
+  function computeSortKey() {
+    if (sortField === 'recommended') return 'recommended';
+    return sortField + '-' + sortDir;
+  }
+
+  function firstTagName(item: GalleryItemData) {
+    return item.tags[0] || '';
+  }
+
+  function getCardShell(id: string): HTMLElement | null {
+    const article = document.querySelector<HTMLElement>(`.gallery-card[data-gallery-item-id="${CSS.escape(id)}"]`);
+    return article?.closest<HTMLElement>('.gallery-card-shell') || null;
+  }
+
+  function applyToolbar() {
+    const grid = document.getElementById('gallery-favorites-grid');
+    const noResults = document.getElementById('gallery-favorites-no-results');
+    if (!grid) return;
+
+    const q = currentQuery.trim().toLowerCase();
+    const favoriteItems = itemsData.filter((item) => favoriteItemIds.has(item.id));
+    const filtered = favoriteItems.filter((item) => {
+      if (activeFilterTags.size > 0 && !item.tags.some((tag) => activeFilterTags.has(tag))) return false;
+      if (q) {
+        const matchesTag = item.tags.some((tag) => tag.toLowerCase().includes(q));
+        const matchesContributor = item.contributor.toLowerCase().includes(q);
+        const matchesTitle = (item.title || '').toLowerCase().includes(q);
+        if (!matchesTag && !matchesContributor && !matchesTitle) return false;
+      }
+      return true;
+    });
+
+    const sorted = filtered.slice();
+    switch (computeSortKey()) {
+      case 'time-desc':
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'time-asc':
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case 'tag-asc':
+        sorted.sort((a, b) => firstTagName(a).localeCompare(firstTagName(b)));
+        break;
+      case 'tag-desc':
+        sorted.sort((a, b) => firstTagName(b).localeCompare(firstTagName(a)));
+        break;
+      case 'fav-desc':
+        sorted.sort((a, b) => b.favoriteCount - a.favoriteCount);
+        break;
+      case 'fav-asc':
+        sorted.sort((a, b) => a.favoriteCount - b.favoriteCount);
+        break;
+    }
+
+    const visibleIds = new Set(sorted.map((i) => i.id));
+    itemsData.forEach((item) => {
+      const shell = getCardShell(item.id);
+      if (!shell) return;
+      shell.style.display = visibleIds.has(item.id) ? '' : 'none';
+    });
+    sorted.forEach((item) => {
+      const shell = getCardShell(item.id);
+      if (shell && shell.parentElement === grid) grid.appendChild(shell);
+    });
+
+    if (noResults) noResults.hidden = sorted.length > 0;
+  }
+
+  // ======== 菜单初始化 ========
+  function initMenus() {
+    const sortTrigger = document.getElementById('gallery-favorites-sort-trigger');
+    const sortMenu = document.getElementById('gallery-favorites-sort-menu');
+    const filterTrigger = document.getElementById('gallery-favorites-filter-trigger');
+    const filterMenu = document.getElementById('gallery-favorites-filter-menu');
+
+    sortMenu?.querySelectorAll<HTMLElement>('.menu-item[data-value]').forEach((item) => {
+      const value = item.getAttribute('data-value') || '';
+      const label = item.querySelector('.menu-item__label')?.textContent || '';
+      sortLabels[value] = label;
+    });
+
+    function setSortChecked() {
+      if (!sortMenu) return;
+      sortMenu.querySelectorAll<HTMLElement>('.menu-item[data-value]').forEach((item) => {
+        const val = item.getAttribute('data-value') || '';
+        const isFieldItem = val.startsWith('field:');
+        const fieldName = isFieldItem ? val.slice(6) : '';
+        const dirName = isFieldItem ? '' : val.slice(4);
+        const shouldCheck = isFieldItem ? fieldName === sortField : dirName === sortDir && sortField !== 'recommended';
+        item.classList.toggle('menu-item--checked', shouldCheck);
+        item.setAttribute('aria-checked', String(shouldCheck));
+      });
+    }
+
+    function updateSortTriggerLabel() {
+      if (!sortTrigger) return;
+      const labelEl = sortTrigger.querySelector('.btn__text');
+      if (labelEl) {
+        if (sortField === 'recommended') labelEl.textContent = sortLabels['field:recommended'] || '';
+        else labelEl.textContent = sortLabels['field:' + sortField] || '';
+      }
+    }
+
+    function updateFilterTriggerLabel() {
+      if (!filterTrigger) return;
+      const labelEl = filterTrigger.querySelector('.btn__text');
+      if (labelEl) {
+        if (activeFilterTags.size === 0) labelEl.textContent = filterLabelAll;
+        else labelEl.textContent = `${filterLabelAll} (${activeFilterTags.size})`;
+      }
+    }
+
+    function toggleMenu(trigger: HTMLElement | null, menu: HTMLElement | null) {
+      if (!trigger || !menu) return;
+      if (menu.classList.contains('is-open')) {
+        (window as any).Menu_close(menu);
+        return;
+      }
+      [sortMenu, filterMenu].forEach((m) => {
+        if (m && m !== menu && m.classList.contains('is-open')) (window as any).Menu_close(m);
+      });
+      (window as any).Menu_open(menu, trigger);
+    }
+
+    sortTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu(sortTrigger as HTMLElement, sortMenu);
+    });
+    filterTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu(filterTrigger as HTMLElement, filterMenu);
+    });
+
+    sortMenu?.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest<HTMLElement>('.menu-item[data-value]');
+      if (!item) return;
+      const val = item.getAttribute('data-value') || '';
+      if (val.startsWith('field:')) {
+        sortField = val.slice(6);
+        if (sortField === 'recommended') sortDir = 'desc';
+      } else if (val.startsWith('dir:')) {
+        if (sortField === 'recommended') return;
+        sortDir = val.slice(4);
+      } else return;
+      setSortChecked();
+      updateSortTriggerLabel();
+      applyToolbar();
+    });
+
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const inSort = sortMenu?.contains(target) || sortTrigger?.contains(target);
+      const inFilter = filterMenu?.contains(target) || filterTrigger?.contains(target);
+      if (!inSort && sortMenu?.classList.contains('is-open')) (window as any).Menu_close(sortMenu);
+      if (!inFilter && filterMenu?.classList.contains('is-open')) (window as any).Menu_close(filterMenu);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (sortMenu?.classList.contains('is-open')) (window as any).Menu_close(sortMenu);
+      if (filterMenu?.classList.contains('is-open')) (window as any).Menu_close(filterMenu);
+    });
+
+    document.addEventListener('menu:change', (e) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail.group === 'gallery-favorites-filter') {
+        if (detail.checked) activeFilterTags.add(detail.value);
+        else activeFilterTags.delete(detail.value);
+        updateFilterTriggerLabel();
+        applyToolbar();
+      }
+    });
+
+    setSortChecked();
+  }
+
+  // ======== 搜索补全 ========
+  function initSearchAutofill() {
+    const input = document.getElementById('gallery-favorites-search-input') as HTMLInputElement | null;
+    const menu = document.getElementById('gallery-favorites-search-suggestions');
+    if (!input || !menu) return;
+
+    const list = menu.querySelector('.menu__list');
+    if (!list) return;
+
+    const originalParent = menu.parentElement;
+    let originalNext: Element | null = menu.nextElementSibling;
+    let activeIndex = -1;
+
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+    input.setAttribute('aria-controls', 'gallery-favorites-search-suggestions');
+
+    function getFiltered() {
+      const q = (input.value || '').trim().toLowerCase();
+      if (!q) return autofillSuggestions.slice(0, 8);
+      return autofillSuggestions.filter((s) => s.label.toLowerCase().includes(q)).slice(0, 8);
+    }
+
+    function positionMenu() {
+      if (menu.parentElement !== document.body) {
+        originalNext = menu.nextElementSibling;
+        document.body.appendChild(menu);
+      }
+      const rect = input.getBoundingClientRect();
+      const padding = 8;
+      const width = rect.width;
+
+      menu.style.display = 'inline-flex';
+      menu.style.visibility = 'hidden';
+      menu.style.zIndex = '2147483647';
+      menu.style.setProperty('--menu-z-index', '2147483647');
+      menu.style.setProperty('--autofill-menu-width', width + 'px');
+
+      const menuHeight = menu.offsetHeight || 100;
+      let left = Math.min(Math.max(rect.left, padding), window.innerWidth - width - padding);
+      let top = rect.bottom + 8;
+      if (top + menuHeight > window.innerHeight - padding) {
+        top = Math.max(padding, rect.top - menuHeight - 8);
+      }
+
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+      menu.style.setProperty('--origin-x', '24px');
+      menu.style.setProperty('--origin-y', '0px');
+      menu.style.visibility = 'visible';
+    }
+
+    function openMenu() {
+      positionMenu();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          menu.classList.remove('menu--closing');
+          menu.classList.add('is-open');
+        });
+      });
+    }
+
+    function closeMenu() {
+      if (!menu.classList.contains('is-open') && !menu.classList.contains('menu--closing') && menu.style.display !== 'inline-flex') return;
+      list.innerHTML = '';
+      menu.classList.remove('is-open');
+      menu.classList.add('menu--closing');
+      window.setTimeout(() => {
+        menu.classList.remove('menu--closing');
+        menu.style.display = 'none';
+        menu.style.left = '';
+        menu.style.top = '';
+        menu.style.visibility = '';
+        menu.style.zIndex = '';
+        menu.style.removeProperty('--menu-z-index');
+        menu.style.removeProperty('--autofill-menu-width');
+        if (originalParent && menu.parentElement !== originalParent) {
+          if (originalNext && originalNext.parentElement === originalParent) originalParent.insertBefore(menu, originalNext);
+          else originalParent.appendChild(menu);
+        }
+      }, 150);
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      activeIndex = -1;
+    }
+
+    function setActive(index: number) {
+      const options = Array.from(list.querySelectorAll<HTMLElement>('[data-autofill-value]'));
+      activeIndex = options.length ? Math.max(0, Math.min(index, options.length - 1)) : -1;
+      options.forEach((opt, i) => {
+        const active = i === activeIndex;
+        opt.classList.toggle('is-active', active);
+        opt.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      if (options[activeIndex]) input.setAttribute('aria-activedescendant', options[activeIndex].id || '');
+    }
+
+    function renderSuggestions() {
+      const filtered = getFiltered();
+      if (!filtered.length) { closeMenu(); return; }
+      list.innerHTML = filtered.map((s, i) => {
+        const prefix = s.kind === 'tag' ? '' : '@';
+        const escapedLabel = String(s.label).replace(/[&<>'"]/g, (char: string) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char] || char);
+        return `<li class="autofill-menu__option" role="none"><button class="autofill-menu__item" id="gallery-favorites-search-opt-${i}" type="button" role="option" data-autofill-value="${escapedLabel}" aria-selected="false"><span>${prefix}${escapedLabel}</span></button></li>`;
+      }).join('');
+      input.setAttribute('aria-expanded', 'true');
+      openMenu();
+      setActive(-1);
+    }
+
+    function selectSuggestion(value: string) {
+      input.value = value;
+      currentQuery = value;
+      applyToolbar();
+      input.focus();
+      closeMenu();
+    }
+
+    input.addEventListener('input', (event) => {
+      currentQuery = (event.target as HTMLInputElement).value;
+      applyToolbar();
+      renderSuggestions();
+    });
+    input.addEventListener('focus', renderSuggestions);
+
+    input.addEventListener('keydown', (event) => {
+      const options = Array.from(list.querySelectorAll<HTMLElement>('[data-autofill-value]'));
+      if (event.key === 'ArrowDown' && options.length) { event.preventDefault(); setActive(activeIndex + 1); return; }
+      if (event.key === 'ArrowUp' && options.length) { event.preventDefault(); setActive(activeIndex <= 0 ? options.length - 1 : activeIndex - 1); return; }
+      if (event.key === 'Escape') { closeMenu(); return; }
+      if (event.key === 'Enter' && activeIndex >= 0 && options[activeIndex]) {
+        event.preventDefault();
+        selectSuggestion(options[activeIndex].getAttribute('data-autofill-value') || '');
+      }
+    });
+
+    menu.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      const button = (event.target as HTMLElement).closest<HTMLElement>('[data-autofill-value]');
+      if (!button) return;
+      selectSuggestion(button.getAttribute('data-autofill-value') || '');
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      const target = event.target as HTMLElement;
+      if (input.contains(target) || menu.contains(target)) return;
+      closeMenu();
+    });
+
+    document.addEventListener('astro:before-swap', () => {
+      closeMenu();
+    }, { once: true });
+  }
+
+  // ======== 初始化页面 ========
+  async function initFavoritesPage() {
+    cleanupFavoritesPage?.();
+
+    const main = document.getElementById('gallery-favorites-main');
+    const gate = document.getElementById('gallery-favorites-gate');
+    const name = document.getElementById('gallery-favorites-name');
+    const email = document.getElementById('gallery-favorites-email');
+    const loading = document.getElementById('gallery-favorites-loading');
+    const empty = document.getElementById('gallery-favorites-empty');
+    const errorBox = document.getElementById('gallery-favorites-error');
+    const grid = document.getElementById('gallery-favorites-grid');
+    if (!main || !gate || !name || !email || !loading || !empty || !errorBox || !grid) return;
+
+    const { user, error: userError } = await getUser();
+    if (userError || !user) {
+      showLoginRequired();
+      return;
+    }
+
+    const { data: profile } = await getUserProfileRole(user.id);
+    const role = profile?.role;
+    const reviewNav = document.querySelector('[data-review-nav]') as HTMLElement | null;
+    if (reviewNav) reviewNav.hidden = role !== 'master';
+
+    currentUserId = user.id;
+    name.textContent = getDisplayName(user);
+    email.textContent = user.email || '';
+    gate.hidden = true;
+    main.hidden = false;
+    bindFavoriteButtons();
+
+    try {
+      await loadFavoriteState();
+    } catch (favoriteError: any) {
+      errorBox.textContent = favoriteError?.message || text.defaultError;
+      errorBox.hidden = false;
+    }
+
+    loading.hidden = true;
+    empty.hidden = favoriteItemIds.size > 0;
+    grid.hidden = favoriteItemIds.size === 0;
+    initMenus();
+    initSearchAutofill();
+    applyToolbar();
+
+    const unsubscribeAuth = onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') showLoginRequired();
+    });
+
+    cleanupFavoritesPage = () => {
+      unsubscribeAuth();
+    };
+  }
+
+  document.addEventListener('astro:before-swap', () => {
+    cleanupFavoritesPage?.();
+    cleanupFavoritesPage = null;
+  });
+  document.addEventListener('astro:page-load', initFavoritesPage);
+  initFavoritesPage();
+</script>
+
+<style>
+  .gallery-admin-page {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
+    min-height: 100vh;
+    padding: 104px clamp(20px, 4vw, 48px) 80px;
+    background: var(--bg);
+  }
+
+  .gallery-admin-topbar {
+    max-width: 1400px;
+    margin: 0 auto 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    gap: 18px;
+  }
+
+  .gallery-admin-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    color: var(--text-strong);
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .gallery-admin-brand__img {
+    width: auto;
+    height: 42px;
+    display: block;
+  }
+
+  .gallery-admin-brand__img--light { display: var(--logo-light-display); }
+  .gallery-admin-brand__img--dark { display: var(--logo-dark-display); }
+
+  .gallery-admin-topbar :global(.pill),
+  .gallery-admin-topbar :global(.btn) {
+    width: auto;
+  }
+
+  .gallery-admin-topbar :global(.btn) {
+    height: 36px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .gallery-admin-main {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    justify-content: center;
+    gap: clamp(48px, 7vw, 80px);
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .gallery-admin-sidebar {
+    min-width: 0;
+  }
+
+  .gallery-admin-identity {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 34px;
+  }
+
+  .gallery-admin-identity strong {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-strong);
+  }
+
+  .gallery-admin-identity span {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .gallery-favorites-content {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    display: grid;
+    gap: 16px;
+  }
+
+  .panel-title {
+    margin: 0 0 6px;
+    color: var(--text-strong);
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    font-weight: 800;
+  }
+
+  .gallery-admin-state {
+    max-width: 800px;
+    margin: 0 auto;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    padding: 26px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  /* ======== 工具栏（复用 gallery.astro 样式） ======== */
+  .gallery-toolbar {
+    position: sticky;
+    top: var(--toolbar-top, 80px);
+    z-index: 49;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0 0 6px;
+    padding: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+  }
+
+  .gallery-toolbar__search {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .gallery-toolbar__search :global(.input-field-pill) {
+    width: 100%;
+  }
+
+  .gallery-toolbar__search :global(.input-field) {
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .gallery-toolbar__control {
+    flex: 0 0 auto;
+    position: relative;
+  }
+
+  .gallery-toolbar :global(.btn) {
+    height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .gallery-toolbar :global(.pill) {
+    width: auto;
+  }
+
+  /* ======== 网格 ======== */
+  .gallery-grid {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    column-count: 4;
+    column-gap: 18px;
+  }
+
+  .gallery-grid :global(.gallery-card) {
+    cursor: zoom-in;
+  }
+
+  /* ======== 状态提示 ======== */
+  .gallery-state {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .gallery-state strong,
+  .gallery-state span {
+    display: block;
+  }
+
+  .gallery-state strong {
+    color: var(--text-strong);
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .gallery-state--loading {
+    min-height: 128px;
+    display: grid;
+    place-items: center;
+    gap: 14px;
+    text-align: center;
+  }
+
+  .gallery-state--loading[hidden] {
+    display: none;
+  }
+
+  .gallery-loading-ring {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 3px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-top-color: var(--color-primary-600);
+    animation: gallery-loading-spin 0.78s linear infinite;
+  }
+
+  @keyframes gallery-loading-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .gallery-state--error {
+    color: #dc2626;
+  }
+
+  /* ======== 响应式 ======== */
+  @media (max-width: 1200px) {
+    .gallery-grid {
+      column-count: 3;
+    }
+  }
+
+  @media (max-width: 980px) {
+    .gallery-grid {
+      column-count: 2;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .gallery-admin-main {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .gallery-admin-identity {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .gallery-toolbar {
+      --toolbar-top: 74px;
+      top: var(--toolbar-top);
+      padding: 8px 0;
+      gap: 6px;
+    }
+
+    .gallery-toolbar__search {
+      flex: 1 1 auto;
+      min-width: 80px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .gallery-admin-page {
+      padding-inline: 14px;
+    }
+
+    .gallery-admin-topbar {
+      align-items: start;
+      flex-direction: column;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .gallery-grid {
+      column-count: 2;
+      column-gap: 12px;
+    }
+
+    .gallery-toolbar :global(.btn) {
+      padding: 0 10px;
+    }
+
+    .gallery-toolbar__control :global(.btn__text) {
+      display: none;
+    }
+
+    .gallery-toolbar__control > :global(.pill),
+    .gallery-toolbar__submit > :global(.pill) {
+      width: 40px;
+      border-radius: 999px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .gallery-grid {
+      column-count: 1;
+    }
+  }
+</style>

@@ -299,6 +299,11 @@
   "gallery.manage.tableTime": "时间",
   "gallery.manage.tableReason": "备注",
   "gallery.manage.tableActions": "操作",
+  "gallery.favoritesPage": "我的喜欢",
+  "gallery.favorites": "喜欢",
+  "gallery.favoritesDesc": "查看你收藏的 Gallery 作品。",
+  "gallery.favorites.emptyTitle": "还没有收藏作品",
+  "gallery.favorites.emptyDesc": "在 Gallery 中点击心形图标收藏喜欢的作品，它们会出现在这里。",
 
   "notFound.eyebrow": "迷路了",
   "notFound.title": "这个页面暂时不在这里",

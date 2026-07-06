@@ -304,22 +304,6 @@ html.is-route-entering .page-transition-container {
 }
 
 /* ==============================================
-   Header 不参与 iOS 风格过渡
-   - .nav-header 已在 Header.astro 中设置 view-transition-name: rinlit-header
-   - 这里让其 old/new 快照瞬间切换 (old 立即透明, new 立即显示)
-   - 配合 transition:persist (DOM 保留), 视觉上完全不动
-   ============================================== */
-::view-transition-old(rinlit-header) {
-  animation: none;
-  opacity: 0;
-}
-
-::view-transition-new(rinlit-header) {
-  animation: none;
-  opacity: 1;
-}
-
-/* ==============================================
    页面切换进度环
    切换耗时超过阈值才显示，避免快速切换时的闪烁
    ============================================== */

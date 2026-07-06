@@ -292,6 +292,12 @@
   "gallery.manage.removalReason": "撤稿原因",
   "gallery.manage.status": "状态",
   "gallery.manage.reason": "申请理由",
+  "gallery.manage.tableArtwork": "作品",
+  "gallery.manage.tableStatus": "状态",
+  "gallery.manage.tableType": "类型",
+  "gallery.manage.tableTime": "时间",
+  "gallery.manage.tableReason": "备注",
+  "gallery.manage.tableActions": "操作",
 
   "notFound.eyebrow": "迷路了",
   "notFound.title": "这个页面暂时不在这里",

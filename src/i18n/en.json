@@ -292,6 +292,12 @@
   "gallery.manage.removalReason": "Removal reason",
   "gallery.manage.status": "Status",
   "gallery.manage.reason": "Reason",
+  "gallery.manage.tableArtwork": "Artwork",
+  "gallery.manage.tableStatus": "Status",
+  "gallery.manage.tableType": "Type",
+  "gallery.manage.tableTime": "Time",
+  "gallery.manage.tableReason": "Notes",
+  "gallery.manage.tableActions": "Actions",
 
   "notFound.eyebrow": "Lost signal",
   "notFound.title": "This page is not here yet",

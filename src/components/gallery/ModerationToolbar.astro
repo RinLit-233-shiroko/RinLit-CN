@@ -43,11 +43,11 @@ const {
       </button>
     ))}
   </div>
-  <div class="moderation-layout" role="group" aria-label={layoutGroupLabel}>
+  <!-- <div class="moderation-layout" role="group" aria-label={layoutGroupLabel}>
     {viewItems.map((item) => (
       <button type="button" class:list={{ 'is-active': item.key === activeView }} aria-label={item.label} {...{ [viewAttrName]: item.key }} set:html={item.icon}></button>
     ))}
-  </div>
+  </div> -->
 </div>
 
 <style>

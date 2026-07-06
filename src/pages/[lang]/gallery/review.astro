@@ -4,6 +4,7 @@ import Button from '../../../components/Button.astro';
 import SettingsCard from '../../../components/SettingsCard.astro';
 import NavigationBar from '../../../components/NavigationBar.astro';
 import ModerationToolbar from '../../../components/gallery/ModerationToolbar.astro';
+import GalleryAdminTable from '../../../components/gallery/GalleryAdminTable.astro';
 import { getIcon } from '../../../utils/icons';
 import { locales, t } from '../../../i18n/index';
 
@@ -78,28 +79,44 @@ const icons = {
           viewAttrName="data-moderation-view"
         />
 
-          <div class="moderation-list" id="gallery-moderation-list" data-view="list" data-filter="ALL"></div>
+          <GalleryAdminTable
+            id="gallery-moderation-list"
+            class="moderation-list"
+            columns={[
+              { label: __('gallery.manage.tableArtwork'), width: '36%' },
+              { label: __('gallery.manage.tableType'), width: '112px' },
+              { label: __('gallery.manage.tableTime'), width: '128px' },
+              { label: __('gallery.manage.tableReason'), width: '22%' },
+              { label: __('gallery.manage.tableActions'), width: '156px' },
+            ]}
+          />
           <p class="submission-empty" id="gallery-moderation-empty" hidden>{__('gallery.noPending')}</p>
           <template id="gallery-moderation-template">
-            <SettingsCard class="moderation-item moderation-item--plain" id="gallery-moderation-template-card">
-              <div class="moderation-item__main">
-                <figure class="moderation-item__figure">
-                  <img class="moderation-item__image" data-moderation-image alt="" loading="lazy" />
-                </figure>
-                <div class="moderation-item__content">
-                  <div class="moderation-item__topline">
-                    <span class="moderation-item__type" data-moderation-type-label></span>
-                    <time class="moderation-item__time" data-moderation-time></time>
-                  </div>
-                  <h2 class="moderation-item__title" data-moderation-title></h2>
-                  <p class="moderation-item__description" data-moderation-description hidden></p>
-                  <ul class="gallery-card__tags moderation-item__tags" data-moderation-tags aria-label="Tags" hidden></ul>
-                  <div class="moderation-reason">
-                    <span data-moderation-reason></span>
+            <tr class="gallery-admin-table__row moderation-item" id="gallery-moderation-template-card">
+              <td>
+                <div class="gallery-admin-table__media">
+                  <figure class="gallery-admin-table__figure">
+                    <img class="gallery-admin-table__image" data-moderation-image alt="" loading="lazy" />
+                  </figure>
+                  <div class="gallery-admin-table__meta">
+                    <h2 class="gallery-admin-table__title" data-moderation-title></h2>
+                    <p class="gallery-admin-table__description" data-moderation-description hidden></p>
                   </div>
                 </div>
-              </div>
-              <div class="moderation-actions">
+              </td>
+              <td>
+                <span class="gallery-admin-table__badge moderation-item__type" data-moderation-type-label></span>
+              </td>
+              <td>
+                <time class="gallery-admin-table__time" data-moderation-time></time>
+              </td>
+              <td>
+                <div class="gallery-admin-table__reason moderation-reason">
+                  <span data-moderation-reason></span>
+                </div>
+              </td>
+              <td>
+                <div class="moderation-actions">
                 <p class="form-message" data-message></p>
                 <div class="moderation-actions__buttons">
                   <Button primary flat class="moderation-action">
@@ -120,7 +137,8 @@ const icons = {
                   </Button>
                 </div>
               </div>
-            </SettingsCard>
+              </td>
+            </tr>
           </template>
         </SettingsCard>
       </section>
@@ -201,12 +219,6 @@ const icons = {
     })[char] || char);
   }
 
-  function extractTags(row: ItemRow) {
-    return (row.gallery_item_tags || [])
-      .flatMap((relation) => relation.gallery_tags || [])
-      .filter(Boolean);
-  }
-
   function getModerationItem(row: ModerationRow) {
     const item = row.gallery_items;
     return Array.isArray(item) ? item[0] : item;
@@ -224,13 +236,11 @@ const icons = {
     const title = fragment.querySelector('[data-moderation-title]') as HTMLElement | null;
     const time = fragment.querySelector('[data-moderation-time]') as HTMLTimeElement | null;
     const description = fragment.querySelector('[data-moderation-description]') as HTMLElement | null;
-    const tagsList = fragment.querySelector('[data-moderation-tags]') as HTMLElement | null;
     const reason = fragment.querySelector('[data-moderation-reason]') as HTMLElement | null;
     const approve = fragment.querySelector('[data-moderation-approve]')?.closest('button') as HTMLButtonElement | null;
     const reject = fragment.querySelector('[data-moderation-reject]')?.closest('button') as HTMLButtonElement | null;
-    if (!card || !image || !typeLabel || !title || !time || !description || !tagsList || !reason || !approve || !reject) return null;
+    if (!card || !image || !typeLabel || !title || !time || !description || !reason || !approve || !reject) return null;
 
-    const tags = extractTags(item);
     const requestTypeLabel = row.request_type === 'REMOVAL' ? text.reviewTypeRemoval : text.reviewTypeSubmission;
 
     card.removeAttribute('id');
@@ -242,21 +252,16 @@ const icons = {
     typeLabel.textContent = requestTypeLabel;
     typeLabel.setAttribute('data-request-type', row.request_type);
     title.textContent = item.title || 'Untitled';
+    title.title = item.title || 'Untitled';
     time.dateTime = row.created_at;
     time.textContent = row.created_at ? new Intl.DateTimeFormat(document.documentElement.lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(row.created_at)) : '';
     description.textContent = item.description || '';
+    description.title = item.description || '';
     description.hidden = !item.description;
     reason.textContent = row.reason || text.noReviewReason;
+    reason.title = row.reason || text.noReviewReason;
     approve.setAttribute('data-decision', 'APPROVED');
     reject.setAttribute('data-decision', 'REJECTED');
-
-    tagsList.innerHTML = '';
-    tagsList.hidden = tags.length === 0;
-    tags.forEach((tag: any) => {
-      const li = document.createElement('li');
-      li.textContent = tag.name;
-      tagsList.append(li);
-    });
 
     return fragment;
   }
@@ -286,6 +291,9 @@ const icons = {
     const reviewList = document.getElementById('gallery-moderation-list');
     const reviewEmpty = document.getElementById('gallery-moderation-empty');
     if (!main || !gate || !name || !email || !reviewList || !reviewEmpty) return;
+
+    reviewList.setAttribute('data-view', 'list');
+    reviewList.closest('.gallery-admin-table')?.setAttribute('data-view', 'list');
 
     const { user, error } = await getUser();
     if (error || !user) {
@@ -342,8 +350,8 @@ const icons = {
 
     const onViewClick = (event: Event) => {
       const button = (event.currentTarget || event.target) as HTMLButtonElement;
-      const view = button.getAttribute('data-moderation-view') || 'list';
-      reviewList.setAttribute('data-view', view);
+      reviewList.setAttribute('data-view', 'list');
+      reviewList.closest('.gallery-admin-table')?.setAttribute('data-view', 'list');
       viewButtons.forEach((item) => item.classList.toggle('is-active', item === button));
     };
 
@@ -561,150 +569,12 @@ const icons = {
     text-wrap: pretty;
   }
 
-  .moderation-list {
-    display: grid;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .moderation-list[data-view='grid'] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .moderation-item {
-    display: grid;
-    gap: 8px;
-    padding: 10px;
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--surface) 88%, var(--color-primary-100));
-    transition: opacity 220ms ease, transform 220ms ease;
-  }
-
-  :root.dark .moderation-item {
-    background: color-mix(in srgb, var(--surface) 90%, black);
-  }
-
-  :global(.moderation-item--plain.settings-card) {
-    border-radius: 14px;
-  }
-
-  :global(.moderation-item--plain.settings-card:not(.settings-card--row)) {
-    padding: 10px;
-  }
-
-  :global(.moderation-item--plain.settings-card > .settings-card__bg-layer) {
-    background: color-mix(in srgb, var(--surface) 88%, var(--color-primary-100));
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  :global(.moderation-item--plain.settings-card > .settings-card__bg-layer::before) {
-    content: none;
-  }
-
-  :root.dark :global(.moderation-item--plain.settings-card > .settings-card__bg-layer) {
-    background: color-mix(in srgb, var(--surface) 90%, black);
-  }
-
-  .moderation-item__main {
-    display: grid;
-    grid-template-columns: 200px minmax(0, 1fr);
-    gap: 16px;
-    align-items: stretch;
-    min-height: 112px;
-  }
-
-  .moderation-list[data-view='grid'] .moderation-item__main {
-    grid-template-columns: 1fr;
-    min-height: 0;
-  }
-
-  .moderation-item__figure {
-    position: relative;
-    align-self: stretch;
-    height: 100%;
-    max-height: 100%;
-    min-height: 0;
-    margin: 0;
-    border-radius: 10px;
-    overflow: hidden;
-    background: color-mix(in srgb, var(--surface) 72%, var(--color-primary-100));
-  }
-
-  .moderation-list[data-view='grid'] .moderation-item__figure {
-    aspect-ratio: 16 / 10;
-    min-height: 0;
-  }
-
-  .moderation-item__image {
-    position: absolute;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
-    object-fit: cover;
-  }
-
-  .moderation-item__content {
-    min-width: 0;
-    display: grid;
-    align-content: start;
-    gap: 6px;
-  }
-
-  .moderation-item__topline {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
   .moderation-item__type {
-    min-width: 0;
-    border-radius: 999px;
-    padding: 4px 9px;
-    color: #ffffff;
     background: var(--color-primary-600);
-    font-size: 12px;
-    line-height: 1.1;
-    font-weight: 900;
-    overflow-wrap: anywhere;
   }
 
   .moderation-item__type[data-request-type='REMOVAL'] {
     background: #d97706;
-  }
-
-  .moderation-item__time {
-    flex: 0 0 auto;
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 750;
-  }
-
-  .moderation-item__title {
-    margin: 0;
-    color: var(--text-strong);
-    font-size: 17px;
-    line-height: 1.2;
-    font-weight: 900;
-    letter-spacing: 0;
-    text-wrap: pretty;
-  }
-
-  .moderation-item__description {
-    margin: 0;
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 620;
-    line-height: 1.42;
-    text-wrap: pretty;
-  }
-
-  .moderation-item__tags {
-    margin-top: 1px;
   }
 
   .moderation-item.is-resolved {
@@ -742,15 +612,11 @@ const icons = {
 
   .moderation-reason {
     display: block;
-    margin-top: 2px;
-    padding: 8px 10px 0;
-    border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+    margin: 0;
+    padding: 0;
+    border-top: 0;
     border-radius: 0;
-    background: color-mix(in srgb, var(--surface) 44%, transparent);
-  }
-
-  :root.dark .moderation-reason {
-    background: color-mix(in srgb, var(--surface) 48%, transparent);
+    background: transparent;
   }
 
   .moderation-reason span {
@@ -763,9 +629,9 @@ const icons = {
   }
 
   .moderation-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
   }
 
@@ -833,18 +699,6 @@ const icons = {
       display: none;
     }
 
-    .moderation-list[data-view='grid'] {
-      grid-template-columns: 1fr;
-    }
-
-    .moderation-list[data-view='grid'] .moderation-item__main {
-      grid-template-columns: 128px minmax(0, 1fr);
-      min-height: 112px;
-    }
-
-    .moderation-list[data-view='grid'] .moderation-item__figure {
-      aspect-ratio: auto;
-    }
   }
 
   @media (max-width: 640px) {
@@ -857,20 +711,9 @@ const icons = {
       flex-direction: column;
     }
 
-    .moderation-item__main,
-    .moderation-list[data-view='grid'] .moderation-item__main {
-      grid-template-columns: 1fr;
-      min-height: 0;
-    }
-
-    .moderation-item__figure,
-    .moderation-list[data-view='grid'] .moderation-item__figure {
-      aspect-ratio: 16 / 10;
-      min-height: 0;
-    }
-
     .moderation-actions {
-      grid-template-columns: 1fr;
+      align-items: stretch;
+      flex-direction: column;
     }
 
     :global(.moderation-action),

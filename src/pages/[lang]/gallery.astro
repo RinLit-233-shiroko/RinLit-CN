@@ -149,8 +149,12 @@ const autofillSuggestions = JSON.stringify([
         </Menu>
       </div>
 
-      <div class="gallery-toolbar__submit">
-        <Button href={`/${lang}/gallery/submit`} primary flat icon="plus">{__('gallery.submit')}</Button>
+      <div class="gallery-toolbar__submit gallery-toolbar__control">
+        <Button id="gallery-submit-trigger" primary flat icon="plus" aria-haspopup="menu">{__('gallery.submit')}</Button>
+        <Menu id="gallery-submit-menu" type="menu" ariaLabel={__('gallery.actions')} zIndex="4000">
+          <MenuItem href={`/${lang}/gallery/submit`} icon="plus">{__('gallery.newSubmission')}</MenuItem>
+          <MenuItem href={`/${lang}/gallery/favorites`} icon="heart">{__('gallery.viewFavorites')}</MenuItem>
+        </Menu>
       </div>
     </section>
 
@@ -450,6 +454,8 @@ const autofillSuggestions = JSON.stringify([
     const sortMenu = document.getElementById('gallery-sort-menu');
     const filterTrigger = document.getElementById('gallery-filter-trigger');
     const filterMenu = document.getElementById('gallery-filter-menu');
+    const submitTrigger = document.getElementById('gallery-submit-trigger');
+    const submitMenu = document.getElementById('gallery-submit-menu');
 
     // 收集排序项 label 用于触发按钮显示
     sortMenu?.querySelectorAll<HTMLElement>('.menu-item[data-value]').forEach((item) => {
@@ -504,7 +510,7 @@ const autofillSuggestions = JSON.stringify([
         (window as any).Menu_close(menu);
         return;
       }
-      [sortMenu, filterMenu].forEach((m) => {
+      [sortMenu, filterMenu, submitMenu].forEach((m) => {
         if (m && m !== menu && m.classList.contains('is-open')) (window as any).Menu_close(m);
       });
       (window as any).Menu_open(menu, trigger);
@@ -517,6 +523,10 @@ const autofillSuggestions = JSON.stringify([
     filterTrigger?.addEventListener('click', (e) => {
       e.stopPropagation();
       toggleMenu(filterTrigger as HTMLElement, filterMenu);
+    });
+    submitTrigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu(submitTrigger as HTMLElement, submitMenu);
     });
 
     // 排序菜单项点击（type="menu" 不自发 menu:change 事件）
@@ -543,8 +553,10 @@ const autofillSuggestions = JSON.stringify([
       const target = e.target as HTMLElement;
       const inSort = sortMenu?.contains(target) || sortTrigger?.contains(target);
       const inFilter = filterMenu?.contains(target) || filterTrigger?.contains(target);
+      const inSubmit = submitMenu?.contains(target) || submitTrigger?.contains(target);
       if (!inSort && sortMenu?.classList.contains('is-open')) (window as any).Menu_close(sortMenu);
       if (!inFilter && filterMenu?.classList.contains('is-open')) (window as any).Menu_close(filterMenu);
+      if (!inSubmit && submitMenu?.classList.contains('is-open')) (window as any).Menu_close(submitMenu);
     });
 
     // Escape 关闭
@@ -552,6 +564,7 @@ const autofillSuggestions = JSON.stringify([
       if (e.key !== 'Escape') return;
       if (sortMenu?.classList.contains('is-open')) (window as any).Menu_close(sortMenu);
       if (filterMenu?.classList.contains('is-open')) (window as any).Menu_close(filterMenu);
+      if (submitMenu?.classList.contains('is-open')) (window as any).Menu_close(submitMenu);
     });
 
     // 监听选择变化（筛选菜单仍用 menu:change）

@@ -18,7 +18,6 @@ const { lang = 'zh-cn' } = Astro.params;
 const __ = (key: string) => t(lang, key);
 const icons = {
   image: getIcon('photo-up', 18),
-  tags: getIcon('tags', 18),
   info: getIcon('info-circle', 18),
   remove: getIcon('x', 18),
   success: getIcon('circle-check', 48),
@@ -118,15 +117,6 @@ const icons = {
           </form>
         </SettingsCard>
 
-        <SettingsCard>
-          <div class="card-head">
-            <div class="card-icon" set:html={icons.tags}></div>
-            <div class="card-copy">
-              <h2>{__('gallery.tagRules')}</h2>
-              <p>{__('gallery.tagRulesDesc')}</p>
-            </div>
-          </div>
-        </SettingsCard>
       </section>
     </main>
 

@@ -63,8 +63,6 @@ const __ = (key: string) => t(lang, key);
 
 <script is:inline>
   (() => {
-    var bound = false;
-
     function setAspectRatio() {
       var tilts = document.querySelectorAll('[data-business-card-tilt]');
       for (var i = 0; i < tilts.length; i++) {
@@ -84,15 +82,14 @@ const __ = (key: string) => t(lang, key);
     }
 
     function bindEvents() {
-      if (bound) return;
-      bound = true;
-
       var tilts = document.querySelectorAll('[data-business-card-tilt]');
 
       for (var i = 0; i < tilts.length; i++) {
         var tilt = tilts[i];
+        if (tilt.hasAttribute('data-business-card-bound')) continue;
         var card = tilt.querySelector('[data-business-card]');
         if (!card) continue;
+        tilt.setAttribute('data-business-card-bound', '');
 
         var touchStartX = 0;
         var touchStartY = 0;
@@ -148,11 +145,16 @@ const __ = (key: string) => t(lang, key);
       }
     }
 
-    setAspectRatio();
-    bindEvents();
+    function initBusinessCard() {
+      setAspectRatio();
+      bindEvents();
+    }
+
+    initBusinessCard();
+    document.addEventListener('astro:page-load', initBusinessCard);
 
     window.addEventListener('pageshow', function (event) {
-      if (event.persisted) setAspectRatio();
+      if (event.persisted) initBusinessCard();
     });
   })();
 </script>

@@ -29,6 +29,14 @@ const {
   disabled = false,
 } = Astro.props;
 
+// 收集所有 data-* 属性以便透传到 DOM 元素
+const dataAttrs: Record<string, string> = {};
+for (const [key, value] of Object.entries(Astro.props)) {
+  if (key.startsWith('data-') && typeof value === 'string') {
+    dataAttrs[key] = value;
+  }
+}
+
 const Tag = href ? 'a' : 'button';
 const svgHtml = getIcon(icon, 18);
 const chevronHtml = getIcon('chevron-right', 16);
@@ -51,6 +59,7 @@ const hasLabel = Astro.slots.has('default');
     role="menuitem"
     aria-checked={checked ? 'true' : 'false'}
     disabled={disabled}
+    {...dataAttrs}
   >
     {svgHtml && <span class="menu-item__icon" set:html={svgHtml} />}
     {hasLabel && <span class="menu-item__label"><slot /></span>}

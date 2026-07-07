@@ -1,5 +1,5 @@
 ---
-import { locales, t } from '../../../i18n/index';
+import { t } from '../../../i18n/index';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Button from '../../../components/Button.astro';
 import Input from '../../../components/Input.astro';
@@ -13,9 +13,7 @@ import { fetchPublishedGalleryItems } from '../../../lib/gallery.client';
 import { createServerClient } from '../../../lib/supabase';
 import { getIcon } from '../../../utils/icons';
 
-export async function getStaticPaths() {
-  return locales.map((lang) => ({ params: { lang } }));
-}
+export const prerender = false;
 
 const { lang = 'zh-cn' } = Astro.params;
 const __ = (key: string) => t(lang, key);
@@ -441,7 +439,7 @@ const autofillSuggestions = JSON.stringify([
       if (shell && shell.parentElement === grid) grid.appendChild(shell);
     });
 
-    if (noResults) noResults.hidden = sorted.length > 0;
+    if (noResults) noResults.hidden = favoriteItems.length === 0 || sorted.length > 0;
   }
 
   // ======== 菜单初始化 ========

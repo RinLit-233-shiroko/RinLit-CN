@@ -169,12 +169,12 @@ const icons = {
 </script>
 
 <script>
-  import { getUser, getUserProfileRole, onAuthStateChange } from '../../../lib/auth.client';
+  import { getUser, getUserEffectiveRoles, onAuthStateChange } from '../../../lib/auth.client';
   import { validateGalleryFile, submitGalleryItem, fetchGalleryTagSuggestions } from '../../../lib/gallery.client';
 
   const text = (window as any).__GALLERY_SUBMIT_I18N || {};
   let currentUser: any = null;
-  let currentRole: 'user' | 'master' | null = null;
+  let currentIsMaster: boolean | null = null;
   let previewObjectUrl = '';
   let currentTags: string[] = [];
   let cleanupGallerySubmit: (() => void) | null = null;
@@ -262,22 +262,23 @@ const icons = {
         return;
       }
 
-      const { data, error: roleError } = await getUserProfileRole(user.id);
-      const role = data?.role;
+      const { roles, error: rolesError } = await getUserEffectiveRoles(user.id);
+      const isMaster = roles.includes('MASTER');
+      const canSubmit = roles.includes('USER') || roles.includes('MASTER') || roles.includes('CW_MAINTAINER');
 
       const reviewNav = document.querySelector('[data-review-nav]') as HTMLElement | null;
-      if (reviewNav) reviewNav.hidden = role !== 'master';
+      if (reviewNav) reviewNav.hidden = !isMaster;
 
-      if (roleError || (role !== 'user' && role !== 'master')) {
+      if (rolesError || !canSubmit) {
         gate.textContent = text.userOnly;
         return;
       }
 
       currentUser = user;
-      currentRole = role;
+      currentIsMaster = isMaster;
       name.textContent = getDisplayName(user);
       email.textContent = user.email || '';
-      submitLabel.textContent = role === 'master' ? text.publish : text.submit;
+      submitLabel.textContent = isMaster ? text.publish : text.submit;
       gate.hidden = true;
       main.hidden = false;
     }
@@ -329,15 +330,15 @@ const icons = {
       setMessage(message, '', 'neutral');
     };
 
-    function openSuccessModal(role: 'user' | 'master') {
-      successTitle.textContent = role === 'master' ? text.publishedTitle : text.submittedTitle;
-      successDesc.textContent = role === 'master' ? text.publishedDesc : text.submittedDesc;
+    function openSuccessModal(isMaster: boolean) {
+      successTitle.textContent = isMaster ? text.publishedTitle : text.submittedTitle;
+      successDesc.textContent = isMaster ? text.publishedDesc : text.submittedDesc;
       (window as any).__modals?.['gallery-submit-success-modal']?.open();
     }
 
     const onSubmit = async (event: Event) => {
       event.preventDefault();
-      if (!currentUser || !currentRole) return;
+      if (!currentUser || currentIsMaster === null) return;
 
       const file = fileInput.files?.[0];
       if (!file) {
@@ -373,7 +374,7 @@ const icons = {
       try {
         const result = await submitGalleryItem({
           userId: currentUser.id,
-          role: currentRole,
+          isMaster: currentIsMaster,
           file,
           title: titleInput.value,
           description: descriptionInput.value,
@@ -386,12 +387,12 @@ const icons = {
         previewUrl.textContent = `${text.storageUrl}${result.imageUrl}`;
         previewUrl.hidden = false;
         setMessage(message, '', 'neutral');
-        openSuccessModal(currentRole);
+        openSuccessModal(currentIsMaster);
       } catch (error: any) {
         setMessage(message, error?.message || text.defaultError, 'error');
       }
 
-      submitLabel.textContent = currentRole === 'master' ? text.publish : text.submit;
+      submitLabel.textContent = currentIsMaster ? text.publish : text.submit;
       submitLabel.hidden = false;
       submitSpinner.hidden = true;
       submitButton.removeAttribute('aria-disabled');

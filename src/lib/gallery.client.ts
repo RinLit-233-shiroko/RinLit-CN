@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { AccountRole, Database, GalleryItemModerationRequestStatus, GalleryItemModerationRequestType, GalleryItemStatus } from "./database.types";
+import type { Database, GalleryItemModerationRequestStatus, GalleryItemModerationRequestType, GalleryItemStatus } from "./database.types";
 
 export const GALLERY_BUCKET = 'gallery';
 export const GALLERY_MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -185,7 +185,7 @@ export async function fetchMyGalleryItems(userId: string) {
 
 export async function submitGalleryItem(params: {
   userId: string;
-  role: AccountRole;
+  isMaster: boolean;
   file: File;
   title: string;
   description: string;
@@ -205,7 +205,7 @@ export async function submitGalleryItem(params: {
 
   const { data: publicUrlData } = supabase.storage.from(GALLERY_BUCKET).getPublicUrl(filePath);
   const imageUrl = publicUrlData.publicUrl;
-  const isMaster = params.role === 'master';
+  const isMaster = params.isMaster;
 
   try {
     const { data: item, error: itemError } = await supabase

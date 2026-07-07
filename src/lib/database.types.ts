@@ -1,5 +1,5 @@
 export type GalleryItemStatus = 'PUBLISHED' | 'HIDDEN' | 'PENDING';
-export type AccountRole = 'user' | 'master';
+export type AccountRole = 'USER' | 'MASTER' | 'CW_MAINTAINER';
 export type GalleryItemModerationRequestType = 'SUBMISSION' | 'REMOVAL';
 export type GalleryItemModerationRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED';
 
@@ -30,7 +30,6 @@ export interface Writing {
 
 export interface Profile {
   id: string;
-  role: AccountRole;
   created_at: string;
   display_name: string | null;
 }
@@ -64,6 +63,12 @@ export interface GalleryFavorite {
   created_at: string;
 }
 
+export interface UserRole {
+  user_id: string;
+  role: AccountRole;
+  created_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -79,7 +84,7 @@ export interface Database {
       };
       profiles: {
         Row: Profile;
-        Insert: Omit<Profile, 'created_at' | 'role'> & Partial<Pick<Profile, 'created_at' | 'role'>>;
+        Insert: Omit<Profile, 'created_at'> & Partial<Pick<Profile, 'created_at'>>;
         Update: Partial<Profile>;
       };
       gallery_tags: {
@@ -101,6 +106,11 @@ export interface Database {
         Row: GalleryFavorite;
         Insert: Omit<GalleryFavorite, 'created_at'> & Partial<Pick<GalleryFavorite, 'created_at'>>;
         Update: Partial<GalleryFavorite>;
+      };
+      user_roles: {
+        Row: UserRole;
+        Insert: Omit<UserRole, 'created_at'> & Partial<Pick<UserRole, 'created_at'>>;
+        Update: Partial<UserRole>;
       };
     };
     Enums: {

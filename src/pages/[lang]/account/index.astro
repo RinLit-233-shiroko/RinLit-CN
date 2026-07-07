@@ -209,8 +209,9 @@ const icons = {
     signingOut: __('auth.signingOut'),
     saveName: __('auth.save'),
     oauthStarting: __('auth.oauthStarting'),
-    roleUser: 'user',
-    roleMaster: 'master',
+    roleUser: __('auth.role.user'),
+    roleMaster: __('auth.role.master'),
+    roleCwMaintainer: __('auth.role.cwMaintainer'),
     neverSignedIn: __('auth.neverSignedIn'),
   })
 }}>
@@ -218,7 +219,7 @@ const icons = {
 </script>
 
 <script>
-  import { getUser, getUserProfileRole, updateDisplayName, linkGithubIdentity, signOut } from '../../../lib/auth.client';
+  import { getUser, getUserEffectiveRoles, updateDisplayName, linkGithubIdentity, signOut } from '../../../lib/auth.client';
 
   const text = (window as any).__ACCOUNT_I18N || {};
   const PANEL_KEY = 'rinlit:account-panel';
@@ -244,8 +245,9 @@ const icons = {
   }
 
   function formatRole(role: string | null | undefined) {
-    if (role === 'master') return text.roleMaster;
-    if (role === 'user') return text.roleUser;
+    if (role === 'MASTER') return text.roleMaster;
+    if (role === 'USER') return text.roleUser;
+    if (role === 'CW_MAINTAINER') return text.roleCwMaintainer;
     return text.unavailable;
   }
 
@@ -361,12 +363,15 @@ const icons = {
 
     async function renderProfileRole(userId: string) {
       accountRoleValue.textContent = '...';
-      const { data, error } = await getUserProfileRole(userId);
+      const { roles, error } = await getUserEffectiveRoles(userId);
       if (error) {
         accountRoleValue.textContent = text.unavailable;
         return;
       }
-      accountRoleValue.textContent = formatRole(data?.role);
+      const labels = roles
+        .map(formatRole)
+        .filter((label) => label !== text.unavailable);
+      accountRoleValue.textContent = labels.length ? labels.join(' / ') : text.unavailable;
     }
 
     async function loadAccount() {

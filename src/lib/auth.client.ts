@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { AccountRole } from "./database.types";
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -101,13 +102,35 @@ export async function getUser() {
     return { user, error };
 }
 
-export async function getUserProfileRole(userId: string) {
+export async function getUserRoles(userId: string) {
     const supabase = getClient();
     return await supabase
-        .from('profiles')
+        .from('user_roles')
         .select('role')
-        .eq('id', userId)
-        .maybeSingle();
+        .eq('user_id', userId);
+}
+
+/**
+ * 返回用户持有的全部角色（来自 user_roles 表）。
+ */
+export async function getUserEffectiveRoles(userId: string): Promise<{ roles: AccountRole[]; error: any }> {
+    const { data, error } = await getUserRoles(userId);
+    const roles = new Set<AccountRole>();
+    if (data) {
+        for (const row of data) {
+            if (row?.role) roles.add(row.role as AccountRole);
+        }
+    }
+    return { roles: Array.from(roles), error };
+}
+
+/**
+ * 判断用户是否持有指定角色（查询 user_roles）。
+ * 出错时返回 false（对审核类入口采用 fail-closed）。
+ */
+export async function hasRole(userId: string, role: AccountRole): Promise<boolean> {
+    const { roles } = await getUserEffectiveRoles(userId);
+    return roles.includes(role);
 }
 
 export async function signOut() {

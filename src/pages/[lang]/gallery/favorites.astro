@@ -209,7 +209,7 @@ const autofillSuggestions = JSON.stringify([
 </script>
 
 <script>
-  import { getUser, getUserProfileRole, onAuthStateChange } from '../../../lib/auth.client';
+  import { getUser, hasRole, onAuthStateChange } from '../../../lib/auth.client';
   import { addGalleryFavorite, fetchMyGalleryFavoriteItemIds, removeGalleryFavorite } from '../../../lib/gallery.client';
 
   const text = (window as any).__GALLERY_FAVORITES_I18N || {};
@@ -725,10 +725,9 @@ const autofillSuggestions = JSON.stringify([
       return;
     }
 
-    const { data: profile } = await getUserProfileRole(user.id);
-    const role = profile?.role;
+    const isMaster = await hasRole(user.id, 'MASTER');
     const reviewNav = document.querySelector('[data-review-nav]') as HTMLElement | null;
-    if (reviewNav) reviewNav.hidden = role !== 'master';
+    if (reviewNav) reviewNav.hidden = !isMaster;
 
     currentUserId = user.id;
     name.textContent = getDisplayName(user);

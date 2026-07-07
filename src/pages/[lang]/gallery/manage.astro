@@ -185,7 +185,7 @@ const icons = {
 </script>
 
 <script>
-  import { getUser, getUserProfileRole, onAuthStateChange } from '../../../lib/auth.client';
+  import { getUser, hasRole, onAuthStateChange } from '../../../lib/auth.client';
   import { fetchMyGalleryItems, requestGalleryItemRemoval } from '../../../lib/gallery.client';
   import type { GalleryItemModerationRequestStatus, GalleryItemModerationRequestType, GalleryItemStatus } from '../../../lib/database.types';
 
@@ -343,10 +343,10 @@ const icons = {
       return;
     }
 
-    const { data: profile } = await getUserProfileRole(user.id);
+    const isMaster = await hasRole(user.id, 'MASTER');
 
     const reviewNav = document.querySelector('[data-review-nav]') as HTMLElement | null;
-    if (reviewNav) reviewNav.hidden = profile?.role !== 'master';
+    if (reviewNav) reviewNav.hidden = !isMaster;
 
     currentUser = user;
     name.textContent = getDisplayName(user);

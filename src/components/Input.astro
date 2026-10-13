@@ -46,6 +46,26 @@ const {
 } = Astro.props;
 
 const inputId = id || (name ? `input-${name}` : `input-${Math.random().toString(36).slice(2)}`);
+
+// 只有当调用方显式传入一个「有意义」的 autocomplete token 时，才把它当作
+// 真正的账号/身份字段(登录邮箱、密码、姓名等)。其余情况(空值或 'off')
+// 一律视为普通输入框，额外加上各家密码管理器的忽略标记。
+//
+// 背景: Chrome 等浏览器会忽略 autocomplete="off"，并把页面上的第一个文本
+// 输入框当成账号/邮箱字段来自动填充。由于 AuthModal 在所有页面都会挂载
+// (即使处于隐藏状态)，Gallery 的搜索框曾被误判成登录表单的一部分而反复
+// 被填入账号密码。这里的标记配合 Modal 关闭时真正隐藏，可彻底避免该问题。
+const resolvedAutocomplete = autocomplete || (type === 'password' ? 'current-password' : 'off');
+const isAutofillField = resolvedAutocomplete !== 'off' && resolvedAutocomplete !== 'on';
+const ignoreAutofillAttrs = isAutofillField
+  ? {}
+  : {
+      'data-1p-ignore': 'true',
+      'data-lpignore': 'true',
+      'data-bwignore': 'true',
+      'data-protonpass-ignore': 'true',
+      'data-form-type': 'other',
+    };
 ---
 
 <div class={`input-wrap ${error ? 'input-wrap--error' : ''} ${className}`}>
@@ -61,11 +81,12 @@ const inputId = id || (name ? `input-${name}` : `input-${Math.random().toString(
       value={value}
       placeholder={placeholder}
       required={required}
-      autocomplete={autocomplete || (type === 'password' ? 'current-password' : 'off')}
+      autocomplete={resolvedAutocomplete}
       autofocus={autofocus}
       class="input-field"
       aria-invalid={error ? 'true' : 'false'}
       aria-describedby={error ? `${inputId}-error` : undefined}
+      {...ignoreAutofillAttrs}
     />
   </Pill>
 

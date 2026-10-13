@@ -1,6 +1,10 @@
 {
   "site.title": "RinLit — 做软件和设计，还有、些有意思的项目",
 
+  "seo.homeTitle": "RinLit — 做软件和设计，还有、些有意思的项目",
+  "seo.homeDescription": "做软件、设计系统，也喜欢折腾各种有趣的项目。这里有项目作品、Gallery 图片收藏和随笔。",
+  "seo.keywords": "RinLit, RinHub, 软件, 设计系统, 项目作品, 随笔, Gallery, 个人网站",
+
   "nav.fields": "领域",
   "nav.gallery": "Gallery",
   "nav.writing": "随笔",

@@ -12,6 +12,6 @@ const { lang } = Astro.params;
 const __ = (key: string) => t(lang, key);
 ---
 
-<BaseLayout lang={lang} title={`${__('page.writing')} — RinLit`}>
+<BaseLayout lang={lang} title={`${__('page.writing')} — RinLit`} description={__('page.writing.desc')}>
   <UnderConstructionPage lang={lang} />
 </BaseLayout>

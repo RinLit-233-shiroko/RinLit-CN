@@ -1,5 +1,5 @@
 ---
-import { locales, defaultLocale } from '../../i18n/index';
+import { locales, t } from '../../i18n/index';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import HeroSection from '../../sections/index/HeroSection.astro';
 import FieldsIntro from '../../sections/index/FieldsIntro.astro';
@@ -11,12 +11,13 @@ export async function getStaticPaths() {
 }
 
 const { lang } = Astro.params;
+const __ = (key: string) => t(lang, key);
 ---
 
 <BaseLayout
   lang={lang}
-  title="RinLit — Building software, design systems, and experimental ideas"
-  description="RinLit is a personal creative space for software projects, design systems, experiments, writing, and visual ideas."
+  title={__('seo.homeTitle')}
+  description={__('seo.homeDescription')}
 >
   <HeroSection lang={lang} />
   <FieldsIntro lang={lang} />

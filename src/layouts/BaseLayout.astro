@@ -9,7 +9,6 @@ export interface Props {
 const {
   lang = 'zh-cn',
   title,
-  description = 'RinLit is a personal creative space for software projects, design systems, experiments, writing, and visual ideas.',
   image = '/images/logo/Type=Square, Mode=Light, Monochrome=False.png',
 } = Astro.props;
 
@@ -17,15 +16,29 @@ import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
 import PageLoader from '../components/layout/PageLoader.astro';
 import AuthModal from '../features/auth/AuthModal.astro';
-import { locales, defaultLocale } from '../i18n/index';
+import { locales, defaultLocale, t } from '../i18n/index';
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
 
 const safeLang = locales.includes(lang as any) ? lang : defaultLocale;
+const description = Astro.props.description ?? t(safeLang, 'seo.homeDescription');
 const currentPath = Astro.url.pathname;
 const pageTitle = title.includes('RinLit') ? title : `${title} — RinLit`;
-const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).href;
-const imageUrl = new URL(image, Astro.site ?? Astro.url.origin).href;
+const siteBase = Astro.site ?? Astro.url.origin;
+const canonicalUrl = new URL(Astro.url.pathname, siteBase).href;
+const imageUrl = new URL(image, siteBase).href;
+// Open Graph 要求 locale 使用 language_REGION 格式（下划线）
+const ogLocale = safeLang === 'zh-cn' ? 'zh_CN' : 'en_US';
+// 去掉路径中的语言前缀，用于生成各语言版本的 hreflang 链接
+const pathWithoutLang = currentPath.replace(/^\/(zh-cn|en)(?=\/|$)/, '');
+const alternateLinks: { hreflang: string; href: string }[] = locales.map((locale) => ({
+  hreflang: locale,
+  href: new URL(`/${locale}${pathWithoutLang}`, siteBase).href,
+}));
+alternateLinks.push({
+  hreflang: 'x-default',
+  href: new URL(`/${defaultLocale}${pathWithoutLang}`, siteBase).href,
+});
 ---
 
 <!doctype html>
@@ -36,8 +49,11 @@ const imageUrl = new URL(image, Astro.site ?? Astro.url.origin).href;
     <meta name="description" content={description} />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#fbf9ff" />
-    <meta name="keywords" content="RinLit, software, design systems, experimental ideas, portfolio, projects, writing" />
+    <meta name="keywords" content={t(safeLang, 'seo.keywords')} />
     <link rel="canonical" href={canonicalUrl} />
+    {alternateLinks.map((link) => (
+      <link rel="alternate" hreflang={link.hreflang} href={link.href} />
+    ))}
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="RinLit" />
@@ -45,7 +61,7 @@ const imageUrl = new URL(image, Astro.site ?? Astro.url.origin).href;
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={imageUrl} />
-    <meta property="og:locale" content={lang} />
+    <meta property="og:locale" content={ogLocale} />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />

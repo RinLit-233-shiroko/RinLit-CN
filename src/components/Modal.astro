@@ -65,13 +65,25 @@ const { id = 'modal', title = '', class: cardClass = '', ariaLabel = '' } = Astr
     align-items: center;
     justify-content: center;
     opacity: 0;
+    /* 关闭时必须真正移出渲染，而不只是透明:
+       否则浏览器仍会把弹窗内的邮箱/密码字段当作可自动填充的
+       登录表单，把账号密码塞进页面上的其它输入框(例如 Gallery
+       搜索框)。visibility 延迟到淡出动画结束后再切换，保证关闭
+       动画依然可见。 */
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition:
+      opacity 0.3s ease,
+      visibility 0s linear 0.3s;
   }
 
   .modal.is-open {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
+    transition:
+      opacity 0.3s ease,
+      visibility 0s;
   }
 
   .modal__backdrop {
@@ -235,7 +247,8 @@ const { id = 'modal', title = '', class: cardClass = '', ariaLabel = '' } = Astr
     goToPage(index: number, silent = false) {
       const el = document.getElementById(this.id);
       if (!el) return;
-      const pages = el.querySelectorAll('.modal__content > [data-page]');
+      // 允许页面节点被包在中间层(例如 <form>)里, 而不仅限于 content 的直接子节点。
+      const pages = el.querySelectorAll('.modal__content [data-page]');
       const totalPages = pages.length;
 
       // 无页面系统时忽略
@@ -275,7 +288,7 @@ const { id = 'modal', title = '', class: cardClass = '', ariaLabel = '' } = Astr
     get totalPages(): number {
       const el = document.getElementById(this.id);
       if (!el) return 0;
-      return el.querySelectorAll('.modal__content > [data-page]').length;
+      return el.querySelectorAll('.modal__content [data-page]').length;
     }
   }
 

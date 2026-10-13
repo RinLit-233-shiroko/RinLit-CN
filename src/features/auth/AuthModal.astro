@@ -37,12 +37,21 @@ const __ = (key: string) => t(lang, key);
 ---
 
 <Modal id="auth-modal" title={__('auth.signIn')} ariaLabel={__('auth.signIn')}>
-  <AuthEmailPage lang={lang} />
-  <AuthPasswordPage lang={lang} />
-  <AuthVerifyPage lang={lang} />
-  <AuthForgotPasswordPage lang={lang} />
-  <AuthResetConfirmPage lang={lang} />
-  <AuthOtpPage lang={lang} />
+  <!--
+    登录/注册字段必须包在真实的 <form> 里: 否则浏览器(尤其 Chrome 的密码
+    管理器)会把整个文档当成一个隐式表单, 把弹窗里唯一的 password 字段和
+    文档中第一个文本输入框配对 —— 也就是 Gallery 的搜索框, 从而把账号密码
+    误填进去。有了明确的 form 边界后, 凭据自动填充只会在弹窗内部生效。
+    novalidate: 校验完全由脚本处理, 避免原生校验弹窗。
+  -->
+  <form id="auth-form" class="auth-form" autocomplete="on" novalidate>
+    <AuthEmailPage lang={lang} />
+    <AuthPasswordPage lang={lang} />
+    <AuthVerifyPage lang={lang} />
+    <AuthForgotPasswordPage lang={lang} />
+    <AuthResetConfirmPage lang={lang} />
+    <AuthOtpPage lang={lang} />
+  </form>
 </Modal>
 
 <!-- 注入 i18n 翻译 -->
@@ -982,6 +991,16 @@ const __ = (key: string) => t(lang, key);
         const btn = (e.target as HTMLElement).closest('[data-action="auth:switch"]');
         if (!btn) return;
         self.switchTab(self.mode === 'signin' ? 'signup' : 'signin');
+      });
+
+      // 阻止登录表单的原生提交(页面刷新)。
+      // 所有交互都走按钮的 click 委托 + Enter 键处理, 表单仅用于限定
+      // 浏览器凭据自动填充的作用域; Button 组件默认渲染为 type="submit",
+      // 若在无专门处理的字段(如昵称)里按 Enter, 这里兜底拦截。
+      document.addEventListener('submit', (e) => {
+        const form = (e.target as HTMLElement).closest('#auth-form');
+        if (!form) return;
+        e.preventDefault();
       });
 
       // Next 按钮 (Page 0) — click 委托，避免 Astro ClientRouter 拦截

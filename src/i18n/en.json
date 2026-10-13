@@ -1,6 +1,10 @@
 {
   "site.title": "RinLit — My personal website.",
 
+  "seo.homeTitle": "RinLit — Building software, design systems, and experimental ideas",
+  "seo.homeDescription": "RinLit is a personal creative space for software projects, design systems, experiments, writing, and visual ideas.",
+  "seo.keywords": "RinLit, RinHub, software, design systems, experimental ideas, portfolio, projects, writing, Gallery",
+
   "nav.fields": "Fields",
   "nav.gallery": "Gallery",
   "nav.writing": "Writing",

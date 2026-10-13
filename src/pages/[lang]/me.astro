@@ -15,6 +15,6 @@ const __ = (key: string) => t(lang, key);
 await new Promise((resolve) => setTimeout(resolve, 2000));
 ---
 
-<BaseLayout lang={lang} title={`${__('page.me')} — RinLit`}>
+<BaseLayout lang={lang} title={`${__('page.me')} — RinLit`} description={__('page.me.desc')}>
   <UnderConstructionPage lang={lang} />
 </BaseLayout>

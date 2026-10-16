@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#fbf9ff" />
+    <meta name="robots" content="noindex" />
+    <title>离线 · Offline — RinLit</title>
+    <link rel="icon" href="/favicon/light.ico" media="(prefers-color-scheme: light)" />
+    <link rel="icon" href="/favicon/dark.ico" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <!--
+      Standalone offline fallback for the service worker.
+      Styling is inlined and self-contained on purpose: this page has to render
+      without any network request. Tokens mirror src/styles/global.css.
+    -->
+    <style>
+      :root {
+        --bg: #ffffff;
+        --bg-muted: #f1f0f5;
+        --text: #2b2a33;
+        --text-strong: #1d1c22;
+        --text-muted: #6b687d;
+        --border: rgba(29, 28, 34, 0.08);
+        --border-strong: rgba(29, 28, 34, 0.14);
+        --primary: #8c7ecd;
+        --pill-bg: rgba(251, 250, 255, 0.72);
+        --pill-shadow: rgba(0, 0, 0, 0.08);
+        --glow: rgba(140, 126, 205, 0.28);
+        color-scheme: light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101216;
+          --bg-muted: #25213e;
+          --text: #e7e6f0;
+          --text-strong: #ffffff;
+          --text-muted: #a39fbf;
+          --border: rgba(255, 255, 255, 0.08);
+          --border-strong: rgba(255, 255, 255, 0.16);
+          --primary: #ac9fe1;
+          --pill-bg: rgba(194, 191, 208, 0.3);
+          --pill-shadow: rgba(0, 0, 0, 0.32);
+          --glow: rgba(172, 159, 225, 0.32);
+          color-scheme: dark;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 32px 24px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Sarasa SC', Geist, ui-sans-serif, system-ui, sans-serif;
+        font-weight: 700;
+        text-wrap: pretty;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .shell {
+        position: relative;
+        width: min(100%, 520px);
+        display: grid;
+        justify-items: center;
+        text-align: center;
+      }
+
+      .shell::before {
+        content: '';
+        position: absolute;
+        inset: 6% 4% auto;
+        height: 260px;
+        border-radius: 999px;
+        background: radial-gradient(circle, var(--glow) 0%, transparent 68%);
+        filter: blur(28px);
+        pointer-events: none;
+      }
+
+      .mark {
+        position: relative;
+        width: 96px;
+        height: 96px;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px var(--pill-shadow);
+      }
+
+      .mark img {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .code {
+        position: relative;
+        margin: 28px 0 0;
+        font-size: clamp(3.5rem, 14vw, 6rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.06em;
+        color: var(--text-strong);
+      }
+
+      .title {
+        position: relative;
+        margin: 12px 0 0;
+        font-size: clamp(1.15rem, 3.4vw, 1.6rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--text-strong);
+      }
+
+      .desc {
+        position: relative;
+        margin: 14px 0 0;
+        max-width: 420px;
+        font-size: 0.94rem;
+        font-weight: 500;
+        line-height: 1.8;
+        color: var(--text-muted);
+      }
+
+      .desc + .desc {
+        margin-top: 6px;
+      }
+
+      .actions {
+        position: relative;
+        margin-top: 32px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 148px;
+        height: 46px;
+        padding: 0 24px;
+        border-radius: 999px;
+        border: 1px solid var(--border-strong);
+        background: var(--pill-bg);
+        box-shadow: 0 8px 12px var(--pill-shadow);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: var(--text-strong);
+        font: inherit;
+        font-size: 15px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+      }
+
+      .btn:hover {
+        transform: scale(1.04);
+      }
+
+      .btn:active {
+        transform: scale(0.98);
+        opacity: 0.85;
+      }
+
+      .btn--primary {
+        border-color: transparent;
+        background: var(--primary);
+        color: #ffffff;
+      }
+
+      .status {
+        position: relative;
+        margin: 18px 0 0;
+        min-height: 1.2em;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text-muted);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .btn {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <span class="mark">
+        <img src="/icons/icon-192.png" alt="RinLit" width="96" height="96" />
+      </span>
+
+      <p class="code">Offline</p>
+      <h1 class="title">网络好像断开了</h1>
+      <p class="desc">当前无法连接到 RinLit，请检查网络后重试。</p>
+      <p class="desc">RinLit is unreachable right now — check your connection and try again.</p>
+
+      <div class="actions">
+        <button class="btn btn--primary" type="button" id="retry">重试 / Retry</button>
+        <a class="btn" href="/zh-cn" id="home">返回首页 / Home</a>
+      </div>
+
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </main>
+
+    <script>
+      (function () {
+        var retry = document.getElementById('retry');
+        var home = document.getElementById('home');
+        var status = document.getElementById('status');
+
+        // Match the language the visitor was last browsing, so the fallback
+        // does not bounce English readers into the Chinese site.
+        try {
+          var saved = localStorage.getItem('rinlit:lang');
+          var nav = navigator.language || '';
+          var target =
+            saved === 'en' || saved === 'zh-cn'
+              ? saved
+              : /^zh/i.test(nav)
+                ? 'zh-cn'
+                : 'en';
+          home.setAttribute('href', '/' + target);
+        } catch (error) {
+          /* keep the default */
+        }
+
+        function update() {
+          status.textContent = navigator.onLine ? '' : '仍然处于离线状态 / Still offline';
+        }
+
+        retry.addEventListener('click', function () {
+          status.textContent = '正在重新连接… / Reconnecting…';
+          window.location.reload();
+        });
+
+        window.addEventListener('online', function () {
+          status.textContent = '网络已恢复，正在返回… / Back online, reloading…';
+          window.location.reload();
+        });
+        window.addEventListener('offline', update);
+        update();
+      })();
+    </script>
+  </body>
+</html>

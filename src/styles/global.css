@@ -209,10 +209,21 @@
 
   body {
     min-height: 100vh;
+    min-height: 100dvh;
     margin: 0;
     text-wrap: pretty;
     color: var(--text);
     background: var(--bg);
+  }
+
+  /* ---------- PWA / 独立窗口 ----------
+     以 standalone 方式启动时视口会延伸到刘海与手势条下方，
+     这里只关闭整页弹性滚动，安全区留白在各组件的固定定位处处理。 */
+  @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
   }
 
   .site-header-mask {
@@ -225,7 +236,8 @@
 
   .site-header-mask--top {
     top: 0;
-    height: var(--header-mask-top-height);
+    /* 刘海/状态栏安全区计入渐变高度，避免遮罩盖不住顶部内容 */
+    height: calc(var(--header-mask-top-height) + env(safe-area-inset-top, 0px));
     background: linear-gradient(
       to bottom,
       var(--header-mask-color) 0%,
@@ -237,7 +249,7 @@
   .site-header-mask--bottom {
     display: none;
     bottom: 0;
-    height: var(--header-mask-bottom-height);
+    height: calc(var(--header-mask-bottom-height) + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       to top,
       var(--header-mask-color) 0%,
@@ -345,4 +357,52 @@ html.is-route-entering .page-transition-container {
   .page-loader__ring {
     animation-duration: 1.6s;
   }
+}
+
+/* ==============================================
+   社交平台徽标（Hero 头像 + 资料弹窗共用）
+   Figma 431:18632：底色/描边同色，图标不占满底板，四周留白
+   两处必须保持同一套规则，避免各自漂移
+   ============================================== */
+.social-badge {
+  --social-badge-bg: #fbfbfb;
+  --social-badge-size: 32px;
+  --social-badge-ring: 4px;
+  /* Figma 的图标图层是描边以内的 24px，但它的素材自带留白，实际笔画只有 ~19px。
+     本项目的图标素材基本满幅，所以再按同样比例收一圈，否则图标会糊满整个徽标。 */
+  --social-badge-icon-ratio: 0.8;
+  --social-badge-icon: calc(
+    (var(--social-badge-size) - 2 * var(--social-badge-ring)) * var(--social-badge-icon-ratio)
+  );
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: var(--social-badge-size);
+  height: var(--social-badge-size);
+  border: var(--social-badge-ring) solid var(--social-badge-bg);
+  border-radius: 50%;
+  background: var(--social-badge-bg);
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.03);
+}
+
+.social-badge__icon {
+  width: var(--social-badge-icon);
+  height: var(--social-badge-icon);
+  border-radius: 0;
+  object-fit: contain;
+  box-shadow: none;
+  filter: none;
+}
+
+/* 暗色下徽标底色与卡片融为一体 */
+:root.dark .social-badge {
+  --social-badge-bg: #2e2e32;
+}
+
+/* 官方主题色本身就是黑/近黑的图标，暗色下需要反白才看得清 */
+:root.dark .social-badge__icon[src*="/github.svg"],
+:root.dark .social-badge__icon[src*="/apple.svg"],
+:root.dark .social-badge__icon[src*="/steam.svg"],
+:root.dark .social-badge__icon[src*="/x.svg"] {
+  filter: invert(1);
 }

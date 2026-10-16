@@ -1,7 +1,7 @@
 {
-  "site.title": "RinLit — 做软件和设计，还有、些有意思的项目",
+  "site.title": "RinLit — 个人小站",
 
-  "seo.homeTitle": "RinLit — 做软件和设计，还有、些有意思的项目",
+  "seo.homeTitle": "RinLit — 你好呀",
   "seo.homeDescription": "做软件、设计系统，也喜欢折腾各种有趣的项目。这里有项目作品、Gallery 图片收藏和随笔。",
   "seo.keywords": "RinLit, RinHub, 软件, 设计系统, 项目作品, 随笔, Gallery, 个人网站",
 
@@ -27,6 +27,15 @@
   "hero.artifact.gallery": "收藏制品",
   "hero.artifact.lab": "实验制品",
   "hero.artifact.writing": "随笔制品",
+
+  "social.deckLabel": "平行世界的我",
+  "social.modalTitle": "平行世界的我",
+  "social.modalAria": "社交账号详情",
+  "social.link": "直达链接",
+  "social.openLink": "打开 {platform}",
+  "social.viewAria": "查看 {platform} 账号信息",
+  "social.previewAlt": "{platform} 预览",
+  "social.previewNotice": "可在配置中添加二维码或图片预览。",
 
   "fields.title": "探索我的领域",
 
@@ -329,5 +338,9 @@
   "footer.nav.writing": "随笔和碎碎念",
   "footer.nav.me": "关于我和联系方式",
   "footer.note": "Made with Astro",
-  "footer.copyright": "© {year} RinLit. 保留所有权利。"
+  "footer.copyright": "© {year} RinLit. 保留所有权利。",
+
+  "pwa.update.title": "发现新版本",
+  "pwa.update.action": "刷新",
+  "pwa.update.dismiss": "关闭"
 }

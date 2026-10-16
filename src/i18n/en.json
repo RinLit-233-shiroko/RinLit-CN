@@ -1,7 +1,7 @@
 {
-  "site.title": "RinLit — My personal website.",
+  "site.title": "RinLit — My personal site.",
 
-  "seo.homeTitle": "RinLit — Building software, design systems, and experimental ideas",
+  "seo.homeTitle": "RinLit — Hi!",
   "seo.homeDescription": "RinLit is a personal creative space for software projects, design systems, experiments, writing, and visual ideas.",
   "seo.keywords": "RinLit, RinHub, software, design systems, experimental ideas, portfolio, projects, writing, Gallery",
 
@@ -27,6 +27,15 @@
   "hero.artifact.gallery": "Gallery Artifact",
   "hero.artifact.lab": "Lab Artifact",
   "hero.artifact.writing": "Writing Artifact",
+
+  "social.deckLabel": "Find me Online",
+  "social.modalTitle": "Me in Parallel Worlds",
+  "social.modalAria": "Social account details",
+  "social.link": "Direct link",
+  "social.openLink": "Open {platform}",
+  "social.viewAria": "View {platform} account info",
+  "social.previewAlt": "{platform} preview",
+  "social.previewNotice": "Add a QR code or image preview in the config.",
 
   "fields.title": "Explore the fields.",
 
@@ -329,5 +338,9 @@
   "footer.nav.writing": "Essays and ramblings",
   "footer.nav.me": "About me and contact",
   "footer.note": "Made with Astro",
-  "footer.copyright": "© {year} RinLit. All rights reserved."
+  "footer.copyright": "© {year} RinLit. All rights reserved.",
+
+  "pwa.update.title": "A new version is available",
+  "pwa.update.action": "Reload",
+  "pwa.update.dismiss": "Dismiss"
 }

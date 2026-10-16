@@ -1,0 +1,76 @@
+---
+import type { SocialProfile } from '../../data/home/socials';
+import { t } from '../../i18n/index';
+
+interface Props {
+  profile: SocialProfile;
+  row?: number;
+  lang?: string;
+}
+
+const { profile, row = 0, lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
+---
+
+<button
+  class="social-avatar"
+  type="button"
+  data-social-id={profile.id}
+  data-row={row}
+  aria-label={__('social.viewAria').replace('{platform}', profile.platform)}
+  style={`--avatar-accent: ${profile.accent}`}
+>
+  <img class="social-avatar__portrait" src={profile.avatar} alt="" loading="lazy" />
+  <span class="social-avatar__badge social-badge" aria-hidden="true">
+    <img class="social-badge__icon" src={profile.icon} alt="" />
+  </span>
+</button>
+
+<style>
+  .social-avatar {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 84px;
+    height: 84px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 220ms ease;
+  }
+
+  .social-avatar__portrait {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+    //box-shadow: 0 8px 18px rgba(26, 21, 51, 0.13);
+  }
+
+  .social-avatar__badge {
+    right: -4px;
+    bottom: -2px;
+  }
+
+  .social-avatar:hover,
+  .social-avatar:focus-visible {
+    transform: translateY(-5px) scale(1.04);
+    filter: saturate(1.08);
+    outline: none;
+  }
+
+  .social-avatar:focus-visible::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border: 2px solid var(--avatar-accent);
+    border-radius: inherit;
+  }
+
+  @media (max-width: 560px) {
+    .social-avatar { width: 74px; height: 74px; }
+    .social-avatar__badge { --social-badge-size: 29px; --social-badge-ring: 3px; }
+  }
+</style>

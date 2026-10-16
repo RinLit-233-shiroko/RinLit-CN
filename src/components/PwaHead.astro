@@ -1,0 +1,301 @@
+---
+// PWA head tags + service-worker registration.
+//
+// Rendered once per page from BaseLayout. Two responsibilities:
+//   1. Emit the manifest / iOS / theme-color <link>+<meta> set.
+//   2. Register public/sw.js and surface an update prompt.
+//
+// The registration script is inline and self-guarding so it is safe to ship on
+// every page and survives Astro's ClientRouter view transitions (the script is
+// only ever evaluated once per document).
+//
+// Props:
+//   themeLight / themeDark — theme-color values, kept in sync with global.css
+//   lang                   — locale key for the update prompt copy
+
+interface Props {
+  themeLight?: string;
+  themeDark?: string;
+  lang?: string;
+}
+
+import { t } from '../i18n/index';
+
+const { themeLight = '#fbf9ff', themeDark = '#101216', lang = 'zh-cn' } = Astro.props;
+
+const copy = {
+  title: t(lang, 'pwa.update.title'),
+  action: t(lang, 'pwa.update.action'),
+  dismiss: t(lang, 'pwa.update.dismiss'),
+};
+
+const lightColour = themeLight;
+const darkColour = themeDark;
+
+// Only skip registration during `astro dev` — HMR plus a stale worker is a bad
+// combination. `astro preview` serves the real build, so the worker registers
+// there and the PWA can be exercised locally.
+const isDev = import.meta.env.DEV;
+
+// `is:inline` scripts cannot use define:vars, so the copy object is injected by
+// textual replacement. JSON.stringify keeps it a valid JS literal.
+const script = `
+  (function () {
+    // ---- theme-color sync -------------------------------------------------
+    // Keeps the address bar / task switcher in step with the in-page theme,
+    // including the manual light/dark override stored in localStorage.
+    var THEME_KEY = 'rinlit:theme';
+
+    function applyThemeColor(dark) {
+      var tags = document.querySelectorAll('[data-pwa-theme-color]');
+      if (!tags.length) return;
+      var colour = dark ? ${JSON.stringify(darkColour)} : ${JSON.stringify(lightColour)};
+      // Write the resolved colour into every tag so whichever media query the
+      // browser matches still reports the user's actual theme.
+      for (var i = 0; i < tags.length; i++) {
+        tags[i].setAttribute('content', colour);
+      }
+    }
+
+    function prefersDark() {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    function syncThemeColor() {
+      var saved = null;
+      try {
+        saved = localStorage.getItem(THEME_KEY);
+      } catch (error) {
+        saved = null;
+      }
+      var dark =
+        saved === 'dark' ||
+        (saved !== 'light' && prefersDark());
+      applyThemeColor(dark);
+    }
+
+    syncThemeColor();
+    document.addEventListener('astro:after-swap', syncThemeColor);
+    document.addEventListener('menu:change', function (event) {
+      var detail = event.detail;
+      if (!detail || detail.group !== 'theme') return;
+      // Use the event value directly: this listener is registered in <head>,
+      // so it runs before the Header's handler has persisted the new theme.
+      applyThemeColor(detail.value === 'dark' || (detail.value === 'auto' && prefersDark()));
+    });
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', syncThemeColor);
+
+    // ---- service worker --------------------------------------------------
+    // Disabled under astro dev only; see the note in PwaHead.astro.
+    if (!('serviceWorker' in navigator)) return;
+
+    if (${JSON.stringify(isDev)}) return;
+
+    var COPY = ${JSON.stringify(copy)};
+
+    window.addEventListener('load', function () {
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .then(function (registration) {
+          // A worker is already waiting → an update is ready right now.
+          if (registration.waiting && navigator.serviceWorker.controller) {
+            showUpdatePrompt(registration);
+          }
+
+          registration.addEventListener('updatefound', function () {
+            var installing = registration.installing;
+            if (!installing) return;
+            installing.addEventListener('statechange', function () {
+              if (
+                installing.state === 'installed' &&
+                navigator.serviceWorker.controller
+              ) {
+                showUpdatePrompt(registration);
+              }
+            });
+          });
+
+          // Re-check for a new worker whenever the tab regains focus.
+          document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') {
+              registration.update().catch(function () {});
+            }
+          });
+        })
+        .catch(function () {});
+    });
+
+    function showUpdatePrompt(registration) {
+      if (document.getElementById('pwa-update')) return;
+
+      var toast = document.createElement('div');
+      toast.id = 'pwa-update';
+      toast.className = 'pwa-update';
+      toast.setAttribute('role', 'status');
+      toast.innerHTML =
+        '<span class="pwa-update__text"></span>' +
+        '<button type="button" class="pwa-update__btn" data-pwa-reload></button>' +
+        '<button type="button" class="pwa-update__dismiss" data-pwa-dismiss>\\u00d7</button>';
+
+      // Copy is injected at build time; set as text so locale strings can never
+      // be interpreted as markup.
+      toast.querySelector('.pwa-update__text').textContent = COPY.title;
+      var reloadBtn = toast.querySelector('[data-pwa-reload]');
+      reloadBtn.textContent = COPY.action;
+      var dismissBtn = toast.querySelector('[data-pwa-dismiss]');
+      dismissBtn.setAttribute('aria-label', COPY.dismiss);
+      dismissBtn.setAttribute('title', COPY.dismiss);
+
+      reloadBtn.addEventListener('click', function () {
+        var waiting = registration.waiting;
+        if (!waiting) {
+          location.reload();
+          return;
+        }
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          location.reload();
+        });
+        waiting.postMessage('SKIP_WAITING');
+      });
+
+      dismissBtn.addEventListener('click', function () {
+        toast.remove();
+      });
+
+      document.body.appendChild(toast);
+      requestAnimationFrame(function () {
+        toast.classList.add('is-visible');
+      });
+    }
+  })();
+`;
+---
+
+<link rel="manifest" href="/manifest.webmanifest" />
+
+<link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png" />
+<link rel="icon" href="/icons/icon-512.png" sizes="512x512" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180" />
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="RinLit" />
+<meta name="application-name" content="RinLit" />
+<meta name="format-detection" content="telephone=no" />
+
+<!--
+  theme-color follows the resolved theme.
+
+  Two media-scoped tags give the correct bar colour before any JS runs. Once
+  the script below runs it writes the *resolved* colour into BOTH tags, because
+  the browser honours the first tag whose media query matches — so a manual
+  light/dark override would otherwise be ignored whenever it disagrees with the
+  system preference.
+-->
+<meta name="theme-color" content={themeLight} media="(prefers-color-scheme: light)" data-pwa-theme-color />
+<meta name="theme-color" content={themeDark} media="(prefers-color-scheme: dark)" data-pwa-theme-color />
+
+<script is:inline set:html={script} />
+
+<style>
+  /* ======== 更新提示 ======== */
+  .pwa-update {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 32px);
+    padding: 8px 8px 8px 18px;
+    border-radius: 999px;
+    background: var(--pill-bg-panel);
+    box-shadow: 0 12px 28px var(--pill-shadow);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    transform: translate(-50%, 16px);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.28s ease,
+      transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .pwa-update.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+  }
+
+  /* 移动端底部导航占据了下缘，提示上移让位 */
+  @media (max-width: 768px) {
+    .pwa-update {
+      bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  .pwa-update__text {
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-strong);
+    white-space: nowrap;
+  }
+
+  .pwa-update__btn {
+    flex-shrink: 0;
+    height: 34px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 999px;
+    background: var(--pill-primary-bg);
+    color: #ffffff;
+    font-family: 'Sarasa SC', Geist, sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @media (hover: hover) {
+    .pwa-update__btn:hover {
+      background: var(--pill-primary-bg-hover);
+    }
+  }
+
+  .pwa-update__btn:active {
+    background: var(--pill-primary-bg-active);
+    transform: scale(0.96);
+  }
+
+  .pwa-update__dismiss {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .pwa-update__dismiss:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pwa-update {
+      transition: opacity 0.2s ease;
+      transform: translate(-50%, 0);
+    }
+  }
+</style>

@@ -136,13 +136,13 @@ const isActive = (href: string) => {
 <style>
   .nav-header {
     position: fixed;
-    top: 24px;
+    top: calc(24px + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
     z-index: 50;
     max-width: 1448px;  /* 24*2 */
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 max(24px, env(safe-area-inset-right, 0px)) 0 max(24px, env(safe-area-inset-left, 0px));
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -212,7 +212,8 @@ const isActive = (href: string) => {
       left: 0;
       right: 0;
       max-width: none;
-      padding: 0 36px 32px 36px;
+      /* 底部导航是主入口，手势条安全区必须让位 */
+      padding: 0 36px calc(32px + env(safe-area-inset-bottom, 0px)) 36px;
       gap: 12px;
     }
 
@@ -245,10 +246,30 @@ const isActive = (href: string) => {
     }
   }
 
+  /*
+   * iOS Safari keeps its own bottom toolbar on screen, so the fixed nav needs
+   * extra clearance there. Installed (standalone) PWAs have no toolbar — the
+   * home indicator is already handled by the safe-area inset above.
+   */
   @supports (-webkit-touch-callout: none) {
     @media (max-width: 768px) {
       .nav-header {
-        padding-bottom: calc(32px + 48px);
+        padding-bottom: calc(32px + 48px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+
+    @media (max-width: 768px) and (display-mode: standalone) {
+      .nav-header {
+        padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+  }
+
+  /* Same rule for iOS builds where the class is the reliable signal. */
+  @supports (-webkit-touch-callout: none) {
+    @media (max-width: 768px) {
+      :global(html.is-standalone) .nav-header {
+        padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
       }
     }
   }
@@ -256,7 +277,8 @@ const isActive = (href: string) => {
   @media (max-width: 474px) {
     .nav-header {
       --scale: calc(max(266px, 100vw) / 474px);
-      padding: 0 calc(36px * var(--scale)) calc(32px * var(--scale));
+      padding: 0 calc(36px * var(--scale))
+        calc(32px * var(--scale) + env(safe-area-inset-bottom, 0px));
       gap: calc(12px * var(--scale));
     }
 
@@ -423,17 +445,17 @@ const isActive = (href: string) => {
   @media (max-width: 768px) {
     .top-bar {
       position: fixed;
-      top: 20px;
-      left: 20px;
-      right: 20px;
+      top: calc(20px + env(safe-area-inset-top, 0px));
+      left: max(20px, env(safe-area-inset-left, 0px));
+      right: max(20px, env(safe-area-inset-right, 0px));
       z-index: 60;
       justify-content: space-between;
     }
 
     .toolbar {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: calc(20px + env(safe-area-inset-top, 0px));
+      right: max(20px, env(safe-area-inset-right, 0px));
       z-index: 60;
     }
   }

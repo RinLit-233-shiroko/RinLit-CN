@@ -1,566 +1,789 @@
 ---
-import { t } from '../../i18n/index';
 import Button from '../../components/Button.astro';
-import Link from '../../components/Link.astro';
+import Avatar from '../../components/home/Avatar.astro';
+import HeroChat from '../../components/home/HeroChat.astro';
+import SocialProfileModal from '../../components/home/SocialProfileModal.astro';
+import { socialProfiles } from '../../data/home/socials';
+import { t } from '../../i18n/index';
 
 export interface Props {
   lang?: string;
 }
 
-const { lang } = Astro.props;
+const { lang = 'zh-cn' } = Astro.props;
 const __ = (key: string) => t(lang, key);
+// The current locale always leads; later choices are shuffled client-side.
+const greetingWords = lang === 'en'
+  ? ['Hello', '你好', 'こんにちは', '안녕하세요', 'Bonjour', 'Hola', 'Hallo']
+  : ['你好', 'Hello', 'こんにちは', '안녕하세요', 'Bonjour', 'Hola', 'Hallo'];
+const onlineLabel = __('social.deckLabel');
 
-const artifacts: { label: string; className: string; href: string }[] = [];
+const avatarRows = [
+  socialProfiles.slice(0, 3),
+  socialProfiles.slice(3, 7),
+  socialProfiles.slice(7, 10),
+  socialProfiles.slice(10, 14),
+  socialProfiles.slice(14, 17),
+];
 ---
 
-<section class="hero-shell" aria-label="RinLit overview">
-  <div class="hero-atmosphere" aria-hidden="true"></div>
-  <div class="hero-sheen" aria-hidden="true"></div>
+<section class="home-hero" aria-label="RinLit">
+  <div class="home-hero__layout">
+    <section class="welcome-card" data-welcome-card data-greetings={JSON.stringify(greetingWords)}>
+      <div class="welcome-card__intro">
+        <img
+          src="/images/logo/Type=Horizontal,%20Mode=Light,%20Monochrome=True.png"
+          alt="RinLit"
+          class="welcome-card__logo welcome-card__logo--light"
+        />
+        <img
+          src="/images/logo/Type=Horizontal,%20Mode=Dark,%20Monochrome=True.png"
+          alt="RinLit"
+          class="welcome-card__logo welcome-card__logo--dark"
+        />
+        <p class="welcome-card__greeting" aria-live="polite" data-greeting>
+          <span class="welcome-card__greeting-layer" data-greeting-out aria-hidden="true"></span>
+          <span class="welcome-card__greeting-layer" data-greeting-in>{greetingWords[0]}</span>
+        </p>
+      </div>
 
-  <div class="hero-content">
-    <div class="hero-copy">
-      <h1>
-        <span class="hero-title-desktop">
-          {__('hero.title.desktop')}
-        </span>
-        <span class="hero-title-mobile">
-          {__('hero.title.mobile')}
-        </span>
-      </h1>
-    </div>
+      <div class="social-deck" data-social-deck tabindex="0" aria-label={onlineLabel}>
+        <p class="social-deck__label">{onlineLabel}</p>
+        <div class="social-deck__fade social-deck__fade--top" aria-hidden="true"></div>
+        <div class="social-deck__grid">
+          {avatarRows.map((row, rowIndex) => (
+            <div class={`social-deck__row social-deck__row--${row.length}`}>
+              {row.map((profile) => <Avatar profile={profile} row={rowIndex} lang={lang} />)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
 
-    <div class="hero-actions" aria-label="Primary links">
-      <Button to="fields" flat>{__('hero.projects')}</Button>
-      <Button to="me" primary flat>{__('hero.about')}</Button>
-    </div>
+    <HeroChat />
   </div>
 
-  <div class="hero-horizon" aria-hidden="true">
-    <img
-      src="/images/logo/Type=Square,%20Mode=Light,%20Monochrome=False.png"
-      alt=""
-      class="hero-mark hero-mark--light"
-      loading="eager"
-    />
-    <img
-      src="/images/logo/Type=Square,%20Mode=Dark,%20Monochrome=False.png"
-      alt=""
-      class="hero-mark hero-mark--dark"
-      loading="eager"
-    />
-  </div>
+  <nav class="home-hero__actions" aria-label="主页导航">
+    <Button to="fields" flat>{lang === 'en' ? 'Projects' : '项目'}</Button>
+    <Button to="me" primary flat>{lang === 'en' ? 'About me' : '关于我'}</Button>
+  </nav>
 
-  <div class="hero-logo-glow" aria-hidden="true"></div>
-
-  <div class="stage-wrap">
-    <div class="artifact-grid" aria-label="Featured project artifacts">
-      {artifacts.map((item) => (
-        <Link to={item.href} class={`artifact ${item.className}`} aria-label={item.label}>
-          <span>{item.label}</span>
-        </Link>
-      ))}
-    </div>
-  </div>
-
-  <!-- <Link to="fields" class="scroll-cue" aria-label="Scroll to content">
-    <span aria-hidden="true"></span>
-    <b>{__('hero.scroll')}</b>
-  </Link> -->
+  <SocialProfileModal profiles={socialProfiles} lang={lang} />
 </section>
 
 <style>
-  :global(:root) {
-    --hero-shell-bg: radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.98) 0 22%, rgba(255, 255, 255, 0) 42%), radial-gradient(circle at 61% 40%, rgba(190, 146, 244, 0.24), rgba(190, 146, 244, 0) 28%), linear-gradient(180deg, #fbf9ff 0%, #f8f5fb 54%, #cfd2e2 54.1%, #aaaec4 100%);
-    --hero-shell-color: #10162f;
-    --hero-shell-bg-mobile: radial-gradient(circle at 44% 27%, rgba(255, 255, 255, 0.98) 0 22%, rgba(255, 255, 255, 0) 46%), radial-gradient(circle at 57% 43%, rgba(178, 132, 243, 0.26), rgba(178, 132, 243, 0) 32%), linear-gradient(180deg, #fbf9ff 0%, #f8f5fb 54%, #cbd0e2 54.1%, #a7acc2 100%);
+  .home-hero {
+    --hero-background: #e1dfea;
+    min-height: 100svh;
+    padding: clamp(100px, 13vh, 164px) 32px 68px;
+    background: var(--hero-background);
   }
 
-  :global(:root.dark) {
-    --hero-shell-bg: radial-gradient(circle at 30% 18%, rgba(50, 40, 90, 0.28) 0 22%, rgba(50, 40, 90, 0) 46%), radial-gradient(circle at 61% 40%, rgba(30, 24, 70, 0.38), rgba(30, 24, 70, 0) 32%), linear-gradient(180deg, #050507 0%, #08080d 54%, #0c0c14 54.1%, #101018 100%);
-    --hero-shell-color: #f4f2fb;
-    --hero-shell-bg-mobile: radial-gradient(circle at 44% 27%, rgba(50, 40, 90, 0.28) 0 22%, rgba(50, 40, 90, 0) 46%), radial-gradient(circle at 57% 43%, rgba(30, 24, 70, 0.38), rgba(30, 24, 70, 0) 32%), linear-gradient(180deg, #050507 0%, #08080d 54%, #0c0c14 54.1%, #101018 100%);
+  .home-hero__layout {
+    display: grid;
+    grid-template-columns: 400px minmax(0, 888px);
+    gap: 32px;
+    width: min(1288px, 100%);
+    margin: 0 auto;
   }
 
-  :global(:root.dark) .hero-atmosphere {
-    background:
-      radial-gradient(circle at 15% 0%, rgba(74, 60, 140, 0.4), transparent 31%),
-      radial-gradient(circle at 86% 5%, rgba(31, 24, 98, 0.5), transparent 34%),
-      radial-gradient(circle at 79% 69%, rgba(49, 40, 118, 0.36), transparent 27%);
-    filter: blur(34px);
-  }
-
-  :global(:root.dark) .hero-sheen {
-    opacity: 0.18;
-  }
-
-  :global(:root.dark) .hero-horizon::before {
-    background: rgba(172, 159, 225, 0.55);
-    box-shadow: 0 0 42px rgba(140, 126, 205, 0.45);
-  }
-
-  :global(:root.dark) .hero-logo-glow {
-    width: min(960px, 105vw);
-    height: 300px;
-    background: radial-gradient(
-      ellipse 42% 100% at 50% 100%,
-      rgba(170, 155, 210, 0.38) 0%,
-      rgba(150, 135, 195, 0.16) 28%,
-      rgba(130, 115, 180, 0) 64%
-    );
-    filter: blur(14px);
-  }
-
-  :global(:root.dark) .hero-mark {
-    filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 16px rgba(140, 126, 205, 0.18)) saturate(1.15);
-  }
-
-  :global(:root.dark) .artifact-grid::before {
-    background:
-      linear-gradient(120deg, rgba(90, 90, 100, 0.22), rgba(160, 160, 170, 0.05) 48%, rgba(60, 60, 70, 0.24)),
-      linear-gradient(180deg, rgba(130, 130, 140, 0.08), rgba(16, 16, 22, 0.22));
-    }
-
-  :global(:root.dark) .artifact {
-    background: linear-gradient(180deg, rgba(140, 126, 205, 0.18), rgba(74, 60, 140, 0.08));
-    border: 2px solid rgba(172, 159, 225, 0.16);
-    box-shadow:
-      inset 0 1px 0 rgba(172, 159, 225, 0.22),
-      0 14px 38px rgba(0, 0, 0, 0.24);
-  }
-
-  :global(:root.dark) .artifact::before {
-    background:
-      linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(197, 188, 240, 0.28), rgba(255, 255, 255, 0));
-  }
-
-  :global(:root.dark) .artifact:hover {
-    background: linear-gradient(180deg, rgba(140, 126, 205, 0.3), rgba(74, 60, 140, 0.16));
-    box-shadow:
-      inset 0 1px 0 rgba(172, 159, 225, 0.36),
-      0 18px 44px rgba(0, 0, 0, 0.3),
-      0 0 28px rgba(140, 126, 205, 0.24);
-  }
-
-  :global(:root.dark) .hero-copy h1 {
-    text-shadow: 0 2px 30px rgba(74, 60, 140, 0.35);
-  }
-
-  .hero-shell {
+  .welcome-card {
+    --welcome-surface: #ede9fc;
+    --welcome-strong: #1a1533;
+    --welcome-muted: #423c65;
+    --welcome-badge-bg: #fbfafb;
+    /* Scroll-driven expansion progress (0 = greeting view, 1 = deck fills card). */
+    --expand: 0;
+    --intro-height: 380px;
+    --deck-height: 220px;
     position: relative;
-    min-height: 100vh;
-    overflow: hidden;
-    background: var(--hero-shell-bg);
-    color: var(--hero-shell-color);
-    isolation: isolate;
-    transition: background 0.3s ease, color 0.3s ease;
-  }
-
-  .hero-atmosphere,
-  .hero-sheen {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .hero-atmosphere {
-    z-index: -2;
-    background:
-      radial-gradient(circle at 15% 0%, rgba(176, 157, 224, 0.28), transparent 31%),
-      radial-gradient(circle at 86% 5%, rgba(255, 238, 220, 0.75), transparent 34%),
-      radial-gradient(circle at 79% 69%, rgba(146, 139, 207, 0.3), transparent 27%);
-    filter: blur(28px);
-  }
-
-  .hero-sheen {
-    z-index: 1;
-    background:
-      linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.34) 50%, rgba(255, 255, 255, 0) 100%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0) 48%, rgba(255, 255, 255, 0.3) 51%, rgba(255, 255, 255, 0) 61%);
-    opacity: 0.78;
-    mix-blend-mode: screen;
-    pointer-events: none;
-  }
-
-  .hero-content {
-    position: relative;
-    z-index: 30;
     display: flex;
     flex-direction: column;
-    /* grid-template-columns: minmax(0, 1fr) auto; */
-    /* align-items: end; */
-    gap: 32px;
-    width: min(1216px, calc(100% - 48px));
-    margin: 0 auto;
-    padding-top: clamp(142px, 18vh, 208px);
-  }
-
-  .hero-copy {
-    /* max-width: 760px; */
-  }
-
-  .hero-copy h1 {
-    margin: 0;
-    font-family: 'Plus Jakarta Sans', Geist, ui-sans-serif, system-ui, sans-serif;
-    font-size: clamp(48px, 5vw, 58px);
-    line-height: 1.14;
-    font-weight: 700;
-    letter-spacing: 0;
-    white-space: pre-line;
-  }
-
-  .hero-title-mobile {
-    display: none;
-  }
-
-  .hero-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 14px;
-    white-space: nowrap;
-  }
-
-  .hero-horizon {
-    --mark-size: clamp(116px, 8.8vw, 144px);
-    position: absolute;
-    z-index: 20;
-    left: 50%;
-    top: calc(54vh - var(--mark-size));
-    width: 220px;
-    height: var(--mark-size);
-    transform: translateX(-50%);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    pointer-events: none;
-  }
-
-  .hero-horizon::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    width: 100vw;
-    height: 1px;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.82);
-    box-shadow: 0 0 42px rgba(168, 120, 244, 0.34);
-  }
-
-  .hero-logo-glow {
-    position: absolute;
-    z-index: 4;
-    left: 50%;
-    bottom: 46vh;
-    width: min(900px, 100vw);
-    height: 360px;
-    transform: translateX(-50%);
-    pointer-events: none;
-    background: radial-gradient(
-      ellipse 45% 100% at 50% 100%,
-      rgba(190, 170, 230, 0.55) 0%,
-      rgba(180, 160, 220, 0.24) 26%,
-      rgba(160, 140, 200, 0) 62%
-    );
-    filter: blur(12px);
-  }
-
-  .hero-mark {
-    position: relative;
-    width: var(--mark-size);
-    height: auto;
-    margin-bottom: calc(var(--mark-size) * -0.2);
-    filter: drop-shadow(0 18px 22px rgba(89, 62, 151, 0.25)) saturate(1.1);
-  }
-
-  .hero-mark--light { display: var(--logo-light-display); }
-  .hero-mark--dark { display: var(--logo-dark-display); }
-
-  .stage-wrap {
-    position: absolute;
-    z-index: 5;
-    inset: calc(54vh - 1px) 0 0;
-    height: 46vh;
-    min-height: 0;
-    perspective: 320px;
-    perspective-origin: 50% 0%;
-    pointer-events: none;
-  }
-
-  .artifact-grid {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    z-index: 2;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-flow: dense;
-    grid-auto-rows: clamp(34px, 5.2vh, 58px);
-    gap: clamp(18px, 1.15vw, 24px);
-    width: min(820px, 64vw);
-    height: 72vh;
-    padding: clamp(48px, 5vw, 128px) clamp(32px, 3vw, 72px);
-    transform: translateX(-50%) rotateX(70deg) scale(0.52);
-    transform-origin: 50% 0%;
-    transform-style: preserve-3d;
-    pointer-events: none;
-  }
-
-  .artifact-grid::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: 20px;
-    background:
-      linear-gradient(120deg, rgba(116, 112, 144, 0.22), rgba(255, 255, 255, 0.06) 48%, rgba(94, 91, 120, 0.22)),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(74, 72, 96, 0.1));
-    }
-
-  .artifact {
-    position: relative;
-    z-index: 2;
-    display: block;
-    width: auto;
-    height: auto;
-    border-radius: 18px;
-    color: rgba(255, 255, 255, 0);
-    text-decoration: none;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.12));
-    border: 2px solid rgba(255, 255, 255, 0.18);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.32),
-      0 14px 38px rgba(80, 77, 108, 0.08);
-    pointer-events: auto;
+    height: 600px;
+    min-width: 0;
     overflow: hidden;
-    transition:
-      transform 220ms ease,
-      box-shadow 220ms ease,
-      background 220ms ease,
-      opacity 220ms ease;
+    border-radius: 26px;
+    background: var(--welcome-surface);
+    color: var(--welcome-strong);
+    container-type: inline-size;
   }
 
-  .artifact::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0));
-    opacity: 0;
-    transform: translateX(-45%);
-    transition:
-      opacity 220ms ease,
-      transform 420ms ease;
-  }
-
-  .artifact span {
-    position: absolute;
-    inset: 0;
+  .welcome-card__intro {
+    position: relative;
+    z-index: 2;
     display: flex;
+    flex: 0 0 calc(var(--intro-height) * (1 - var(--expand)));
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    transition: color 180ms ease;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    min-height: 0;
+    padding: calc(32px * (1 - var(--expand))) 24px calc(48px * (1 - var(--expand)));
+    opacity: calc(1 - var(--expand));
+    transform: translateY(calc(-42px * var(--expand)));
+    will-change: flex-basis, opacity, transform;
+    transition: none;
   }
 
-  .artifact:hover {
-    transform: translateY(-6px);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.18));
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.46),
-      0 18px 44px rgba(98, 73, 159, 0.14),
-      0 0 24px rgba(183, 141, 245, 0.14);
-  }
-
-  .artifact:hover::before {
-    opacity: 1;
-    transform: translateX(45%);
-  }
-
-  .artifact:hover span,
-  .artifact:focus-visible span {
-    color: rgba(255, 255, 255, 0.72);
-  }
-
-  .artifact:active {
-    transform: translateY(2px);
-    box-shadow:
-      inset 0 2px 8px rgba(77, 70, 111, 0.12),
-      0 8px 26px rgba(98, 73, 159, 0.1);
-  }
-
-  .artifact:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.72);
-    outline-offset: 4px;
-  }
-
-  .artifact--class {
-    grid-column: 1;
-    grid-row: span 3;
-  }
-
-  .artifact--rinui {
-    grid-column: 2;
-    grid-row: span 2;
-  }
-
-  .artifact--pbi {
-    grid-column: 1;
-    grid-row: span 4;
-  }
-
-  .artifact--lab {
-    grid-column: 2;
-    grid-row: span 3;
-  }
-
-  .artifact--notes {
-    grid-column: 2;
-    grid-row: span 4;
-  }
-
-  .scroll-cue {
-    position: absolute;
-    z-index: 6;
-    left: 50%;
-    bottom: 32px;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    transform: translateX(-50%);
-    color: rgba(255, 255, 255, 0.92);
-    text-decoration: none;
-  }
-
-  .scroll-cue span {
-    width: 22px;
-    height: 34px;
-    border: 2px solid currentColor;
-    border-radius: 999px;
-    opacity: 0.92;
-  }
-
-  .scroll-cue b {
-    font-family: 'Plus Jakarta Sans', Geist, ui-sans-serif, system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 1;
-    letter-spacing: 0.42em;
+  .welcome-card__logo { width: 130px; height: 48px; object-fit: contain; }
+  .welcome-card__logo--light { display: block; }
+  .welcome-card__logo--dark { display: none; }
+  .welcome-card__greeting {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    color: var(--welcome-strong);
+    font-family: 'Plus Jakarta Sans', 'Sarasa SC', sans-serif;
+    font-size: min(128px, 40cqw, calc((var(--intro-height) - 118px) * 0.72));
     font-weight: 700;
+    letter-spacing: normal;
+    line-height: .95;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
-  @media (max-width: 1024px) {
-    .hero-content {
-      padding-top: 138px;
-    }
-    .artifact span {
-      font-size: 10px;
-    }
+  /* Outgoing and incoming words overlap so each character can cross-fade
+     independently, matching the per-glyph blur transition in the reference. */
+  .welcome-card__greeting-layer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    line-height: inherit;
+    transform: translate(-50%, -50%);
+    transform-origin: center;
+  }
+  /* The animated glyph spans are created at runtime, so they need global
+     selectors rather than Astro's scoped attribute selector. */
+  :global(.welcome-card__greeting-char) {
+    display: inline-block;
+    /* Preserve each script's natural kerning while keeping glyphs animatable. */
+    margin-inline-end: 0;
+    will-change: opacity, transform, filter;
+    transition:
+      opacity var(--greeting-char-duration, 500ms) var(--greeting-ease, cubic-bezier(.16,.84,.44,1)),
+      transform var(--greeting-char-duration, 500ms) var(--greeting-ease, cubic-bezier(.16,.84,.44,1)),
+      filter var(--greeting-char-duration, 500ms) var(--greeting-ease, cubic-bezier(.16,.84,.44,1));
+    transition-delay: var(--greeting-char-delay, 0ms);
   }
 
-  @media (max-width: 768px) {
-    .hero-shell {
-      min-height: 100svh;
-      background: var(--hero-shell-bg-mobile);
-    }
-    .hero-content {
-      display: block;
-      width: min(100% - 40px, 520px);
-      padding-top: 112px;
-      text-align: left;
-    }
-    .hero-copy h1 {
-      font-size: clamp(40px, 11vw, 54px);
-    }
-    .hero-title-desktop {
-      display: none;
-    }
-    .hero-title-mobile {
-      display: inline;
-    }
-    .hero-actions {
-      display: flex;
-      justify-content: flex-start;
-      margin-top: 24px;
-    }
-    .hero-horizon {
-      --mark-size: 106px;
-      top: calc(54vh - var(--mark-size));
-      width: 180px;
-    }
-    .stage-wrap {
-      inset: calc(54vh - 1px) 0 0;
-      height: 46vh;
-      perspective: 280px;
-      perspective-origin: 50% 0%;
-    }
-    .artifact-grid {
-      top: 0;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-auto-rows: clamp(28px, 5vh, 44px);
-      gap: clamp(10px, 2vw, 16px);
-      width: min(640px, 82vw);
-      height: 68vh;
-      padding: clamp(32px, 4vw, 56px) clamp(20px, 3vw, 36px);
-      transform: translateX(-50%) rotateX(76deg) scale(0.58);
-    }
-    .artifact {
-      border-radius: 14px;
-    }
-    .artifact--class { grid-column: 1; grid-row: span 3; }
-    .artifact--rinui { grid-column: 2; grid-row: span 2; }
-    .artifact--pbi { grid-column: 1; grid-row: span 4; }
-    .artifact--lab { grid-column: 2; grid-row: span 3; }
-    .artifact--notes { grid-column: 2; grid-row: span 4; }
-    .scroll-cue {
-      bottom: 128px;
-      gap: 12px;
-    }
-    .scroll-cue span {
-      width: 18px;
-      height: 28px;
-      border-width: 1px;
-    }
-    .scroll-cue b {
-      font-size: 11px;
-      letter-spacing: 0.36em;
-    }
+  .social-deck {
+    position: relative;
+    z-index: 1;
+    height: calc(var(--deck-height) + var(--intro-height) * var(--expand));
+    flex: 0 0 calc(var(--deck-height) + var(--intro-height) * var(--expand));
+    overflow: hidden;
+    /* The deck scrolls by transform, so it never needs native scrolling or a
+       blocked scroll chain: once the JS stops consuming a gesture the page has
+       to keep scrolling underneath. */
+    overscroll-behavior: auto;
+    touch-action: pan-y;
+    outline: none;
+    will-change: height, flex-basis;
+    transition: none;
   }
-
-  @media (max-width: 474px) {
-    .hero-content {
-      width: calc(100% - 32px);
-      padding-top: 96px;
-    }
-    .hero-copy h1 {
-      font-size: clamp(36px, 10.1vw, 48px);
-    }
-    .hero-actions :global(.btn) {
-      height: 38px;
-      padding-inline: 20px;
-      font-size: 15px;
-    }
-    .hero-horizon {
-      --mark-size: 92px;
-      top: calc(54vh - var(--mark-size));
-    }
-    .stage-wrap {
-      inset: calc(54vh - 1px) 0 0;
-      perspective: 240px;
-    }
-    .artifact-grid {
-      transform: translateX(-50%) rotateX(77deg) scale(0.5);
-      grid-auto-rows: clamp(26px, 4.8vh, 40px);
-      gap: 16px;
-      padding: clamp(64px, 10vw, 128px) clamp(32px, 5vw, 64px);
-    }
-    .artifact span { font-size: 9px; }
+    .social-deck__label {
+    position: absolute;
+    z-index: 3;
+    top: 23px;
+    left: 50%;
+    margin: 0;
+    transform: translate(-50%, calc(-12px * var(--expand)));
+    color: var(--welcome-muted);
+    font: 600 16px/1.2 'Plus Jakarta Sans', 'Sarasa SC', sans-serif;
+    white-space: nowrap;
+    opacity: calc(1 - var(--expand));
+    transition: opacity 140ms linear, transform 140ms linear;
   }
+  .social-deck__grid {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    display: grid;
+    gap: 16px;
+    width: max-content;
+    padding: 0 20px 24px;
+    /* One stable positioning model for collapsed, expanded, and scrolled states. */
+    transform: translate(-50%, var(--grid-y, -80px)) scale(var(--grid-scale, 1));
+    transform-origin: center;
+    /* The transform is driven directly by gesture deltas; easing it would lag
+       behind the finger and look like the grid jumps when direction reverses. */
+    transition: none;
+    will-change: transform;
+  }
+  .welcome-card.is-expanded .social-deck {
+    overflow: hidden;
+  }
+  .social-deck.has-deck-overflow .social-deck__row:first-child {
+    opacity: var(--first-row-opacity, 1);
+  }
+  .social-deck.has-deck-overflow .social-deck__row:first-child { opacity: var(--first-row-opacity, 1); }
+  .social-deck__row { display: flex; align-items: center; justify-content: center; gap: 24px; min-height: 84px; }
+  .social-deck__row--3 { padding-inline: 58px; }
+  /* Only fades the clipped first row while the card is still collapsing; once
+     expanded the grid starts at the deck's top edge, so the mask would cover
+     real avatars instead of empty space. */
+  .social-deck__fade { position: absolute; z-index: 2; inset: 0 0 auto; height: 66px; pointer-events: none; background: linear-gradient(180deg, var(--welcome-surface) 0%, color-mix(in srgb, var(--welcome-surface) 72%, transparent) 42%, transparent 100%); opacity: calc((1 - var(--expand)) * (1 - var(--deck-scroll-progress, 0))); }
+  .welcome-card.is-expanded .social-deck__fade { position: absolute; }
 
+  /* Expansion only fills the card; the page itself keeps scrolling.
+     Do not set overscroll-behavior on these: overflow:hidden already makes the
+     card a scroll container, and suppressing the chain made the page refuse to
+     scroll once the deck ran out of travel or the greeting state was restored. */
+  .welcome-card.is-expanded .welcome-card__intro { pointer-events: none; }
+
+  .home-hero__actions { display: flex; justify-content: center; gap: 12px; margin: 32px auto 0; }
+
+  :global(:root.dark) .home-hero { --hero-background: #24232d; }
+  :global(:root.dark) .welcome-card { --welcome-surface: #181834; --welcome-strong: #efebf7; --welcome-muted: #fbfafb; --welcome-badge-bg: #2e2e32; }
+  :global(:root.dark) .welcome-card__logo--light { display: none; }
+  :global(:root.dark) .welcome-card__logo--dark { display: block; }
+
+  @media (max-width: 1320px) {
+    .home-hero__layout { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .home-hero { padding: 104px 36px 56px; }
+    .home-hero__layout { grid-template-columns: 1fr; gap: 32px; max-width: 600px; }
+    /* On mobile both cards share the column width so the stack reads as one block. */
+    .welcome-card { width: 100%; height: 380px; }
+    .welcome-card { --intro-height: 230px; --deck-height: 150px; }
+    .welcome-card__intro { padding-bottom: 0; }
+    .welcome-card__greeting { font-size: min(96px, 40cqw, calc((var(--intro-height) - 118px) * 0.72)); }
+    .home-hero__actions { margin-top: 30px; }
+  }
+  @media (max-width: 480px) {
+    .home-hero { padding: 96px 16px 48px; }
+    .home-hero__layout { gap: 30px; }
+    .welcome-card { height: 360px; border-radius: 26px; --intro-height: 220px; --deck-height: 140px; }
+    .welcome-card__intro { padding-bottom: calc(36px * (1 - var(--expand))); }
+    .welcome-card__logo { width: 130px; }
+    .welcome-card__greeting { font-size: min(96px, 40cqw, calc((var(--intro-height) - 118px) * 0.72)); }
+    .social-deck__grid { transform: translate(-50%, var(--grid-y, -84px)) scale(.88); transform-origin: center; }
+    .home-hero__actions :global(.btn) { height: 40px; padding-inline: 24px; }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .artifact { transition: none; }
+    .welcome-card, .welcome-card__intro, .social-deck, .social-deck__label, .social-avatar { transition: none !important; }
+    .welcome-card__greeting.is-switching { animation: none; }
   }
 </style>
+
+<script>
+  // Greeting words live on the element instead of `define:vars`, because
+  // `define:vars` forces a raw inline script where TypeScript is not compiled.
+  function bindHero() {
+    const card = document.querySelector<HTMLElement>('[data-welcome-card]');
+    const deck = document.querySelector<HTMLElement>('[data-social-deck]');
+    const greeting = document.querySelector<HTMLElement>('[data-greeting]');
+    if (!card || !deck || !greeting || card.dataset.heroBound) return;
+    card.dataset.heroBound = 'true';
+
+    let greetingWords: string[] = ['你好'];
+    try {
+      greetingWords = JSON.parse(card.dataset.greetings || '[]');
+    } catch {
+      /* keep the fallback greeting */
+    }
+    if (!greetingWords.length) greetingWords = ['你好'];
+
+    const localeGreeting = greetingWords[0];
+    let greetingQueue = [localeGreeting];
+    const greetingOut = card.querySelector<HTMLElement>('[data-greeting-out]');
+    const greetingIn = card.querySelector<HTMLElement>('[data-greeting-in]');
+    const refillGreetingQueue = () => {
+      const shuffled = greetingWords.slice(1);
+      for (let index = shuffled.length - 1; index > 0; index--) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+      }
+      greetingQueue = [localeGreeting, ...shuffled];
+    };
+
+    // Split a word into per-character spans so each glyph can blur/fade on its
+    // own schedule, the way the reference animation staggers its letters.
+    const renderChars = (layer: HTMLElement | null, text: string, side: 'in' | 'out') => {
+      if (!layer) return [];
+      layer.textContent = '';
+      const chars = Array.from(text);
+      const span = 480;
+      const step = span / Math.max(1, chars.length);
+      return chars.map((character, index) => {
+        const node = document.createElement('span');
+        node.className = 'welcome-card__greeting-char';
+        node.textContent = character;
+        // Outgoing letters leave quickly; incoming ones wait, then settle.
+        const delay = side === 'out' ? index * step * 0.62 : 180 + index * step;
+        node.style.setProperty('--greeting-char-delay', `${Math.round(delay)}ms`);
+        node.style.setProperty('--greeting-char-duration', side === 'out' ? '380ms' : '640ms');
+        node.style.setProperty('--greeting-ease', side === 'out' ? 'cubic-bezier(.4,0,.7,.2)' : 'cubic-bezier(.16,.84,.44,1)');
+        if (side === 'out') {
+          node.style.opacity = '1';
+          node.style.transform = 'translateY(0) scale(1)';
+          node.style.filter = 'blur(0)';
+        } else {
+          node.style.opacity = '0';
+          node.style.transform = 'translateY(14px) scale(.94)';
+          node.style.filter = 'blur(10px)';
+        }
+        layer.appendChild(node);
+        return node;
+      });
+    };
+
+    // Force a style flush so the browser registers the "from" state of the new
+    // characters; without it the next write skips the transition entirely.
+    const commitStyles = (layer: HTMLElement | null) => {
+      if (layer) void layer.offsetWidth;
+    };
+    const fitGreeting = () => {
+      const available = greeting.clientWidth;
+      [greetingIn, greetingOut].forEach((layer) => {
+        if (!layer) return;
+        layer.style.fontSize = '';
+        const naturalWidth = layer.scrollWidth;
+        let scale = 1;
+        if (available && naturalWidth > available) {
+          const computedSize = Number.parseFloat(getComputedStyle(greeting).fontSize);
+          layer.style.fontSize = `${Math.max(1, computedSize * available / naturalWidth)}px`;
+          scale = 1;
+        }
+        // Each word owns its centering transform; changing the incoming word
+        // can no longer affect the outgoing word's position or sizing.
+        layer.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      });
+    };
+
+    const playGreeting = (nextGreeting: string) => {
+      if (!greetingIn || !greetingOut) {
+        greeting.textContent = nextGreeting;
+        return;
+      }
+      const current = greetingIn.textContent || localeGreeting;
+      greetingOut.textContent = '';
+      renderChars(greetingOut, current, 'out');
+      const incoming = renderChars(greetingIn, nextGreeting, 'in');
+      fitGreeting();
+      // Fix each layer's own center independently so differing word widths or
+      // font metrics never shift the outgoing word when the next one is sized.
+      commitStyles(greetingIn);
+      commitStyles(greetingOut);
+      greetingOut.querySelectorAll<HTMLElement>('.welcome-card__greeting-char').forEach((node) => {
+        node.style.opacity = '0';
+        node.style.transform = 'translateY(-10px) scale(.92)';
+        node.style.filter = 'blur(10px)';
+      });
+      incoming.forEach((node) => {
+        node.style.opacity = '1';
+        node.style.transform = 'translateY(0) scale(1)';
+        node.style.filter = 'blur(0)';
+      });
+    };
+
+    const cycleGreeting = () => {
+      if (document.hidden) return;
+      if (greetingQueue.length <= 1) refillGreetingQueue();
+      greetingQueue.shift();
+      const nextGreeting = greetingQueue[0] || localeGreeting;
+      playGreeting(nextGreeting);
+    };
+    renderChars(greetingIn, localeGreeting, 'in');
+    fitGreeting();
+    const greetingResizeObserver = new ResizeObserver(fitGreeting);
+    greetingResizeObserver.observe(greeting);
+    commitStyles(greetingIn);
+    requestAnimationFrame(() => {
+      greetingIn?.querySelectorAll<HTMLElement>('.welcome-card__greeting-char').forEach((node) => {
+        node.style.opacity = '1';
+        node.style.transform = 'translateY(0) scale(1)';
+        node.style.filter = 'blur(0)';
+      });
+    });
+    const timer = window.setInterval(cycleGreeting, 3000);
+    document.addEventListener('astro:before-swap', () => {
+      window.clearInterval(timer);
+      greetingResizeObserver.disconnect();
+    }, { once: true });
+
+    let expandProgress = Number(card.style.getPropertyValue('--expand')) || 0;
+    // How much wheel/touch travel maps onto one full expansion. It is the
+    // height the greeting block gives up, so the deck tracks the gesture
+    // continuously instead of jumping between two states.
+    let expandSpan = 380;
+    // -1 = the gesture is heading back up, 1 = down. The settle step at the end
+    // of a gesture reads it to pick the side the card should land on.
+    let lastScrollSign = 0;
+    let deckScroll = 0;
+    let deckMaxScroll = 0;
+    let scrollMode: 'center' | 'scroll' = 'center';
+    const grid = card.querySelector<HTMLElement>('.social-deck__grid');
+    const expandDuration = 460;
+    const measureExpandSpan = () => {
+      const raw = Number.parseFloat(getComputedStyle(card).getPropertyValue('--intro-height'));
+      if (Number.isFinite(raw) && raw > 60) expandSpan = raw;
+    };
+    measureExpandSpan();
+    const updateGridPosition = () => {
+      const isMobile = window.matchMedia('(max-width: 480px)').matches;
+      const gridHeight = grid?.offsetHeight || 0;
+      const centeredOffset = scrollMode === 'center'
+        ? Math.max(0, (deck.clientHeight - gridHeight) / 2) * expandProgress
+        : 0;
+      const collapsedOffset = (isMobile ? -36 : -48) * (1 - expandProgress);
+      const y = collapsedOffset + centeredOffset - deckScroll;
+      deck.style.setProperty('--grid-y', `${y.toFixed(2)}px`);
+      deck.style.setProperty('--deck-scroll-progress', `${Math.min(1, deckScroll / 110).toFixed(3)}`);
+    };
+    const measureDeck = () => {
+      measureExpandSpan();
+      const contentHeight = grid?.offsetHeight || 0;
+      deckMaxScroll = Math.max(0, contentHeight - deck.clientHeight);
+      scrollMode = deckMaxScroll > 1 ? 'scroll' : 'center';
+      deck.classList.toggle('has-deck-overflow', scrollMode === 'scroll');
+      deckScroll = 0;
+      updateGridPosition();
+    };
+    const setExpandProgress = (value: number) => {
+      const wasExpanded = expandProgress >= 1;
+      expandProgress = Math.max(0, Math.min(1, value));
+      card.style.setProperty('--expand', expandProgress.toFixed(4));
+      card.classList.toggle('is-expanded', expandProgress >= 1);
+      if (expandProgress >= 1 && !wasExpanded) {
+        // Keep the deck in its pre-expansion layout during the progress
+        // animation. Measuring here used to switch to center at the endpoint
+        // and jump the grid by half the remaining card height.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(measureDeck);
+        });
+      } else if (expandProgress < 1) {
+        deckScroll = 0;
+        scrollMode = 'center';
+        deckMaxScroll = 0;
+        deck.classList.remove('has-deck-overflow');
+      }
+      updateGridPosition();
+    };
+    let expandTweenFrame = 0;
+    let expandTarget: 0 | 1 = expandProgress >= 1 ? 1 : 0;
+    const stopExpandTween = () => {
+      if (expandTweenFrame) cancelAnimationFrame(expandTweenFrame);
+      expandTweenFrame = 0;
+    };
+    const expandTo = (target: 0 | 1) => {
+      if (expandTweenFrame && expandTarget === target) return;
+      expandTarget = target;
+      if (reducedMotion.matches || expandProgress === target) {
+        stopExpandTween();
+        setExpandProgress(target);
+        return;
+      }
+      const distance = Math.abs(target - expandProgress);
+      if (distance < 0.04) {
+        // Close enough that the last sliver is not worth animating — a gesture
+        // that was cut mid-flight would otherwise creep into place.
+        stopExpandTween();
+        setExpandProgress(target);
+        return;
+      }
+      stopExpandTween();
+      const from = expandProgress;
+      // A short snap must not take the full time: whatever it interrupts was
+      // already moving, and a long ease-in on an almost finished card reads as
+      // a stall instead of a landing.
+      const duration = expandDuration * (0.4 + 0.6 * distance);
+      const startedAt = performance.now();
+      const tick = () => {
+        const t = Math.min(1, (performance.now() - startedAt) / duration);
+        setExpandProgress(from + (target - from) * (1 - Math.pow(1 - t, 3)));
+        if (t < 1) {
+          expandTweenFrame = requestAnimationFrame(tick);
+          return;
+        }
+        expandTweenFrame = 0;
+        setExpandProgress(target);
+      };
+      expandTweenFrame = requestAnimationFrame(tick);
+    };
+    const consumeDelta = (delta: number): boolean => {
+      if (!delta) return true;
+      if (expandProgress < 1) {
+        // Free, stepless expansion: the gesture travel drives the progress
+        // directly, so the card follows the wheel/touch instead of snapping.
+        // Only when the card is already collapsed and the gesture heads back up
+        // does the page get the rest of the scroll.
+        if (delta < 0 && expandProgress <= 0 && deckScroll <= 0) return false;
+        lastScrollSign = delta > 0 ? 1 : -1;
+        stopExpandTween();
+        setExpandProgress(expandProgress + delta / expandSpan);
+        return true;
+      }
+      if (scrollMode === 'scroll') {
+        if (delta > 0) {
+          const amount = Math.min(delta, deckMaxScroll - deckScroll);
+          deckScroll += amount;
+          if (delta > amount) {
+            updateGridPosition();
+            return false;
+          }
+        } else if (deckScroll > 0) {
+          const amount = Math.max(delta, -deckScroll);
+          deckScroll += amount;
+          const remainder = delta - amount;
+          if (remainder < 0) {
+            // Deck is scrolled back to its first row; whatever travel is left
+            // retracts the card proportionally instead of slamming it shut.
+            lastScrollSign = -1;
+            stopExpandTween();
+            setExpandProgress(expandProgress + remainder / expandSpan);
+            return expandProgress > 0;
+          }
+        } else {
+          lastScrollSign = -1;
+          stopExpandTween();
+          setExpandProgress(expandProgress + delta / expandSpan);
+          return expandProgress > 0;
+        }
+      } else if (delta < 0) {
+        // A deck that fits is centered only at the fully expanded endpoint;
+        // it still retracts continuously on upward input so the gesture keeps
+        // the same feel as the expandable case.
+        lastScrollSign = -1;
+        stopExpandTween();
+        setExpandProgress(expandProgress + delta / expandSpan);
+        return expandProgress > 0;
+      }
+      updateGridPosition();
+      return true;
+    };
+    const setExpanded = (expanded: boolean) => expandTo(expanded ? 1 : 0);
+    setExpandProgress(expandProgress);
+
+    let touchLastY = 0;
+    let touchVelocity = 0;
+    let touchLastTime = 0;
+    let touchActive = false;
+    let momentumFrame = 0;
+    let wheelVelocity = 0;
+    let wheelLastAt = 0;
+    let wheelFrame = 0;
+    let wheelTarget = 0;
+    let wheelPosition = 0;
+    let wheelApplied = 0;
+    let wheelPreviousFrame = 0;
+    const wheelSnapDelay = 220;
+    // Wheel notches keep arriving every few frames while the wheel spins, so a
+    // short quiet window is enough to tell "still spinning" from "stopped".
+    const wheelIdleDelay = 60;
+    let settleTimer = 0;
+    const cancelSettle = () => {
+      if (settleTimer) window.clearTimeout(settleTimer);
+      settleTimer = 0;
+    };
+    // The smoothing spring is usually still gliding when the gesture ends.
+    // Stop it right away so the snap starts on the first frame after the pause
+    // instead of waiting for the glide to play out. Its leftover travel only
+    // still means something once the deck is fully open (there it keeps
+    // scrolling the grid); mid-expansion the snap below is heading to the same
+    // endpoint anyway, so delivering it would only be a visible jump.
+    const flushWheelMotion = () => {
+      if (!wheelFrame) return;
+      cancelAnimationFrame(wheelFrame);
+      wheelFrame = 0;
+      wheelPreviousFrame = 0;
+      const residue = wheelTarget - wheelPosition;
+      wheelVelocity = 0;
+      wheelTarget = wheelPosition = wheelApplied = 0;
+      if (residue && expandProgress >= 1) consumeDelta(residue);
+    };
+    // A gesture can stop anywhere in the travel. Once input has been quiet for
+    // a moment the card lands on a side: a downward gesture always opens (a
+    // single notch is enough), while coming back up only closes after most of
+    // the travel was pulled back, so a stray nudge cannot cancel the trip.
+    const settleExpand = (force = false) => {
+      cancelSettle();
+      const atEndpoint = expandProgress <= 0 || expandProgress >= 1;
+      // A fling that is still going while the card sits at an endpoint keeps
+      // scrolling the deck (touch counterpart of the wheel glide); anywhere in
+      // between the snap ends up at the same place, so it takes over right away
+      // instead of waiting for the momentum to die out.
+      if (force && momentumFrame && !atEndpoint) stopMomentum();
+      if (force) flushWheelMotion();
+      if (atEndpoint || expandTweenFrame || touchActive || wheelFrame || momentumFrame) return;
+      const shouldOpen = lastScrollSign > 0 || expandProgress > 0.75;
+      expandTo(shouldOpen ? 1 : 0);
+    };
+    const scheduleSettle = () => {
+      cancelSettle();
+      // Scheduled off every wheel notch, including the first one of a gesture:
+      // at that point the spring has not moved the card yet, so `expandProgress`
+      // still reads 0 and an early bail-out would leave the gesture without a
+      // snap at all. settleExpand itself ignores the states it cannot snap from.
+      settleTimer = window.setTimeout(() => settleExpand(true), wheelIdleDelay);
+    };
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const stopMomentum = () => {
+      cancelSettle();
+      if (momentumFrame) cancelAnimationFrame(momentumFrame);
+      if (wheelFrame) cancelAnimationFrame(wheelFrame);
+      momentumFrame = 0;
+      wheelFrame = 0;
+      wheelVelocity = 0;
+      wheelTarget = wheelPosition;
+      wheelApplied = wheelPosition;
+      wheelPreviousFrame = 0;
+      touchVelocity = 0;
+    };
+    const runWheelMotion = () => {
+      if (reducedMotion.matches || wheelFrame) return;
+      const tick = () => {
+        const now = performance.now();
+        const dt = Math.min(32, Math.max(1, now - (wheelPreviousFrame || now)));
+        wheelPreviousFrame = now;
+        const idle = now - wheelLastAt;
+        // Critically damped spring. It eases in from rest and glides to a stop,
+        // so discrete wheel notches blend into one continuous scroll instead of
+        // stepping frame by frame. Critical damping is what keeps it honest: an
+        // underdamped spring overshot, and its return swing was read as an
+        // upward gesture, opening the deck and immediately bouncing it shut.
+        const dtFrames = Math.min(1.5, dt / 16.67);
+        const omega = (idle < 100 ? 26 : 16) / 60; // radians per frame
+        wheelVelocity += (omega * omega * (wheelTarget - wheelPosition) - 2 * omega * wheelVelocity) * dtFrames;
+        wheelPosition += wheelVelocity * dtFrames;
+        const remaining = wheelTarget - wheelPosition;
+        if (Math.abs(remaining) < 0.12 && Math.abs(wheelVelocity) < 0.12 && idle >= wheelSnapDelay) {
+          wheelTarget = wheelPosition = wheelApplied = 0;
+          wheelFrame = 0;
+          wheelPreviousFrame = 0;
+          settleExpand();
+          return;
+        }
+        const delta = wheelPosition - wheelApplied;
+        wheelApplied = wheelPosition;
+        const continued = consumeDelta(delta);
+        if (!continued || (expandProgress <= 0 && wheelVelocity < 0)) {
+          wheelTarget = wheelPosition = wheelApplied = 0;
+          wheelFrame = 0;
+          wheelPreviousFrame = 0;
+          return;
+        }
+        wheelFrame = requestAnimationFrame(tick);
+      };
+      wheelFrame = requestAnimationFrame(tick);
+    };
+    const runInertia = (initialVelocity: number, source: 'touch') => {
+      if (reducedMotion.matches || Math.abs(initialVelocity) < 0.08) return;
+      let velocity = Math.max(-34, Math.min(34, initialVelocity));
+      const tick = () => {
+        velocity *= 0.94;
+        if (Math.abs(velocity) < 0.12) { momentumFrame = 0; settleExpand(); return; }
+        if (!consumeDelta(velocity) || (expandProgress <= 0 && velocity < 0)) { momentumFrame = 0; settleExpand(); return; }
+        momentumFrame = requestAnimationFrame(tick);
+      };
+      momentumFrame = requestAnimationFrame(tick);
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (!event.composedPath().includes(card) && !card.matches(':hover')) return;
+      const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? deck.clientHeight
+          : 1;
+      const delta = Math.max(-160, Math.min(160, event.deltaY * unit));
+      const atCollapsedTop = expandProgress <= 0 && deckScroll <= 0 && delta < 0;
+      const shouldPrevent = expandProgress < 1
+        || (expandProgress >= 1 && (scrollMode === 'scroll'
+          ? deckScroll < deckMaxScroll || delta < 0
+          : delta < 0));
+      if (!shouldPrevent) return;
+      if (atCollapsedTop) {
+        // Let the page receive further upward wheel input once the greeting
+        // state is fully restored; never leave a stale inertial tail running.
+        if (wheelFrame) cancelAnimationFrame(wheelFrame);
+        wheelFrame = 0;
+        wheelVelocity = 0;
+        wheelTarget = wheelPosition = wheelApplied = 0;
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      cancelSettle();
+      if (reducedMotion.matches) {
+        // No smoothing for reduced motion, but the notch must still register and
+        // the gesture still has to land on a side afterwards.
+        consumeDelta(delta);
+        scheduleSettle();
+        return;
+      }
+
+      const now = performance.now();
+      // Keep the visual position on its own timeline: mouse notches update a
+      // target, while an rAF spring catches up instead of jumping per event.
+      // A reversal starts from rest, otherwise the glide still in flight would
+      // carry the spring the other way and swallow the new input entirely.
+      if (delta * wheelVelocity < 0) wheelVelocity = 0;
+      wheelTarget += delta;
+      wheelLastAt = now;
+      runWheelMotion();
+      // The snap is scheduled off the input itself, not off the animation:
+      // once the notches stop for wheelIdleDelay the card lands on a side
+      // while the smoothing spring is still gliding (it gets flushed).
+      scheduleSettle();
+    };
+    window.addEventListener('wheel', onWheel, { passive: false, capture: true });
+    card.addEventListener('touchstart', (event) => {
+      stopMomentum();
+      touchActive = true;
+      touchLastY = event.touches[0]?.clientY || 0;
+      touchLastTime = performance.now();
+    }, { passive: true });
+    card.addEventListener('touchmove', (event) => {
+      const currentY = event.touches[0]?.clientY || touchLastY;
+      const now = performance.now();
+      const delta = touchLastY - currentY;
+      const elapsed = Math.max(8, now - touchLastTime);
+      touchVelocity = touchVelocity * 0.55 + (delta / elapsed * 16.67) * 0.45;
+      // At the greeting state an upward swipe has nothing left to consume, so
+      // the page keeps it instead of being swallowed by the deck.
+      const atCollapsedTop = expandProgress <= 0 && deckScroll <= 0 && delta < 0;
+      const shouldPrevent = !atCollapsedTop && (expandProgress < 1
+        || (expandProgress >= 1 && (scrollMode === 'scroll'
+          ? deckScroll < deckMaxScroll || delta < 0
+          : delta < 0)));
+      if (shouldPrevent) {
+        event.preventDefault();
+      }
+      consumeDelta(delta);
+      touchLastY = currentY;
+      touchLastTime = now;
+    }, { passive: false });
+    const endTouch = () => {
+      if (!touchActive) return;
+      touchActive = false;
+      runInertia(touchVelocity, 'touch');
+      scheduleSettle();
+    };
+    card.addEventListener('touchend', endTouch, { passive: true });
+    card.addEventListener('touchcancel', endTouch, { passive: true });
+    deck.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown') { setExpandProgress(1); event.preventDefault(); }
+      if (event.key === 'ArrowUp') { setExpandProgress(0); event.preventDefault(); }
+    });
+    window.addEventListener('resize', measureExpandSpan, { passive: true });
+    document.addEventListener('astro:before-swap', () => {
+      window.removeEventListener('wheel', onWheel, true);
+      window.removeEventListener('resize', measureExpandSpan);
+      stopMomentum();
+      stopExpandTween();
+      setExpandProgress(0);
+    }, { once: true });
+  }
+  bindHero();
+  document.addEventListener('astro:page-load', bindHero);
+</script>

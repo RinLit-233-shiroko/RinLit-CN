@@ -19,6 +19,7 @@ interface Props {
   ariaLabel?: string;
   maxHeight?: string;
   zIndex?: string | number;
+  align?: 'end' | 'center';  // Horizontal anchor against the trigger when opened via Menu_open
 }
 
 const {
@@ -31,6 +32,7 @@ const {
   ariaLabel = '',
   maxHeight = '75vh',
   zIndex = '',
+  align = 'end',
 } = Astro.props;
 
 const menuVars = [
@@ -53,6 +55,7 @@ const role = roleMap[type];
   role={role}
   data-menu-type={type}
   data-group={group}
+  data-menu-align={align}
   data-context-target={contextTarget || ''}
   aria-label={ariaLabel || undefined}
   style={menuVars || undefined}
@@ -107,6 +110,10 @@ const role = roleMap[type];
     overflow-y: auto;
     overscroll-behavior: contain;
     border-radius: inherit;
+    /* 菜单盒子可被 min-width 撑宽（见下方 .menu > .pill），而 Pill 是
+       inline-flex 包住内容；内容层需跟随盒子宽度，否则列表会比背景窄。 */
+    width: 100%;
+    min-width: 0;
   }
 
   .menu__list {
@@ -131,6 +138,13 @@ const role = roleMap[type];
   :global(.menu .pill--panel) {
     --pill-press-scale: 1.01;
     --pill-drag-scale: 0.01;
+  }
+
+  /* 让视觉背景层填满菜单盒子。菜单可由 min-width 撑宽，而 Pill 默认只包住内容；
+     若两者不等宽，Menu_open 依据盒子中心计算的 transform-origin 会偏离可见胶囊，
+     造成"从右侧弹出"的错觉。 */
+  :global(.menu > .pill) {
+    min-width: 100%;
   }
 
   :global(.menu__content) {
@@ -401,8 +415,11 @@ const role = roleMap[type];
       var vw = window.innerWidth;
       var vh = window.innerHeight;
 
-      // 2. 顶部与按钮顶部对齐（原位覆盖），左侧向内侧展开
-      var left = tRect.right - mW;
+      // 2. 顶部与按钮顶部对齐（原位覆盖），水平方向按 data-menu-align 对齐
+      var align = menuEl.getAttribute('data-menu-align') || 'end';
+      var left = align === 'center'
+        ? tRect.left + tRect.width / 2 - mW / 2   // 以按钮中心为基准水平居中
+        : tRect.right - mW;                        // 默认：右边缘与按钮右边缘对齐
       var top = tRect.top;
 
       if (left < padding) left = padding;

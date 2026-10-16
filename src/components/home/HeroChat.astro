@@ -1,0 +1,332 @@
+---
+import Button from '../Button.astro';
+import Menu from '../Menu.astro';
+import MenuItem from '../MenuItem.astro';
+import { homeDialogue } from '../../data/home/dialogue';
+import { getIcon } from '../../utils/icons';
+
+const initialOptions = homeDialogue.initial
+  .map((id) => homeDialogue.nodes[id])
+  .filter(Boolean);
+const placeholder = initialOptions.map((node) => node.question).join(' / ');
+const typingIcon = getIcon('dots', 20, 'filled');
+---
+
+<section class="hero-chat" aria-label="Chat with RinLit" data-dialogue-tree={JSON.stringify(homeDialogue)} data-dialogue-placeholder={placeholder}>
+  <header class="hero-chat__title">Chat with RinLit</header>
+  <div class="hero-chat__messages" aria-live="polite" data-dialogue-messages>
+    <p class="hero-chat__time">现在</p>
+    <div class="hero-chat__message hero-chat__message--rin">你好哇\(@^0^@)/</div>
+    <div class="hero-chat__message hero-chat__message--rin hero-chat__message--tail">
+      欢迎来到我的网站！有什么想问我的吗 (^///^)
+    </div>
+  </div>
+  <div class="hero-chat__menu-anchor">
+    <div class="hero-chat__composer">
+      <Button id="hero-chat-trigger" class="hero-chat__prompt" flat aria-haspopup="menu" aria-controls="hero-chat-menu" aria-expanded="false">{placeholder}</Button>
+      <Button id="hero-chat-send" class="hero-chat__send" primary flat icon="arrow-up" aria-label="打开预设问题" data-dialogue-open />
+    </div>
+    <Menu id="hero-chat-menu" class="hero-chat__menu" ariaLabel="预设问题" zIndex="110" align="center">
+      {initialOptions.map((node) => (
+        <MenuItem value={node.id} data-dialogue-choice={node.id}>{node.question}</MenuItem>
+      ))}
+    </Menu>
+  </div>
+
+  <!-- Cloned at runtime so streamed replies reuse the real Button component
+       markup (and therefore its Pill glow, press and hover states). -->
+  <template data-dialogue-link-template>
+    <Button class="hero-chat__link" href="__DIALOGUE_HREF__" flat>__DIALOGUE_LABEL__</Button>
+  </template>
+  <template data-dialogue-typing-template>
+    <div class="hero-chat__message hero-chat__message--rin hero-chat__message--tail is-typing">
+      <span class="hero-chat__typing" set:html={typingIcon} aria-hidden="true"></span>
+    </div>
+  </template>
+</section>
+
+<style is:global>
+  .hero-chat {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 600px;
+    padding: 24px;
+    border-radius: 24px;
+    background: var(--chat-surface, #fbfafb);
+    color: var(--chat-text, #000);
+  }
+  .hero-chat__title {
+    display: grid; place-items: center; height: 42px; flex: 0 0 auto;
+    border-radius: 18px; background: var(--chat-header, #f1f0f5);
+    color: var(--chat-text, #000); font: 700 17px/1 'Sarasa SC', Geist, sans-serif;
+  }
+  .hero-chat__messages {
+    display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 10px;
+    /* A fixed 640px cap keeps the conversation column stable instead of
+       letting viewport-relative padding decide how wide the messages read. */
+    width: 100%; max-width: 640px; margin-inline: auto;
+    padding: 13px 16px; overflow-y: auto; scrollbar-width: none;
+  }
+  .hero-chat__messages::-webkit-scrollbar { display: none; }
+  .hero-chat__time { margin: 0 0 2px; color: var(--color-secondary-500); text-align: center; font: 600 14px/1 'Plus Jakarta Sans', sans-serif; }
+  .hero-chat__message {
+    align-self: flex-start; max-width: min(100%, 500px); padding: 8px 16px;
+    border-radius: 18px; font: 600 16px/1.36 'Plus Jakarta Sans', 'Sarasa SC', sans-serif;
+    overflow-wrap: anywhere;
+  }
+  .hero-chat__message--rin { background: var(--chat-rin-message, #f5f4f8); color: var(--chat-text, #000); }
+  .hero-chat__message.is-typing { min-width: 42px; min-height: 18px; }
+  .hero-chat__typing { display: inline-flex; align-items: center; height: 18px; color: var(--chat-text, #000); }
+  .hero-chat__typing svg { width: 20px; height: 20px; display: block; }
+  /* The first path is Tabler's transparent bounding box; only dots animate. */
+  .hero-chat__typing path:nth-child(n+2) { animation: typing-dot 1.05s ease-in-out infinite; }
+  .hero-chat__typing path:nth-child(3) { animation-delay: .16s; }
+  .hero-chat__typing path:nth-child(4) { animation-delay: .32s; }
+  @keyframes typing-dot { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
+  .hero-chat__message--tail { border-bottom-left-radius: 8px; }
+  .hero-chat__message--user { align-self: flex-end; border-bottom-right-radius: 8px; background: var(--chat-user-message, #695cb0); color: #fff; }
+  .hero-chat__image { align-self: flex-start; width: min(385px, 100%); border-radius: 18px; object-fit: cover; }
+  /* Reveal uses the standalone `translate` property so it composes with the
+     Pill press transform instead of overriding it. */
+  .hero-chat__enter { animation: chat-reveal 320ms cubic-bezier(.2,.8,.2,1) both; }
+  .hero-chat__leave { animation: chat-hide 240ms ease both; }
+  @keyframes chat-reveal {
+    from { opacity: 0; translate: 0 10px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+  @keyframes chat-hide {
+    from { opacity: 1; translate: 0 0; }
+    to { opacity: 0; translate: 0 -4px; }
+  }
+  .hero-chat__caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: currentColor; animation: caret-blink 1s steps(2, end) infinite; }
+  @keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  /* Streamed link replies are real Button components; only alignment and the
+     chat bubble radius need to be adjusted here. */
+  .hero-chat__link { align-self: flex-start; max-width: 100%; border-radius: var(--pill-radius, 24px); }
+  .hero-chat__link .btn { width: auto; max-width: 100%; height: auto; min-height: 44px; padding: 10px 20px; color: var(--chat-text, #000); white-space: normal; text-align: left; }
+  .hero-chat__link .btn__text { display: block; white-space: normal; text-overflow: clip; font: 700 16px/1.3 'Sarasa SC', Geist, sans-serif; }
+  .hero-chat__menu-anchor { position: relative; width: min(480px, 100%); margin: 12px auto 0; }
+  .hero-chat__composer { display: flex; gap: 10px; align-items: center; width: 100%; }
+  .hero-chat__prompt, .hero-chat__send { flex-shrink: 0; }
+  .hero-chat__prompt { flex: 1; min-width: 0; }
+  .hero-chat__prompt .pill { width: 100%; }
+  .hero-chat__prompt .btn { justify-content: flex-start; height: 48px; padding: 0 22px; overflow: hidden; color: var(--text-muted); text-align: left; text-overflow: ellipsis; white-space: nowrap; opacity: .62; }
+  /* Left-align the label inside the pill; the Button default centers a grid cell. */
+  .hero-chat__prompt .btn__text { display: block; flex: 1 1 auto; place-items: initial; text-align: left; }
+  .hero-chat__prompt.has-selection .btn { color: var(--chat-text, #000); opacity: 1; }
+  .hero-chat__send { width: 48px; min-width: 48px; }
+  .hero-chat__send .btn,
+  .hero-chat__send .btn.btn--icon-only { width: 48px !important; min-width: 48px; max-width: 48px; height: 48px; padding: 0; }
+  .hero-chat__send .btn__icon svg { width: 20px; height: 20px; stroke-width: 2.5; }
+  #hero-chat-menu { min-width: min(410px, calc(100vw - 48px)); }
+  .hero-chat__prompt:hover, .hero-chat__send:hover { transform: translateY(-1px); }
+  :root.dark .hero-chat { --chat-surface: #161616; --chat-header: #24232d; --chat-text: #fff; --chat-rin-message: #423c65; --chat-user-message: #8c7ecd; --chat-link: rgba(194,191,208,.3); }
+  @media (max-width: 700px) {
+    .hero-chat { height: 389px; padding: 24px; }
+    .hero-chat__messages { padding-inline: 4px; }
+    .hero-chat__message { font-size: 14px; }
+    .hero-chat__composer { margin-top: 10px; }
+    .hero-chat__prompt { font-size: 15px; }
+  }
+</style>
+
+<script>
+  type DialogueMessage = { type: 'text' | 'image' | 'link'; content?: string; src?: string; alt?: string; href?: string; label?: string };
+  type DialogueNode = { id: string; question: string; responses: DialogueMessage[][]; next?: string[]; requires?: { flag?: string; equals?: string | boolean }[]; effects?: { flag: string; value: string | boolean }[] };
+  type DialogueTree = { initial: string[]; nodes: Record<string, DialogueNode> };
+
+  const DIALOGUE_HREF_TOKEN = '__DIALOGUE_HREF__';
+  const DIALOGUE_LABEL_TOKEN = '__DIALOGUE_LABEL__';
+
+  function bindHeroChat() {
+    const root = document.querySelector<HTMLElement>('.hero-chat');
+    if (!root || root.dataset.dialogueBound) return;
+    root.dataset.dialogueBound = 'true';
+    const tree = JSON.parse(root.dataset.dialogueTree || '{}') as DialogueTree;
+    const placeholderText = root.dataset.dialoguePlaceholder || '你好？ / 介绍一下你自己！ / 你做了些啥项目？';
+    const messages = root.querySelector<HTMLElement>('[data-dialogue-messages]');
+    const menu = document.getElementById('hero-chat-menu');
+    const trigger = root.querySelector<HTMLElement>('#hero-chat-trigger');
+    const opener = root.querySelector<HTMLElement>('[data-dialogue-open]');
+    const linkTemplate = root.querySelector<HTMLTemplateElement>('[data-dialogue-link-template]');
+    const typingTemplate = root.querySelector<HTMLTemplateElement>('[data-dialogue-typing-template]');
+    const state: Record<string, string | boolean> = {};
+    let available = tree.initial || [];
+    let selectedId = '';
+
+    const openMenu = () => {
+      if (!menu || !trigger) return;
+      if (menu.classList.contains('is-open')) {
+        closeMenu();
+        return;
+      }
+      window.Menu_open?.(menu, trigger);
+      trigger.setAttribute('aria-expanded', 'true');
+    };
+    const closeMenu = () => {
+      if (menu) window.Menu_close?.(menu);
+      trigger?.setAttribute('aria-expanded', 'false');
+    };
+    const add = (element: HTMLElement) => {
+      // Reveal through a transition instead of popping the node into place.
+      messages?.appendChild(element);
+      element.classList.add('hero-chat__enter');
+      element.addEventListener('animationend', () => element.classList.remove('hero-chat__enter'), { once: true });
+      messages?.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    };
+    const prompt = root.querySelector<HTMLElement>('#hero-chat-trigger .btn__text');
+    const el = (className: string, text?: string) => { const element = document.createElement('div'); element.className = className; if (text) element.textContent = text; return element; };
+    const cloneTemplate = (template: HTMLTemplateElement | null) => {
+      if (!template) return null;
+      const node = template.content.firstElementChild;
+      return node ? (node.cloneNode(true) as HTMLElement) : null;
+    };
+    const eligible = (id: string) => {
+      const node = tree.nodes[id];
+      return node && (node.requires || []).every((rule) => !rule.flag || state[rule.flag] === rule.equals);
+    };
+    const refreshChoices = () => {
+      if (!menu) return;
+      menu.querySelectorAll<HTMLElement>('[data-dialogue-choice]').forEach((choice) => {
+        const id = choice.dataset.dialogueChoice || '';
+        choice.hidden = !available.includes(id) || !eligible(id);
+      });
+    };
+    const wait = (duration: number) => new Promise<void>((resolve) => window.setTimeout(resolve, duration));
+    const streamText = async (message: HTMLElement, text: string) => {
+      message.textContent = '';
+      const caret = document.createElement('span');
+      caret.className = 'hero-chat__caret';
+      message.appendChild(caret);
+      for (const character of text) {
+        caret.insertAdjacentText('beforebegin', character);
+        messages?.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        await wait(28);
+      }
+      caret.remove();
+    };
+    const respond = async (id: string) => {
+      const node = tree.nodes[id];
+      if (!node || !messages) return;
+      add(el('hero-chat__message hero-chat__message--user', node.question));
+      resetPrompt();
+      const variants = node.responses || [];
+      const response = variants[Math.floor(Math.random() * variants.length)] || [];
+      await wait(700);
+      for (const item of response) {
+        const typing = cloneTemplate(typingTemplate);
+        if (typing) {
+          add(typing);
+          await wait(720);
+          typing.classList.remove('hero-chat__enter');
+          typing.classList.add('hero-chat__leave');
+          window.setTimeout(() => typing.remove(), 260);
+        }
+        if (item.type === 'text') {
+          const message = el('hero-chat__message hero-chat__message--rin hero-chat__message--tail');
+          add(message);
+          await streamText(message, item.content || '');
+        }
+        if (item.type === 'image' && item.src) {
+          const image = document.createElement('img');
+          image.className = 'hero-chat__image';
+          image.src = item.src;
+          image.alt = item.alt || '';
+          image.loading = 'lazy';
+          add(image);
+          await wait(420);
+        }
+        if (item.type === 'link' && item.href) {
+          const label = item.label || item.href;
+          const link = cloneTemplate(linkTemplate);
+          if (link) {
+            const anchor = link.matches('a') ? link : link.querySelector<HTMLAnchorElement>('a');
+            const text = link.querySelector<HTMLElement>('.btn__text');
+            if (anchor) {
+              anchor.setAttribute('href', item.href);
+              if (/^https?:/i.test(item.href)) {
+                anchor.setAttribute('target', '_blank');
+                anchor.setAttribute('rel', 'noreferrer');
+              }
+            }
+            if (text) text.textContent = label;
+            add(link);
+          } else {
+            const fallback = document.createElement('a');
+            fallback.className = 'hero-chat__link';
+            fallback.href = item.href;
+            fallback.textContent = label;
+            if (/^https?:/i.test(item.href)) { fallback.target = '_blank'; fallback.rel = 'noreferrer'; }
+            add(fallback);
+          }
+          await wait(420);
+        }
+      }
+      (node.effects || []).forEach((effect) => { state[effect.flag] = effect.value; });
+      available = [...new Set([...(node.next || []), ...available])];
+      selectedId = '';
+      refreshChoices();
+      closeMenu();
+    };
+
+    // Typewriter for the prompt label: the selected question types itself in
+    // instead of popping in, and any in-flight run is cancelled on re-select.
+    let promptTyping = 0;
+    const typePrompt = async (text: string, force = false) => {
+      if (!prompt) return;
+      const runId = ++promptTyping;
+      if (force && !trigger?.classList.contains('has-selection')) {
+        prompt.textContent = text;
+        return;
+      }
+      prompt.textContent = '';
+      for (const character of text) {
+        if (runId !== promptTyping) return;
+        prompt.insertAdjacentText('beforeend', character);
+        await wait(36);
+      }
+    };
+    const resetPrompt = () => {
+      promptTyping++;
+      trigger?.classList.remove('has-selection');
+      if (prompt) prompt.textContent = placeholderText;
+    };
+
+    trigger?.addEventListener('click', openMenu);
+    menu?.addEventListener('click', (event) => {
+      const choice = (event.target as HTMLElement).closest<HTMLElement>('[data-dialogue-choice]');
+      if (!choice?.dataset.dialogueChoice) return;
+      selectedId = choice.dataset.dialogueChoice;
+      const selectedNode = tree.nodes[selectedId];
+      if (selectedNode) {
+        trigger?.classList.add('has-selection');
+        typePrompt(selectedNode.question);
+      }
+      closeMenu();
+    });
+    opener?.addEventListener('click', (event) => {
+      if (!selectedId) {
+        event.preventDefault();
+        openMenu();
+        return;
+      }
+      const id = selectedId;
+      selectedId = '';
+      resetPrompt();
+      respond(id);
+    });
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (!menu?.classList.contains('is-open')) return;
+      if (!target.closest('#hero-chat-menu') && !target.closest('#hero-chat-trigger') && !target.closest('[data-dialogue-open]')) closeMenu();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeMenu();
+    });
+    refreshChoices();
+  }
+  bindHeroChat();
+  document.addEventListener('astro:page-load', bindHeroChat);
+</script>

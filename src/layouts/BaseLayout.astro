@@ -15,6 +15,7 @@ const {
 import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
 import PageLoader from '../components/layout/PageLoader.astro';
+import PwaHead from '../components/PwaHead.astro';
 import AuthModal from '../features/auth/AuthModal.astro';
 import { locales, defaultLocale, t } from '../i18n/index';
 import '../styles/global.css';
@@ -45,10 +46,10 @@ alternateLinks.push({
 <html lang={safeLang}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, viewport-fit=cover" />
     <meta name="description" content={description} />
     <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#fbf9ff" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="keywords" content={t(safeLang, 'seo.keywords')} />
     <link rel="canonical" href={canonicalUrl} />
     {alternateLinks.map((link) => (
@@ -73,6 +74,14 @@ alternateLinks.push({
       (function () {
         try {
           var root = document.documentElement;
+          // Mark standalone launches (installed PWA) so CSS can react to it
+          // without relying on display-mode media queries alone.
+          if (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true
+          ) {
+            root.classList.add('is-standalone');
+          }
           var saved = localStorage.getItem('rinlit:theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           var mode = saved ? saved : (prefersDark ? 'dark' : 'light');
@@ -88,12 +97,14 @@ alternateLinks.push({
     <link rel="icon" href="/favicon/light.ico" media="(prefers-color-scheme: light)" />
     <link rel="icon" href="/favicon/dark.ico" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon/light.ico" />
+
+    <PwaHead lang={safeLang} />
   </head>
   <body class="min-h-screen bg-light text-dark font-sans">
     <div class="site-header-mask site-header-mask--top" aria-hidden="true"></div>
     <div class="site-header-mask site-header-mask--bottom" aria-hidden="true"></div>
     <Header currentPath={currentPath} lang={safeLang} transition:persist />
-    <main class="pb-28 md:pb-0">
+    <main class="site-main">
       <div class="page-transition-container">
         <slot />
       </div>
@@ -103,3 +114,16 @@ alternateLinks.push({
     <AuthModal lang={safeLang} />
   </body>
 </html>
+
+<style>
+  /* 移动端底部导航为固定定位，正文需要预留高度 + 手势条安全区 */
+  .site-main {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 769px) {
+    .site-main {
+      padding-bottom: 0;
+    }
+  }
+</style>

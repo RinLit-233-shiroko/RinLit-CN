@@ -104,6 +104,7 @@ const { id = 'modal', title = '', class: cardClass = '', ariaLabel = '' } = Astr
     width: 380px;
     max-width: calc(100vw - 48px);
     max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     border-radius: 24px;
     background: var(--bg-elevated);
     box-shadow:

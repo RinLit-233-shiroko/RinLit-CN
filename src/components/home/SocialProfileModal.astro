@@ -1,0 +1,105 @@
+---
+import Modal from '../Modal.astro';
+import type { SocialProfile } from '../../data/home/socials';
+import { t } from '../../i18n/index';
+
+interface Props {
+  profiles: SocialProfile[];
+  lang?: string;
+}
+
+const { profiles, lang } = Astro.props;
+const __ = (key: string) => t(lang, key);
+---
+
+<Modal id="social-profile-modal" title={__('social.modalTitle')} class="social-profile-modal__card" ariaLabel={__('social.modalAria')}>
+  <div class="social-profile-modal" data-social-profile-content>
+    {profiles.map((profile) => (
+      <article class="social-profile" data-social-profile={profile.id} data-platform={profile.platform} hidden>
+        <div class="social-profile__hero" style={`--profile-accent: ${profile.accent}`}>
+          <img class="social-profile__portrait" src={profile.avatar} alt="" />
+          <span class="social-profile__badge social-badge" aria-hidden="true">
+            <img class="social-badge__icon" src={profile.icon} alt="" />
+          </span>
+        </div>
+        <p class="social-profile__nickname">{profile.nickname}</p>
+        <dl class="social-profile__details">
+          {profile.accountLabel && profile.account && (
+            <div>
+              <dt>{profile.accountLabel}</dt>
+              <dd>{profile.account}</dd>
+            </div>
+          )}
+          {profile.href && (
+            <div>
+              <dt>{__('social.link')}</dt>
+              <dd><a href={profile.href} target="_blank" rel="noreferrer">{__('social.openLink').replace('{platform}', profile.platform)}</a></dd>
+            </div>
+          )}
+        </dl>
+        {profile.previewImage ? (
+          <img class="social-profile__preview" src={profile.previewImage} alt={__('social.previewAlt').replace('{platform}', profile.platform)} />
+        ) : !profile.href && (
+          <p class="social-profile__notice">{__('social.previewNotice')}</p>
+        )}
+      </article>
+    ))}
+  </div>
+</Modal>
+
+<style>
+  :global(.social-profile-modal__card) { width: min(440px, calc(100vw - 36px)); }
+
+  .social-profile { padding: 6px 0 4px; text-align: center; }
+  .social-profile__hero {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 4px auto 16px;
+  }
+  .social-profile__portrait {
+    width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    //box-shadow: 0 14px 28px color-mix(in srgb, var(--profile-accent) 28%, transparent);
+  }
+  /* 徽标本体样式来自 global.css 的 .social-badge，这里只给尺寸与定位 */
+  .social-profile__badge { --social-badge-size: 38px; right: -4px; bottom: 2px; }
+  .social-profile__nickname { margin: 0 0 14px; color: var(--text-strong); font: 800 24px/1.2 'Plus Jakarta Sans', 'Sarasa SC', sans-serif; overflow-wrap: anywhere; }
+  .social-profile__details { display: grid; gap: 10px; margin: 0; text-align: left; }
+  .social-profile__details div { padding: 13px 16px; border-radius: 18px; background: var(--bg-muted); }
+  .social-profile__details dt { margin-bottom: 5px; color: var(--text-muted); font-size: 13px; }
+  .social-profile__details dd { margin: 0; color: var(--text-strong); font-size: 16px; overflow-wrap: anywhere; }
+  .social-profile__details a { color: var(--color-primary); text-decoration: none; }
+  .social-profile__preview { display: block; width: min(240px, 100%); margin: 16px auto 0; border-radius: 18px; }
+  .social-profile__notice { margin: 16px 0 0; color: var(--text-muted); font-size: 14px; }
+</style>
+
+<script>
+  function setProfile(profileId: string) {
+    const modal = document.getElementById('social-profile-modal');
+    if (!modal) return;
+    const profile = modal.querySelector(`[data-social-profile="${profileId}"]`) as HTMLElement | null;
+    if (!profile) return;
+    modal.querySelectorAll<HTMLElement>('[data-social-profile]').forEach((item) => {
+      item.hidden = item !== profile;
+    });
+    const title = modal.querySelector('.modal__topbar-title');
+    const platform = profile.dataset.platform;
+    if (title && platform) title.textContent = platform;
+  }
+
+  function bindSocialProfiles() {
+    document.querySelectorAll<HTMLButtonElement>('[data-social-id]').forEach((button) => {
+      if (button.dataset.socialBound) return;
+      button.dataset.socialBound = 'true';
+      button.addEventListener('click', () => {
+        const profileId = button.dataset.socialId;
+        if (!profileId) return;
+        setProfile(profileId);
+        window.__modals?.['social-profile-modal']?.open();
+      });
+    });
+  }
+
+  bindSocialProfiles();
+  document.addEventListener('astro:page-load', bindSocialProfiles);
+</script>

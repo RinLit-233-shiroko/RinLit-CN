@@ -7,9 +7,17 @@
 //
 // Re-runs automatically on `predev` and `prebuild` (see package.json).
 //
-// Sizing rule: each icon is laid out so the *opaque* pixels of the mark stay
-// inside a target radius of the canvas. That keeps maskable icons inside
-// Android's 80% safe circle while still filling the plate as much as possible.
+// Sizing rule: the source logo art is scaled as a whole, then centred on the
+// output canvas. Nothing is trimmed or re-centred.
+//
+// The source 512×512 art is intentionally NOT trimmed. In the Figma file the
+// mark sits horizontally centred but slightly above the middle (62px top /
+// 102px bottom padding). Trimming and re-centring would discard that optical
+// offset and make the icon look like it has drifted upward.
+//
+// The same art is effectively maskable-safe: its fully opaque edge reaches
+// 79.87% of the half-width, with only sub-pixel anti-aliasing beyond Android's
+// 80% safe circle. Scaling the whole canvas keeps the design geometry intact.
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -28,8 +36,6 @@ const PLATE_LIGHT = '#ffffff';
 const MARK_PURPLE = join(LOGO_DIR, 'Type=Square, Mode=Light, Monochrome=False.png');
 const MARK_WHITE = join(LOGO_DIR, 'Type=Square, Mode=Dark, Monochrome=True.png');
 
-const ALPHA_THRESHOLD = 24;
-
 async function loadSharp() {
   try {
     const mod = await import('sharp');
@@ -40,57 +46,29 @@ async function loadSharp() {
 }
 
 /**
- * Max distance from the image centre to any opaque pixel.
- * Used to fit the mark inside a circular safe area.
- */
-async function radialExtent(sharp, buffer) {
-  const { data, info } = await sharp(buffer)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  const cx = (info.width - 1) / 2;
-  const cy = (info.height - 1) / 2;
-  let max = 0;
-
-  for (let y = 0; y < info.height; y += 1) {
-    for (let x = 0; x < info.width; x += 1) {
-      if (data[(y * info.width + x) * 4 + 3] <= ALPHA_THRESHOLD) continue;
-      const dx = x - cx;
-      const dy = y - cy;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist > max) max = dist;
-    }
-  }
-
-  return max || Math.max(info.width, info.height) / 2;
-}
-
-/**
  * Render one square icon.
  *
  * @param {object} options
  * @param {string} options.src        transparent PNG of the mark
  * @param {number} options.size       output edge length in px
  * @param {string|object} options.plate  background colour, or null for transparency
- * @param {number} options.radiusRatio opaque mark must fit inside size * ratio
  * @param {string} options.out        output file name inside public/icons/
  */
-async function renderIcon(sharp, { src, size, plate, radiusRatio, out }) {
-  const trimmed = await sharp(src).trim({ threshold: 1 }).png().toBuffer();
-  const extent = await radialExtent(sharp, trimmed);
+async function renderIcon(sharp, { src, size, plate, out }) {
+  // Keep the whole 1:1 design canvas. The source padding is part of the
+  // artwork, so it must scale with the mark instead of being cropped away.
+  const meta = await sharp(src).metadata();
+  const source = await sharp(src).png().toBuffer();
 
-  // Scale so the furthest opaque pixel lands exactly on the safe radius.
-  const targetRadius = size * radiusRatio;
-  const scale = targetRadius / extent;
-  const meta = await sharp(trimmed).metadata();
-  const width = Math.max(1, Math.round(meta.width * scale));
-  const height = Math.max(1, Math.round(meta.height * scale));
-
-  const scaled = await sharp(trimmed)
-    .resize(width, height, { fit: 'fill', kernel: 'lanczos3' })
-    .png()
-    .toBuffer();
+  // A same-size render must be a byte-identical copy: resampling here would
+  // erode the anti-aliased edges by ~1px.
+  const scaled =
+    meta.width === size && meta.height === size
+      ? source
+      : await sharp(source)
+          .resize(size, size, { fit: 'fill', kernel: 'lanczos3' })
+          .png()
+          .toBuffer();
 
   const canvas = sharp({
     create: {
@@ -151,20 +129,19 @@ async function main() {
         src: MARK_PURPLE,
         size,
         plate: PLATE_LIGHT,
-        radiusRatio: 0.46,
         out: `icon-${size}.png`,
       }),
     );
   }
 
-  // Maskable icons — inverted mark on brand plate, inside the 80% safe circle.
+  // Maskable icons — inverted mark on brand plate. The opaque artwork sits
+  // inside the 80% safe circle, so no extra inset is applied.
   for (const size of [192, 512]) {
     results.push(
       await renderIcon(sharp, {
         src: MARK_WHITE,
         size,
         plate: BRAND,
-        radiusRatio: 0.4,
         out: `maskable-${size}.png`,
       }),
     );
@@ -176,18 +153,18 @@ async function main() {
       src: MARK_WHITE,
       size: 180,
       plate: BRAND_DEEP,
-      radiusRatio: 0.44,
       out: 'apple-touch-icon.png',
     }),
   );
 
   // Monochrome (themed) icon — silhouette on transparency.
+  // Uses the white monochrome art: the OS tints monochrome icons from their
+  // alpha channel, so a brand-coloured copy would not be truly monochrome.
   results.push(
     await renderIcon(sharp, {
-      src: MARK_PURPLE,
+      src: MARK_WHITE,
       size: 512,
       plate: null,
-      radiusRatio: 0.4,
       out: 'monochrome-512.png',
     }),
   );

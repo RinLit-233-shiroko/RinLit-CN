@@ -16,7 +16,7 @@
  * instead. Only non-personalised, static assets are ever stored.
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = `rinlit-shell-${VERSION}`;
 const STATIC_CACHE = `rinlit-static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';

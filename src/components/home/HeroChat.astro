@@ -195,7 +195,7 @@ const lastBubble = [...introItems].reverse().find((item) => item.kind === 'text'
     35% { box-shadow: 0 0 0 4px var(--chat-user-message, #695cb0); }
     100% { box-shadow: 0 0 0 0 transparent; }
   }
-  .hero-chat__prompt:hover, .hero-chat__send:hover { transform: translateY(-1px); }
+  .hero-chat__prompt:hover, .hero-chat__send:hover { transform: none; }
   /* 正在回复：把手柄压住，避免在流式回复里插队提问 */
   .hero-chat--busy .hero-chat__composer { opacity: .62; pointer-events: none; }
   /* 问题问完了：没有可选项，标记为不可再问 */

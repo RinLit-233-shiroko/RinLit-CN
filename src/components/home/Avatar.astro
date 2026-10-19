@@ -39,7 +39,8 @@ const __ = (key: string) => t(lang, key);
     border-radius: 50%;
     background: transparent;
     cursor: pointer;
-    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 220ms ease;
+    transform: scale(var(--avatar-pointer-scale, 1));
+    transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 220ms ease;
   }
 
   .social-avatar__portrait {
@@ -57,7 +58,6 @@ const __ = (key: string) => t(lang, key);
 
   .social-avatar:hover,
   .social-avatar:focus-visible {
-    transform: translateY(-5px) scale(1.04);
     filter: saturate(1.08);
     outline: none;
   }

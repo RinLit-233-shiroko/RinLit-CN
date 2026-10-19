@@ -314,6 +314,21 @@ const avatarRows = buildDeckRows(socialProfiles, avatarDeckLayout);
     let greetingQueue = [localeGreeting];
     const greetingOut = card.querySelector<HTMLElement>('[data-greeting-out]');
     const greetingIn = card.querySelector<HTMLElement>('[data-greeting-in]');
+    const pointerAvatars = Array.from(deck.querySelectorAll<HTMLElement>('.social-avatar'));
+    const pointerRadius = 260;
+    const updateAvatarScales = (pointerX: number, pointerY: number) => {
+      pointerAvatars.forEach((avatar) => {
+        const rect = avatar.getBoundingClientRect();
+        const distance = Math.hypot(pointerX - (rect.left + rect.width / 2), pointerY - (rect.top + rect.height / 2));
+        const proximity = Math.max(0, 1 - distance / pointerRadius);
+        const influence = proximity * proximity;
+        avatar.style.setProperty('--avatar-pointer-scale', (1 + influence * 0.06).toFixed(3));
+      });
+    };
+    deck.addEventListener('pointermove', (event) => updateAvatarScales(event.clientX, event.clientY));
+    deck.addEventListener('pointerleave', () => {
+      pointerAvatars.forEach((avatar) => avatar.style.setProperty('--avatar-pointer-scale', '1'));
+    });
     const refillGreetingQueue = () => {
       const shuffled = greetingWords.slice(1);
       for (let index = shuffled.length - 1; index > 0; index--) {
@@ -679,7 +694,9 @@ const avatarRows = buildDeckRows(socialProfiles, avatarDeckLayout);
       if (force && momentumFrame && !atEndpoint) stopMomentum();
       if (force) flushWheelMotion();
       if (atEndpoint || expandTweenFrame || touchActive || wheelFrame || momentumFrame) return;
-      const shouldOpen = lastScrollSign > 0 || expandProgress > 0.75;
+      // One intentional upward gesture should return to the greeting. The
+      // previous high threshold made a short wheel notch snap back open.
+      const shouldOpen = lastScrollSign > 0;
       expandTo(shouldOpen ? 1 : 0);
     };
     const scheduleSettle = () => {

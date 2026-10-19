@@ -3,6 +3,7 @@ import Button from '../../components/Button.astro';
 import Avatar from '../../components/home/Avatar.astro';
 import HeroChat from '../../components/home/HeroChat.astro';
 import SocialProfileModal from '../../components/home/SocialProfileModal.astro';
+import { avatarDeckLayout, buildDeckRows } from '../../data/home/deck';
 import { socialProfiles } from '../../data/home/socials';
 import { t } from '../../i18n/index';
 
@@ -18,13 +19,10 @@ const greetingWords = lang === 'en'
   : ['你好', 'Hello', 'こんにちは', '안녕하세요', 'Bonjour', 'Hola', 'Hallo'];
 const onlineLabel = __('social.deckLabel');
 
-const avatarRows = [
-  socialProfiles.slice(0, 3),
-  socialProfiles.slice(3, 7),
-  socialProfiles.slice(7, 10),
-  socialProfiles.slice(10, 14),
-  socialProfiles.slice(14, 17),
-];
+// Shuffled per request so the deck never reads the same twice; the client
+// re-rolls once more on load, which keeps the arrangement fresh even when the
+// HTML comes from a cache.
+const avatarRows = buildDeckRows(socialProfiles, avatarDeckLayout);
 ---
 
 <section class="home-hero" aria-label="RinLit">
@@ -50,7 +48,7 @@ const avatarRows = [
       <div class="social-deck" data-social-deck tabindex="0" aria-label={onlineLabel}>
         <p class="social-deck__label">{onlineLabel}</p>
         <div class="social-deck__fade social-deck__fade--top" aria-hidden="true"></div>
-        <div class="social-deck__grid">
+        <div class="social-deck__grid" data-deck-layout={JSON.stringify(avatarDeckLayout)}>
           {avatarRows.map((row, rowIndex) => (
             <div class={`social-deck__row social-deck__row--${row.length}`}>
               {row.map((profile) => <Avatar profile={profile} row={rowIndex} lang={lang} />)}
@@ -279,6 +277,8 @@ const avatarRows = [
 </style>
 
 <script>
+  import { buildDeckRows, type DeckItem, type DeckLayout } from '../../data/home/deck';
+
   // Greeting words live on the element instead of `define:vars`, because
   // `define:vars` forces a raw inline script where TypeScript is not compiled.
   function bindHero() {
@@ -413,6 +413,53 @@ const avatarRows = [
       window.clearInterval(timer);
       greetingResizeObserver.disconnect();
     }, { once: true });
+
+    // The server already dealt the deck once per request; re-rolling here keeps
+    // the arrangement fresh even when the HTML was served from a cache. Only
+    // the avatars move between rows — the row sizes (and therefore the grid
+    // geometry the expansion animation measures) stay exactly as rendered.
+    const reshuffleDeck = () => {
+      const grid = card.querySelector<HTMLElement>('.social-deck__grid');
+      if (!grid) return;
+      let layout: DeckLayout | null = null;
+      try {
+        layout = JSON.parse(grid.dataset.deckLayout || 'null');
+      } catch {
+        /* keep the server-rendered order if the layout payload is unreadable */
+      }
+      if (!layout || !Array.isArray(layout.rowSizes)) return;
+
+      const rows = Array.from(grid.querySelectorAll<HTMLElement>('.social-deck__row'));
+      const avatars = rows.flatMap((row) => Array.from(row.querySelectorAll<HTMLElement>('.social-avatar')));
+      if (!avatars.length) return;
+
+      const items: DeckItem[] = avatars.map((avatar) => {
+        const weight = avatar.dataset.weight;
+        return {
+          id: avatar.dataset.socialId || '',
+          weight: weight === undefined ? undefined : Number(weight),
+        };
+      });
+      // Without ids the reorder could not tell the avatars apart; keep the
+      // server-rendered order instead of shuffling into a broken deck.
+      if (items.some((item) => !item.id)) return;
+      const nextRows = buildDeckRows(items, layout);
+      const byId = new Map(avatars.map((avatar) => [avatar.dataset.socialId || '', avatar]));
+
+      rows.forEach((row, rowIndex) => {
+        const nodes = (nextRows[rowIndex] || [])
+          .map((item) => byId.get(item.id))
+          .filter((node): node is HTMLElement => Boolean(node));
+        if (!nodes.length) return;
+        row.className = `social-deck__row social-deck__row--${nodes.length}`;
+        nodes.forEach((node) => {
+          node.dataset.row = String(rowIndex);
+          // appendChild moves the existing node, which is what reorders the row.
+          row.appendChild(node);
+        });
+      });
+    };
+    reshuffleDeck();
 
     let expandProgress = Number(card.style.getPropertyValue('--expand')) || 0;
     // How much wheel/touch travel maps onto one full expansion. It is the

@@ -16,6 +16,7 @@ const __ = (key: string) => t(lang, key);
   class="social-avatar"
   type="button"
   data-social-id={profile.id}
+  data-weight={profile.weight ?? 1}
   data-row={row}
   aria-label={__('social.viewAria').replace('{platform}', profile.platform)}
   style={`--avatar-accent: ${profile.accent}`}

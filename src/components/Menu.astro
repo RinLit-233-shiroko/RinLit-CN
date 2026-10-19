@@ -390,6 +390,98 @@ const role = roleMap[type];
     // 通用动画 API — 主菜单也带动画
     // ==========================================================
 
+    /**
+     * 量触发按钮的原始位置。
+     * 菜单打开时按钮会带上「飞向菜单」的 transform（来自 .pill.is-trigger-hidden），
+     * 直接 getBoundingClientRect 会拿到被 transform 污染的结果，
+     * 所以测量期间临时用 inline !important 把 transform 摘掉。
+     * @param {HTMLElement} triggerEl
+     * @returns {DOMRect}
+     */
+    function measureTriggerRect(triggerEl) {
+      var hadTransform = triggerEl.style.getPropertyValue('transform');
+      var hadPriority = triggerEl.style.getPropertyPriority('transform');
+      triggerEl.style.setProperty('transform', 'none', 'important');
+      var rect = triggerEl.getBoundingClientRect();
+      if (hadTransform) triggerEl.style.setProperty('transform', hadTransform, hadPriority);
+      else triggerEl.style.removeProperty('transform');
+      return rect;
+    }
+
+    /**
+     * 依据触发按钮位置摆放菜单，并把按钮的「飞向菜单」偏移 / 缩放写回按钮。
+     * 打开时调用一次；菜单内容变化后可以再调，用来重新避让视口边缘。
+     * @param {HTMLElement} menuEl
+     * @param {HTMLElement} triggerEl
+     * @param {{ animate?: boolean }} [options] animate=false 时不重算按钮动画变量
+     */
+    function layoutMenu(menuEl, triggerEl, options) {
+      if (!menuEl || !triggerEl) return;
+      var animate = !(options && options.animate === false);
+
+      var tRect = measureTriggerRect(triggerEl);
+      var mW = menuEl.offsetWidth || 160;
+      var mH = menuEl.offsetHeight || 100;
+      var padding = 8;
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+
+      // 顶部与按钮顶部对齐（原位覆盖），水平方向按 data-menu-align 对齐
+      var align = menuEl.getAttribute('data-menu-align') || 'end';
+      var left = align === 'center'
+        ? tRect.left + tRect.width / 2 - mW / 2   // 以按钮中心为基准水平居中
+        : tRect.right - mW;                        // 默认：右边缘与按钮右边缘对齐
+      var top = tRect.top;
+
+      if (left < padding) left = padding;
+      if (left + mW > vw - padding) left = vw - mW - padding;
+      // 放不下时向上顶，避免菜单溢出视口下沿。
+      if (top + mH > vh - padding) top = Math.max(padding, vh - mH - padding);
+
+      menuEl.style.left = left + 'px';
+      menuEl.style.top = top + 'px';
+
+      if (!animate) return;
+
+      // 计算菜单的中心点（页面坐标）
+      var menuCenterX = left + mW / 2;
+      var menuCenterY = top + mH / 2;
+
+      // 计算按钮中心到菜单中心的偏移，注入按钮让按钮"飞向"菜单中心
+      var triggerCenterX = tRect.left + tRect.width / 2;
+      var triggerCenterY = tRect.top + tRect.height / 2;
+      var moveX = menuCenterX - triggerCenterX;
+      var moveY = menuCenterY - triggerCenterY;
+
+      triggerEl.style.setProperty('--move-x', moveX + 'px');
+      triggerEl.style.setProperty('--move-y', moveY + 'px');
+
+      // 非均匀缩放：让按钮按菜单的实际宽高比例展开，而非统一 scale
+      var scaleX = mW / (tRect.width || 1);
+      var scaleY = mH / (tRect.height || 1);
+      triggerEl.style.setProperty('--scale-x', String(scaleX));
+      triggerEl.style.setProperty('--scale-y', String(scaleY));
+
+      // 菜单的 transform-origin：按钮中心相对菜单位置
+      var originX = triggerCenterX - left;
+      var originY = triggerCenterY - top;
+      menuEl.style.setProperty('--origin-x', originX + 'px');
+      menuEl.style.setProperty('--origin-y', originY + 'px');
+    }
+
+    /**
+     * 已打开的菜单在内容变化后重新避让视口边缘。
+     * 只挪位置，不重播打开动画，也不动触发按钮。
+     * @param {HTMLElement} menuEl
+     */
+    window.Menu_reposition = function (menuEl) {
+      if (!menuEl || !menuEl.classList.contains('is-open')) return;
+      var triggerEl = menuEl._triggerEl;
+      if (!triggerEl) return;
+      // offsetWidth/Height 需要布局，同步读取一次即可。
+      layoutMenu(menuEl, triggerEl, { animate: false });
+    };
+
     /** 将菜单从触发按钮位置动画展开 */
     window.Menu_open = function (menuEl, triggerEl) {
       if (!menuEl || !triggerEl) return;
@@ -408,53 +500,10 @@ const role = roleMap[type];
       menuEl.style.display = 'inline-flex';
       menuEl.style.visibility = 'hidden';
 
-      var tRect = triggerEl.getBoundingClientRect();
-      var mW = menuEl.offsetWidth || 160;
-      var mH = menuEl.offsetHeight || 100;
-      var padding = 8;
-      var vw = window.innerWidth;
-      var vh = window.innerHeight;
+      // 2. 依据按钮位置摆放，并写回按钮的展开动画变量
+      layoutMenu(menuEl, triggerEl, { animate: true });
 
-      // 2. 顶部与按钮顶部对齐（原位覆盖），水平方向按 data-menu-align 对齐
-      var align = menuEl.getAttribute('data-menu-align') || 'end';
-      var left = align === 'center'
-        ? tRect.left + tRect.width / 2 - mW / 2   // 以按钮中心为基准水平居中
-        : tRect.right - mW;                        // 默认：右边缘与按钮右边缘对齐
-      var top = tRect.top;
-
-      if (left < padding) left = padding;
-      if (left + mW > vw - padding) left = vw - mW - padding;
-      if (top + mH > vh - padding) top = Math.max(padding, vh - mH - padding);
-
-      menuEl.style.left = left + 'px';
-      menuEl.style.top = top + 'px';
-
-      // 3. 计算菜单的中心点（页面坐标）
-      var menuCenterX = left + mW / 2;
-      var menuCenterY = top + mH / 2;
-
-      // 4. 计算按钮中心到菜单中心的偏移，注入按钮让按钮"飞向"菜单中心
-      var triggerCenterX = tRect.left + tRect.width / 2;
-      var triggerCenterY = tRect.top + tRect.height / 2;
-      var moveX = menuCenterX - triggerCenterX;
-      var moveY = menuCenterY - triggerCenterY;
-
-      triggerEl.style.setProperty('--move-x', moveX + 'px');
-      triggerEl.style.setProperty('--move-y', moveY + 'px');
-
-      // 5. 非均匀缩放：让按钮按菜单的实际宽高比例展开，而非统一 scale
-      var scaleX = mW / (tRect.width || 1);
-      var scaleY = mH / (tRect.height || 1);
-      triggerEl.style.setProperty('--scale-x', String(scaleX));
-      triggerEl.style.setProperty('--scale-y', String(scaleY));
-
-      // 6. 菜单的 transform-origin：按钮中心相对菜单位置
-      var originX = triggerCenterX - left;
-      var originY = triggerCenterY - top;
-      menuEl.style.setProperty('--origin-x', originX + 'px');
-      menuEl.style.setProperty('--origin-y', originY + 'px');
-
-      // 7. 恢复可见，执行打开动画
+      // 3. 恢复可见，执行打开动画
       menuEl.style.visibility = 'visible';
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {

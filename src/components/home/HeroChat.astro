@@ -5,21 +5,57 @@ import MenuItem from '../MenuItem.astro';
 import { homeDialogue } from '../../data/home/dialogue';
 import { getIcon } from '../../utils/icons';
 
-const initialOptions = homeDialogue.initial
-  .map((id) => homeDialogue.nodes[id])
-  .filter(Boolean);
-const placeholder = initialOptions.map((node) => node.question).join(' / ');
-const typingIcon = getIcon('dots', 20, 'filled');
+// 服务端先渲染一份开场问题，让脚本生效前菜单也可用；
+// 脚本接管后会按当前的对话状态重建。
+const initialChoices = homeDialogue.initial
+  .filter((id) => homeDialogue.nodes[id]);
+const placeholder = initialChoices
+  .map((id) => homeDialogue.nodes[id].question)
+  .join(' / ');
+const emptyPlaceholder = '今天的问答结束啦，点右上角的重置可以重来~';
+const revisitPlaceholder = '这些话题都聊过啦，点开可以再看看';
+const busyPlaceholder = 'RinLit 正在回复…';
+const backIcon = getIcon('chevron-left', 18);
+
+// 开场白来自 dialogue.json 的 intro，改文案在 studio 里改就行。
+type IntroItem = { kind: 'text' | 'image' | 'link'; text: string; src?: string; alt?: string; href?: string };
+const introTime = homeDialogue.intro?.time ?? '现在';
+const introItems: IntroItem[] = (homeDialogue.intro?.messages ?? [])
+  .map((message): IntroItem | null => {
+    if (typeof message === 'string') return message.trim() ? { kind: 'text', text: message } : null;
+    if (message.type === 'image') return message.src ? { kind: 'image', text: message.alt || '', src: message.src, alt: message.alt || '' } : null;
+    if (message.type === 'link') return message.href ? { kind: 'link', text: message.label || message.href, href: message.href } : null;
+    return message.content?.trim() ? { kind: 'text', text: message.content } : null;
+  })
+  .filter((item): item is IntroItem => Boolean(item));
+if (!introItems.length) introItems.push({ kind: 'text', text: '你好哇\\(@^0^@)/' });
+const lastBubble = [...introItems].reverse().find((item) => item.kind === 'text');
 ---
 
-<section class="hero-chat" aria-label="Chat with RinLit" data-dialogue-tree={JSON.stringify(homeDialogue)} data-dialogue-placeholder={placeholder}>
-  <header class="hero-chat__title">Chat with RinLit</header>
+<section
+  class="hero-chat"
+  aria-label="Chat with RinLit"
+  data-dialogue-tree={JSON.stringify(homeDialogue)}
+  data-dialogue-placeholder={placeholder}
+  data-dialogue-empty-placeholder={emptyPlaceholder}
+  data-dialogue-revisit-placeholder={revisitPlaceholder}
+  data-dialogue-busy-placeholder={busyPlaceholder}
+>
+  <header class="hero-chat__title">
+    Chat with RinLit
+    <Button id="hero-chat-reset" class="hero-chat__reset" flat icon="refresh" aria-label="重新开始对话" data-dialogue-reset />
+  </header>
   <div class="hero-chat__messages" aria-live="polite" data-dialogue-messages>
-    <p class="hero-chat__time">现在</p>
-    <div class="hero-chat__message hero-chat__message--rin">你好哇\(@^0^@)/</div>
-    <div class="hero-chat__message hero-chat__message--rin hero-chat__message--tail">
-      欢迎来到我的网站！有什么想问我的吗 (^///^)
-    </div>
+    <p class="hero-chat__time">{introTime}</p>
+    {introItems.map((item) => (
+      item.kind === 'image' ? (
+        <img class="hero-chat__image" src={item.src} alt={item.alt} loading="lazy" />
+      ) : item.kind === 'link' ? (
+        <Button class="hero-chat__link" href={item.href} flat>{item.text}</Button>
+      ) : (
+        <div class:list={['hero-chat__message', 'hero-chat__message--rin', { 'hero-chat__message--tail': item === lastBubble }]}>{item.text}</div>
+      )
+    ))}
   </div>
   <div class="hero-chat__menu-anchor">
     <div class="hero-chat__composer">
@@ -27,8 +63,11 @@ const typingIcon = getIcon('dots', 20, 'filled');
       <Button id="hero-chat-send" class="hero-chat__send" primary flat icon="arrow-up" aria-label="打开预设问题" data-dialogue-open />
     </div>
     <Menu id="hero-chat-menu" class="hero-chat__menu" ariaLabel="预设问题" zIndex="110" align="center">
-      {initialOptions.map((node) => (
-        <MenuItem value={node.id} data-dialogue-choice={node.id}>{node.question}</MenuItem>
+      {initialChoices.map((id) => (
+        <MenuItem
+          value={id}
+          data-dialogue-choice={id}
+        >{homeDialogue.nodes[id].question}</MenuItem>
       ))}
     </Menu>
   </div>
@@ -40,8 +79,17 @@ const typingIcon = getIcon('dots', 20, 'filled');
   </template>
   <template data-dialogue-typing-template>
     <div class="hero-chat__message hero-chat__message--rin hero-chat__message--tail is-typing">
-      <span class="hero-chat__typing" set:html={typingIcon} aria-hidden="true"></span>
+      <span class="hero-chat__typing" aria-hidden="true"><i></i><i></i><i></i></span>
     </div>
+  </template>
+  <!-- Same trick for the choice list: the runtime rewrites these labels, so the
+       menu keeps using real MenuItem markup instead of hand-rolled DOM. -->
+  <template data-dialogue-choice-template>
+    <MenuItem value="__DIALOGUE_ID__" data-dialogue-choice="__DIALOGUE_ID__">__DIALOGUE_LABEL__</MenuItem>
+  </template>
+  <!-- 「返回上一层」在标签前插一个真正的图标，而不是把 ↩ 写进文字里。 -->
+  <template data-dialogue-back-icon-template>
+    <span class="menu-item__icon" aria-hidden="true" set:html={backIcon}></span>
   </template>
 </section>
 
@@ -58,10 +106,20 @@ const typingIcon = getIcon('dots', 20, 'filled');
     color: var(--chat-text, #000);
   }
   .hero-chat__title {
+    position: relative;
     display: grid; place-items: center; height: 42px; flex: 0 0 auto;
     border-radius: 18px; background: var(--chat-header, #f1f0f5);
     color: var(--chat-text, #000); font: 700 17px/1 'Sarasa SC', Geist, sans-serif;
   }
+  /* 重开按钮挂在标题栏右上角：absolute 让它不参与标题的居中排版。
+     这里必须用 id —— Pill 自带的 scoped 规则 `.pill[data-astro-cid-*]` 优先级更高，
+     单靠 class 会被它按回 relative。 */
+  #hero-chat-reset { position: absolute; top: 50%; right: 5px; translate: 0 -50%; }
+  .hero-chat__reset .btn,
+  .hero-chat__reset .btn.btn--icon-only { width: 32px !important; min-width: 32px; max-width: 32px; height: 32px; padding: 0; }
+  .hero-chat__reset .btn__icon svg { width: 18px; height: 18px; }
+  .hero-chat__reset .btn { color: var(--chat-text, #000); opacity: .55; }
+  .hero-chat__reset:hover .btn { opacity: 1; }
   .hero-chat__messages {
     display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 10px;
     /* A fixed 640px cap keeps the conversation column stable instead of
@@ -70,28 +128,28 @@ const typingIcon = getIcon('dots', 20, 'filled');
     padding: 13px 16px; overflow-y: auto; scrollbar-width: none;
   }
   .hero-chat__messages::-webkit-scrollbar { display: none; }
-  .hero-chat__time { margin: 0 0 2px; color: var(--color-secondary-500); text-align: center; font: 600 14px/1 'Plus Jakarta Sans', sans-serif; }
+  .hero-chat__time { flex: none; margin: 0 0 2px; color: var(--color-secondary-500); text-align: center; font: 600 14px/1 'Plus Jakarta Sans', sans-serif; }
   .hero-chat__message {
-    align-self: flex-start; max-width: min(100%, 500px); padding: 8px 16px;
+    align-self: flex-start; flex: none; max-width: min(100%, 500px); padding: 8px 16px;
     border-radius: 18px; font: 600 16px/1.36 'Plus Jakarta Sans', 'Sarasa SC', sans-serif;
     overflow-wrap: anywhere;
   }
   .hero-chat__message--rin { background: var(--chat-rin-message, #f5f4f8); color: var(--chat-text, #000); }
-  .hero-chat__message.is-typing { min-width: 42px; min-height: 18px; }
-  .hero-chat__typing { display: inline-flex; align-items: center; height: 18px; color: var(--chat-text, #000); }
-  .hero-chat__typing svg { width: 20px; height: 20px; display: block; }
-  /* The first path is Tabler's transparent bounding box; only dots animate. */
-  .hero-chat__typing path:nth-child(n+2) { animation: typing-dot 1.05s ease-in-out infinite; }
-  .hero-chat__typing path:nth-child(3) { animation-delay: .16s; }
-  .hero-chat__typing path:nth-child(4) { animation-delay: .32s; }
-  @keyframes typing-dot { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
+  /* 提示气泡沿用 .hero-chat__message 的 padding(8px 16px) 与字号，只是把内容换成点阵。
+     这里不要写死宽高：消息列表变长后 flex 会把可收缩的项压扁，气泡就会变成一条细边。 */
+  .hero-chat__message.is-typing { display: flex; align-items: center; justify-content: center; }
+  .hero-chat__typing { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 1.36em; color: var(--chat-text, #000); }
+  .hero-chat__typing i { display: block; width: .5em; height: .5em; border-radius: 50%; background: currentColor; animation: typing-dot 1.05s ease-in-out infinite; }
+  .hero-chat__typing i:nth-child(2) { animation-delay: .16s; }
+  .hero-chat__typing i:nth-child(3) { animation-delay: .32s; }
+  @keyframes typing-dot { 0%, 60%, 100% { opacity: .35; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-2px); } }
   .hero-chat__message--tail { border-bottom-left-radius: 8px; }
   .hero-chat__message--user { align-self: flex-end; border-bottom-right-radius: 8px; background: var(--chat-user-message, #695cb0); color: #fff; }
-  .hero-chat__image { align-self: flex-start; width: min(385px, 100%); border-radius: 18px; object-fit: cover; }
+  .hero-chat__image { align-self: flex-start; flex: none; width: min(385px, 100%); border-radius: 18px; object-fit: cover; }
   /* Reveal uses the standalone `translate` property so it composes with the
      Pill press transform instead of overriding it. */
   .hero-chat__enter { animation: chat-reveal 320ms cubic-bezier(.2,.8,.2,1) both; }
-  .hero-chat__leave { animation: chat-hide 240ms ease both; }
+  .hero-chat__leave { animation: chat-hide 180ms ease both; }
   @keyframes chat-reveal {
     from { opacity: 0; translate: 0 10px; }
     to { opacity: 1; translate: 0 0; }
@@ -104,24 +162,44 @@ const typingIcon = getIcon('dots', 20, 'filled');
   @keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
   /* Streamed link replies are real Button components; only alignment and the
      chat bubble radius need to be adjusted here. */
-  .hero-chat__link { align-self: flex-start; max-width: 100%; border-radius: var(--pill-radius, 24px); }
+  .hero-chat__link { align-self: flex-start; flex: none; max-width: 100%; border-radius: var(--pill-radius, 24px); }
   .hero-chat__link .btn { width: auto; max-width: 100%; height: auto; min-height: 44px; padding: 10px 20px; color: var(--chat-text, #000); white-space: normal; text-align: left; }
   .hero-chat__link .btn__text { display: block; white-space: normal; text-overflow: clip; font: 700 16px/1.3 'Sarasa SC', Geist, sans-serif; }
   .hero-chat__menu-anchor { position: relative; width: min(480px, 100%); margin: 12px auto 0; }
-  .hero-chat__composer { display: flex; gap: 10px; align-items: center; width: 100%; }
+  .hero-chat__composer { display: flex; gap: 10px; align-items: center; width: 100%; transition: opacity .2s ease; }
   .hero-chat__prompt, .hero-chat__send { flex-shrink: 0; }
   .hero-chat__prompt { flex: 1; min-width: 0; }
   .hero-chat__prompt .pill { width: 100%; }
-  .hero-chat__prompt .btn { justify-content: flex-start; height: 48px; padding: 0 22px; overflow: hidden; color: var(--text-muted); text-align: left; text-overflow: ellipsis; white-space: nowrap; opacity: .62; }
+  .hero-chat__prompt .btn { justify-content: flex-start; height: 40px; padding: 0 20px; overflow: hidden; color: var(--text-muted); text-align: left; text-overflow: ellipsis; white-space: nowrap; opacity: .62; }
   /* Left-align the label inside the pill; the Button default centers a grid cell. */
   .hero-chat__prompt .btn__text { display: block; flex: 1 1 auto; place-items: initial; text-align: left; }
-  .hero-chat__prompt.has-selection .btn { color: var(--chat-text, #000); opacity: 1; }
-  .hero-chat__send { width: 48px; min-width: 48px; }
+  .hero-chat__send { width: 40px; min-width: 40px; }
   .hero-chat__send .btn,
-  .hero-chat__send .btn.btn--icon-only { width: 48px !important; min-width: 48px; max-width: 48px; height: 48px; padding: 0; }
+  .hero-chat__send .btn.btn--icon-only { width: 40px !important; min-width: 40px; max-width: 40px; height: 40px; padding: 0; }
   .hero-chat__send .btn__icon svg { width: 20px; height: 20px; stroke-width: 2.5; }
   #hero-chat-menu { min-width: min(410px, calc(100vw - 48px)); }
+  #hero-chat-menu .hero-chat__back-option { margin-top: 2px; padding-top: 2px; border-top: 1px solid var(--border-color, rgba(127,127,127,.35)); }
+  /* 返回项图标由脚本插入，不在 MenuItem 的 scoped 样式范围内，这里补一份。 */
+  #hero-chat-menu .hero-chat__back-option .menu-item__icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; width: 18px; height: 18px; opacity: .75;
+  }
+  #hero-chat-menu .hero-chat__back-option .menu-item__icon svg { display: block; width: 18px; height: 18px; }
+  /* 聊过的话题只作为回看入口：只压暗文字，勾号保持清晰。 */
+  #hero-chat-menu .hero-chat__asked-option .menu-item__label { opacity: .6; }
+  /* 勾号用 MenuItem 自带的 SVG，并挪到文字前面，而不是往标签里塞 '✓' 字符。 */
+  #hero-chat-menu .hero-chat__asked-option .menu-item__check { order: -1; margin-left: 0; opacity: 1; }
+  .hero-chat__message--flash { animation: chat-flash 900ms ease; }
+  @keyframes chat-flash {
+    0% { box-shadow: 0 0 0 0 var(--chat-user-message, #695cb0); }
+    35% { box-shadow: 0 0 0 4px var(--chat-user-message, #695cb0); }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
   .hero-chat__prompt:hover, .hero-chat__send:hover { transform: translateY(-1px); }
+  /* 正在回复：把手柄压住，避免在流式回复里插队提问 */
+  .hero-chat--busy .hero-chat__composer { opacity: .62; pointer-events: none; }
+  /* 问题问完了：没有可选项，标记为不可再问 */
+  .hero-chat--exhausted .hero-chat__composer { opacity: .55; pointer-events: none; }
   :root.dark .hero-chat { --chat-surface: #161616; --chat-header: #24232d; --chat-text: #fff; --chat-rin-message: #423c65; --chat-user-message: #8c7ecd; --chat-link: rgba(194,191,208,.3); }
   @media (max-width: 700px) {
     .hero-chat { height: 389px; padding: 24px; }
@@ -133,35 +211,318 @@ const typingIcon = getIcon('dots', 20, 'filled');
 </style>
 
 <script>
-  type DialogueMessage = { type: 'text' | 'image' | 'link'; content?: string; src?: string; alt?: string; href?: string; label?: string };
-  type DialogueNode = { id: string; question: string; responses: DialogueMessage[][]; next?: string[]; requires?: { flag?: string; equals?: string | boolean }[]; effects?: { flag: string; value: string | boolean }[] };
-  type DialogueTree = { initial: string[]; nodes: Record<string, DialogueNode> };
+  import type { DialogueMessage as DialogueMessageData, DialogueTree } from '../../data/home/dialogue';
 
+  type DialogueMessage = DialogueMessageData;
+  type DialogueNode = DialogueTree['nodes'][string];
+  type DialogueOption = { id: string; label: string; node?: DialogueNode; asked?: boolean };
+  type DialogueFrame = { parentId: string | null; ids: string[] };
+  type CrossRunState = {
+    version: number;
+    starts: number;
+    flags: Record<string, string | boolean>;
+  };
+
+  // 这三个占位串对应 <template> 里写死的标记；运行时直接改写被克隆出来的节点。
   const DIALOGUE_HREF_TOKEN = '__DIALOGUE_HREF__';
   const DIALOGUE_LABEL_TOKEN = '__DIALOGUE_LABEL__';
+  const BACK_ID = '__dialogue_back__';
+  const BACK_LABEL = '返回上一层';
+  /** 答完一题后自动弹回选项列表。 */
+  const REOPEN_CHOICES = true;
+  const REOPEN_DELAY = 420;
+  /** 聊天记录落在 localStorage 里，刷新/下次访问还能接着聊。 */
+  const STORAGE_KEY = 'rinlit:hero-chat';
+  // 4：选项改为「点一下直接提问」，同时记录每条用户消息对应的节点 id 供回看定位。
+  const STORAGE_VERSION = 4;
+  /** 只留最近这些条消息，免得记录无限膨胀。 */
+  const STORAGE_ENTRY_LIMIT = 240;
+  /** 跨重置的进度单独存，和当前这次对话互不影响。 */
+  const PROGRESS_KEY = 'rinlit:hero-chat-progress';
+  const PROGRESS_VERSION = 1;
+
+  /** nodeId 记下这条用户消息问的是哪个节点，回看时用它定位历史消息。 */
+  type StoredEntry = { kind: 'user' | 'message'; text?: string; item?: DialogueMessage; nodeId?: string };
+  type StoredSession = {
+    version: number;
+    entries: StoredEntry[];
+    answered: string[];
+    sends: Record<string, number>;
+    flags: Record<string, string | boolean>;
+    path: DialogueFrame[];
+  };
 
   function bindHeroChat() {
     const root = document.querySelector<HTMLElement>('.hero-chat');
     if (!root || root.dataset.dialogueBound) return;
     root.dataset.dialogueBound = 'true';
     const tree = JSON.parse(root.dataset.dialogueTree || '{}') as DialogueTree;
-    const placeholderText = root.dataset.dialoguePlaceholder || '你好？ / 介绍一下你自己！ / 你做了些啥项目？';
+    const idlePlaceholder = root.dataset.dialoguePlaceholder || '你好？';
+    const emptyPlaceholder = root.dataset.dialogueEmptyPlaceholder || idlePlaceholder;
+    const revisitPlaceholder = root.dataset.dialogueRevisitPlaceholder || idlePlaceholder;
+    const busyPlaceholder = root.dataset.dialogueBusyPlaceholder || idlePlaceholder;
     const messages = root.querySelector<HTMLElement>('[data-dialogue-messages]');
     const menu = document.getElementById('hero-chat-menu');
+    const list = menu?.querySelector<HTMLElement>('.menu__list') || null;
     const trigger = root.querySelector<HTMLElement>('#hero-chat-trigger');
     const opener = root.querySelector<HTMLElement>('[data-dialogue-open]');
+    const prompt = root.querySelector<HTMLElement>('#hero-chat-trigger .btn__text');
     const linkTemplate = root.querySelector<HTMLTemplateElement>('[data-dialogue-link-template]');
     const typingTemplate = root.querySelector<HTMLTemplateElement>('[data-dialogue-typing-template]');
+    const choiceTemplate = root.querySelector<HTMLTemplateElement>('[data-dialogue-choice-template]');
+    const backIconTemplate = root.querySelector<HTMLTemplateElement>('[data-dialogue-back-icon-template]');
     const state: Record<string, string | boolean> = {};
-    let available = tree.initial || [];
-    let selectedId = '';
+    const progress: CrossRunState = { version: PROGRESS_VERSION, starts: 0, flags: {} };
+    /** 已经问过的问题：问过就从选项里消失（repeatable 的除外）。 */
+    const answered = new Set<string>();
+    const sendCounts: Record<string, number> = {};
+    /** 根节点始终留在第一层；extras 是带条件的主层入口。 */
+    let rootIds = [...(tree.initial || [])];
+    /** 每一层保存父节点和该层可选项；最后一层就是当前菜单。 */
+    let path: DialogueFrame[] = [{ parentId: null, ids: rootIds }];
+    let busy = false;
+    let reopenTimer = 0;
+    let history: StoredEntry[] = [];
+    /** 每次回答/重开都会换一个令牌，用来让作废的异步回答提前收手。 */
+    let runToken = 0;
+    // 开场的三块（时间戳 + 两句开场白）在 SSR 里，没有 data-dialogue-dynamic 标记；
+    // 重开时按这份快照还原，不依赖 bind 时刻的 innerHTML 状态。
+    const introNodes = messages
+      ? [...messages.children].filter((node) => !(node as HTMLElement).dataset.dialogueDynamic)
+      : [];
+
+    const wait = (duration: number) => new Promise<void>((resolve) => window.setTimeout(resolve, duration));
+    const el = (className: string, text?: string) => { const element = document.createElement('div'); element.className = className; if (text) element.textContent = text; return element; };
+    const cloneTemplate = (template: HTMLTemplateElement | null) => {
+      if (!template) return null;
+      const node = template.content.firstElementChild;
+      return node ? (node.cloneNode(true) as HTMLElement) : null;
+    };
+    const add = (element: HTMLElement) => {
+      // Reveal through a transition instead of popping the node into place.
+      element.dataset.dialogueDynamic = 'true';
+      messages?.appendChild(element);
+      element.classList.add('hero-chat__enter');
+      element.addEventListener('animationend', () => element.classList.remove('hero-chat__enter'), { once: true });
+      messages?.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    };
+    /** 把某条消息滚到视野中间并闪一下，用于回看已经聊过的话题。 */
+    const focusMessage = (element: HTMLElement) => {
+      if (!messages) return;
+      // offsetTop 是相对 .hero-chat 的，这里换算成相对滚动容器的距离。
+      const offset = element.getBoundingClientRect().top - messages.getBoundingClientRect().top;
+      const centered = messages.scrollTop + offset - (messages.clientHeight - element.offsetHeight) / 2;
+      messages.scrollTo({ top: Math.max(0, centered), behavior: 'smooth' });
+      element.classList.remove('hero-chat__message--flash');
+      // 重新触发动画：先移除类并强制回流，再加回去。
+      void element.offsetWidth;
+      element.classList.add('hero-chat__message--flash');
+      window.setTimeout(() => element.classList.remove('hero-chat__message--flash'), 1000);
+    };
+    /** 历史回放：同样的 DOM，但不重播动画。 */
+    const place = (element: HTMLElement, nodeId?: string) => {
+      if (nodeId) element.dataset.dialogueNode = nodeId;
+      element.dataset.dialogueDynamic = 'true';
+      messages?.appendChild(element);
+    };
+    /** 把一条对话内容变成 DOM：流式回答和历史回放共用同一套构造。 */
+    const buildMessageItem = (item: DialogueMessage): HTMLElement | null => {
+      if (typeof item === 'string') {
+        return el('hero-chat__message hero-chat__message--rin hero-chat__message--tail', item);
+      }
+      if (item.type === 'text') {
+        return el('hero-chat__message hero-chat__message--rin hero-chat__message--tail', item.content || '');
+      }
+      if (item.type === 'image' && item.src) {
+        const image = document.createElement('img');
+        image.className = 'hero-chat__image';
+        image.src = item.src;
+        image.alt = item.alt || '';
+        image.loading = 'lazy';
+        return image;
+      }
+      if (item.type === 'link' && item.href) {
+        const label = item.label || item.href;
+        const link = cloneTemplate(linkTemplate);
+        if (link) {
+          const anchor = link.matches('a') ? link : link.querySelector<HTMLAnchorElement>('a');
+          const text = link.querySelector<HTMLElement>('.btn__text');
+          if (anchor) {
+            anchor.setAttribute('href', item.href);
+            if (/^https?:/i.test(item.href)) {
+              anchor.setAttribute('target', '_blank');
+              anchor.setAttribute('rel', 'noreferrer');
+            }
+          }
+          if (text) text.textContent = label;
+          return link;
+        }
+        const fallback = document.createElement('a');
+        fallback.className = 'hero-chat__link';
+        fallback.href = item.href;
+        fallback.textContent = label;
+        if (/^https?:/i.test(item.href)) { fallback.target = '_blank'; fallback.rel = 'noreferrer'; }
+        return fallback;
+      }
+      return null;
+    };
+
+    // ---- 聊天记录持久化 --------------------------------------------------
+
+    const readStored = (): StoredSession | null => {
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as StoredSession;
+        return parsed?.version === STORAGE_VERSION ? parsed : null;
+      } catch {
+        return null;
+      }
+    };
+    const readProgress = (): CrossRunState | null => {
+      try {
+        const raw = window.localStorage.getItem(PROGRESS_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as CrossRunState;
+        return parsed?.version === PROGRESS_VERSION ? parsed : null;
+      } catch {
+        return null;
+      }
+    };
+    const persistProgress = () => {
+      try {
+        window.localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+          version: PROGRESS_VERSION,
+          starts: progress.starts,
+          flags: progress.flags,
+        } satisfies CrossRunState));
+      } catch {
+        /* ignore */
+      }
+    };
+    const persist = () => {
+      try {
+        const payload: StoredSession = {
+          version: STORAGE_VERSION,
+          entries: history.slice(-STORAGE_ENTRY_LIMIT),
+          answered: [...answered],
+          sends: sendCounts,
+          flags: state,
+          path,
+        };
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+        // 隐私模式 / 配额满：存不下也不影响这次对话
+      }
+    };
+    const clearStored = () => {
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    // ---- 选项推导 --------------------------------------------------------
+
+    /** 条件先看本次对话，再回退到跨重置进度。 */
+    const currentFlags = () => ({ ...progress.flags, ...state });
+    const meetsRequires = (node: DialogueNode) => (node.requires || []).every((rule) => {
+      if (!rule.flag) return true;
+      const value = currentFlags()[rule.flag];
+      // 没写 equals 时按「有值即通过」处理
+      return rule.equals === undefined ? Boolean(value) : value === rule.equals;
+    });
+    const extraEntries = () => (tree.extras || []).filter((id) => {
+      const node = tree.nodes[id];
+      return node && meetsRequires(node);
+    });
+    const currentFrame = () => path[path.length - 1] || { parentId: null, ids: rootIds };
+    /** 第一层额外放带条件的入口，例如重开后才出现的 returning。 */
+    const visibleIds = () => {
+      const frame = currentFrame();
+      return [...new Set([
+        ...frame.ids,
+        ...(frame.parentId === null ? extraEntries() : []),
+      ])];
+    };
+    const hasChildren = (node: DialogueNode) => (node.next || []).some((id) => {
+      const child = tree.nodes[id];
+      return child && meetsRequires(child);
+    });
+    /** 某个问题的下一层选项（去重、条件过滤）。 */
+    const childIds = (id: string) => {
+      const node = tree.nodes[id];
+      return [...new Set((node?.next || []).filter((entry) => {
+        const child = tree.nodes[entry];
+        return child && meetsRequires(child);
+      }))];
+    };
+    /** 已聊过的话题只是回看入口：点它下钻，不重复提问。 */
+    const isAsked = (id: string) => {
+      const node = tree.nodes[id];
+      return Boolean(node) && answered.has(id) && !node.repeatable;
+    };
+    /**
+     * 取当前该用的那组「第 n 次」文案：精确命中优先，
+     * 否则退到 count 不超过当前次数里最大的那一组（第 7 次之后一直沿用第 7 次）。
+     */
+    const milestoneFor = (node: DialogueNode, count: number) => {
+      const entries = node.responsesAt || [];
+      const exact = entries.find((entry) => entry.count === count);
+      if (exact) return exact;
+      return entries
+        .filter((entry) => entry.count <= count)
+        .sort((a, b) => a.count - b.count)
+        .pop();
+    };
+    /**
+     * 当前层展示哪些选项：这一层的全部子问题（聊过的也留着，作为回看入口），
+     * 条件不满足的过滤掉，最后附上返回上一层。
+     */
+    const currentOptions = (): DialogueOption[] => {
+      const seen = new Set<string>();
+      const fresh: DialogueOption[] = [];
+      const asked: DialogueOption[] = [];
+      for (const entry of visibleIds()) {
+        const node = tree.nodes[entry];
+        if (!node || seen.has(entry)) continue;
+        if (!meetsRequires(node)) continue;
+        seen.add(entry);
+        const option = { id: entry, label: node.question, node, asked: isAsked(entry) };
+        (option.asked ? asked : fresh).push(option);
+      }
+      // 没聊过的排前面，聊过的沉到底部当作回看入口。
+      const result = [...fresh, ...asked];
+      if (currentFrame().parentId !== null) result.push({ id: BACK_ID, label: BACK_LABEL });
+      return result;
+    };
+    const optionSummary = (options: DialogueOption[]) => {
+      const topics = options.filter((option) => option.id !== BACK_ID);
+      // 可重复的问题答完仍留在菜单里，但不该一直占着输入框的提示文字。
+      const fresh = topics.filter((option) => !option.asked && !(option.node?.repeatable && answered.has(option.id)));
+      if (fresh.length) return fresh.map((option) => option.label).join(' / ');
+      return topics.length ? revisitPlaceholder : emptyPlaceholder;
+    };
+    /** 整层都没有内容时才向上找一层，避免停在空菜单上。 */
+    const unwindToOptions = () => {
+      while (!currentOptions().some((option) => option.id !== BACK_ID) && path.length > 1) path.pop();
+    };
+
+    // ---- 候选问题菜单 ----------------------------------------------------
 
     const openMenu = () => {
-      if (!menu || !trigger) return;
+      if (!menu || !trigger || busy) return;
       if (menu.classList.contains('is-open')) {
         closeMenu();
         return;
       }
+      // 没有可问的问题时不去弹一个空菜单
+      const depthBefore = path.length;
+      unwindToOptions();
+      if (path.length !== depthBefore) persist();
+      if (!currentOptions().length) return;
+      renderOptions();
       window.Menu_open?.(menu, trigger);
       trigger.setAttribute('aria-expanded', 'true');
     };
@@ -169,32 +530,58 @@ const typingIcon = getIcon('dots', 20, 'filled');
       if (menu) window.Menu_close?.(menu);
       trigger?.setAttribute('aria-expanded', 'false');
     };
-    const add = (element: HTMLElement) => {
-      // Reveal through a transition instead of popping the node into place.
-      messages?.appendChild(element);
-      element.classList.add('hero-chat__enter');
-      element.addEventListener('animationend', () => element.classList.remove('hero-chat__enter'), { once: true });
-      messages?.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    const buildOption = (option: DialogueOption) => {
+      const element = cloneTemplate(choiceTemplate);
+      if (!element) return null;
+      const item = element.matches('[data-dialogue-choice]')
+        ? element
+        : element.querySelector<HTMLElement>('[data-dialogue-choice]');
+      if (!item) return null;
+      item.dataset.value = option.id;
+      item.dataset.dialogueChoice = option.id;
+      const label = item.querySelector<HTMLElement>('.menu-item__label');
+      if (label) label.textContent = option.label;
+      // 返回项用图标开头，而不是让文字自带 ↩。
+      if (option.id === BACK_ID) {
+        const icon = cloneTemplate(backIconTemplate);
+        if (icon) item.insertBefore(icon, item.firstChild);
+      }
+      return element;
     };
-    const prompt = root.querySelector<HTMLElement>('#hero-chat-trigger .btn__text');
-    const el = (className: string, text?: string) => { const element = document.createElement('div'); element.className = className; if (text) element.textContent = text; return element; };
-    const cloneTemplate = (template: HTMLTemplateElement | null) => {
-      if (!template) return null;
-      const node = template.content.firstElementChild;
-      return node ? (node.cloneNode(true) as HTMLElement) : null;
+    const renderOptions = () => {
+      const previousDepth = path.length;
+      unwindToOptions();
+      if (path.length !== previousDepth) persist();
+      const options = currentOptions();
+      if (list) {
+        list.textContent = '';
+        options.forEach((option) => {
+          const element = buildOption(option);
+          if (element) {
+            if (option.id === BACK_ID) element.classList.add('hero-chat__back-option');
+            else if (option.asked) element.classList.add('hero-chat__asked-option');
+            list.appendChild(element);
+          }
+        });
+      }
+      root.classList.toggle('hero-chat--exhausted', options.length === 0 && path.length <= 1);
+      if (!options.length) closeMenu();
+      // 列表整块重建后高度会变，已打开的菜单需要重新避让视口边缘。
+      else if (menu) window.Menu_reposition?.(menu);
+      refreshPrompt();
     };
-    const eligible = (id: string) => {
-      const node = tree.nodes[id];
-      return node && (node.requires || []).every((rule) => !rule.flag || state[rule.flag] === rule.equals);
+
+    // ---- 输入框提示 ------------------------------------------------------
+
+    /** 输入框只用来展示当前层还能问什么，选项直接点选即发送。 */
+    const setPrompt = (text: string) => { if (prompt) prompt.textContent = text; };
+    const refreshPrompt = () => {
+      if (busy) return;
+      setPrompt(optionSummary(currentOptions()));
     };
-    const refreshChoices = () => {
-      if (!menu) return;
-      menu.querySelectorAll<HTMLElement>('[data-dialogue-choice]').forEach((choice) => {
-        const id = choice.dataset.dialogueChoice || '';
-        choice.hidden = !available.includes(id) || !eligible(id);
-      });
-    };
-    const wait = (duration: number) => new Promise<void>((resolve) => window.setTimeout(resolve, duration));
+
+    // ---- 回答 ------------------------------------------------------------
+
     const streamText = async (message: HTMLElement, text: string) => {
       message.textContent = '';
       const caret = document.createElement('span');
@@ -207,125 +594,226 @@ const typingIcon = getIcon('dots', 20, 'filled');
       }
       caret.remove();
     };
+    const scheduleReopen = () => {
+      window.clearTimeout(reopenTimer);
+      if (!REOPEN_CHOICES || !currentOptions().length) return;
+      // 答完回到选项列表，但不要打断已经在看菜单的人
+      reopenTimer = window.setTimeout(() => {
+        if (busy || menu?.classList.contains('is-open')) return;
+        openMenu();
+      }, REOPEN_DELAY);
+    };
     const respond = async (id: string) => {
       const node = tree.nodes[id];
-      if (!node || !messages) return;
-      add(el('hero-chat__message hero-chat__message--user', node.question));
-      resetPrompt();
-      const variants = node.responses || [];
-      const response = variants[Math.floor(Math.random() * variants.length)] || [];
+      if (!node || !messages || busy) return;
+      const token = ++runToken;
+      const stale = () => token !== runToken;
+      busy = true;
+      root.classList.add('hero-chat--busy');
+      setPrompt(busyPlaceholder);
+      const asked = el('hero-chat__message hero-chat__message--user', node.question);
+      asked.dataset.dialogueNode = id;
+      add(asked);
+      history.push({ kind: 'user', text: node.question, nodeId: id });
+      const count = (sendCounts[id] || 0) + 1;
+      sendCounts[id] = count;
+      const milestone = milestoneFor(node, count);
+      const variants = milestone?.responses?.length ? milestone.responses : (node.responses || []);
+      const responseIndex = Math.floor(Math.random() * variants.length);
+      const response = variants[responseIndex] || [];
       await wait(700);
+      if (stale()) return;
       for (const item of response) {
-        const typing = cloneTemplate(typingTemplate);
-        if (typing) {
-          add(typing);
-          await wait(720);
-          typing.classList.remove('hero-chat__enter');
-          typing.classList.add('hero-chat__leave');
-          window.setTimeout(() => typing.remove(), 260);
-        }
-        if (item.type === 'text') {
-          const message = el('hero-chat__message hero-chat__message--rin hero-chat__message--tail');
-          add(message);
-          await streamText(message, item.content || '');
-        }
-        if (item.type === 'image' && item.src) {
-          const image = document.createElement('img');
-          image.className = 'hero-chat__image';
-          image.src = item.src;
-          image.alt = item.alt || '';
-          image.loading = 'lazy';
-          add(image);
-          await wait(420);
-        }
-        if (item.type === 'link' && item.href) {
-          const label = item.label || item.href;
-          const link = cloneTemplate(linkTemplate);
-          if (link) {
-            const anchor = link.matches('a') ? link : link.querySelector<HTMLAnchorElement>('a');
-            const text = link.querySelector<HTMLElement>('.btn__text');
-            if (anchor) {
-              anchor.setAttribute('href', item.href);
-              if (/^https?:/i.test(item.href)) {
-                anchor.setAttribute('target', '_blank');
-                anchor.setAttribute('rel', 'noreferrer');
-              }
-            }
-            if (text) text.textContent = label;
-            add(link);
-          } else {
-            const fallback = document.createElement('a');
-            fallback.className = 'hero-chat__link';
-            fallback.href = item.href;
-            fallback.textContent = label;
-            if (/^https?:/i.test(item.href)) { fallback.target = '_blank'; fallback.rel = 'noreferrer'; }
-            add(fallback);
+        const element = buildMessageItem(item);
+        if (!element) continue;
+        const isText = typeof item === 'string' || item.type === 'text';
+        // 链接按钮本身就是「可点」的信号，不用再先闪一个「正在输入」气泡。
+        const wantsTyping = isText || (item as { type?: string }).type !== 'link';
+        if (wantsTyping) {
+          const typing = cloneTemplate(typingTemplate);
+          if (typing) {
+            add(typing);
+            await wait(720);
+            if (stale()) return;
+            // 先让提示气泡淡出再收起，最后才插入正式内容：三个动作按顺序来，
+            // 不会出现气泡和新消息同时位移的抖动。
+            typing.classList.add('hero-chat__leave');
+            await wait(180);
+            if (stale()) return;
+            typing.remove();
           }
-          await wait(420);
         }
+        add(element);
+        history.push({ kind: 'message', item });
+        if (isText) {
+          await streamText(element, typeof item === 'string' ? item : (item.content || ''));
+        }
+        else await wait(420);
+        if (stale()) return;
       }
-      (node.effects || []).forEach((effect) => { state[effect.flag] = effect.value; });
-      available = [...new Set([...(node.next || []), ...available])];
-      selectedId = '';
-      refreshChoices();
+
+      if (stale()) return;
+      // 节点自身的 effects 每次都写；按次数文案自带的 effects 只在它生效的那一轮写，
+      // 用来做「点够几次才解锁」的彩蛋。
+      [...(node.effects || []), ...(milestone?.effects || [])].forEach((effect) => {
+        state[effect.flag] = effect.value;
+        if (effect.persist) {
+          progress.flags[effect.flag] = effect.value;
+          persistProgress();
+        }
+      });
+      // 有子问题就进入下一层；叶子先留在当前层，可继续问兄弟问题。
+      if (hasChildren(node)) {
+        // 不在这里按 requires 过滤：条件可能由这一轮刚写入的 flag 解锁，
+        // 交给 currentOptions() 每次渲染时再判断。可重复的节点把自己也留在这一层，
+        // 这样它答完后仍能继续被点。
+        const children = (node.next || []).filter((entry) => Boolean(tree.nodes[entry]));
+        // 可重复的问题留在原来的位置（开头），不要像「聊过的话题」那样沉到底部。
+        const nextIds = [...new Set([...(node.repeatable ? [id] : []), ...children])];
+        const current = currentFrame();
+        const sameFrame = current.parentId === id
+          && current.ids.length === nextIds.length
+          && current.ids.every((entry, index) => entry === nextIds[index]);
+        if (!sameFrame) path.push({ parentId: id, ids: nextIds });
+      }
+      answered.add(id);
+      busy = false;
+      root.classList.remove('hero-chat--busy');
+      persist();
+      renderOptions();
       closeMenu();
+      scheduleReopen();
+    };
+    /** 已经聊过的话题：滚到当时那条消息并闪一下，不重复提问。 */
+    const revealAsked = (id: string) => {
+      if (!messages) return;
+      const target = [...messages.querySelectorAll<HTMLElement>('[data-dialogue-node]')]
+        .find((element) => element.dataset.dialogueNode === id);
+      if (target) focusMessage(target);
     };
 
-    // Typewriter for the prompt label: the selected question types itself in
-    // instead of popping in, and any in-flight run is cancelled on re-select.
-    let promptTyping = 0;
-    const typePrompt = async (text: string, force = false) => {
-      if (!prompt) return;
-      const runId = ++promptTyping;
-      if (force && !trigger?.classList.contains('has-selection')) {
-        prompt.textContent = text;
-        return;
-      }
-      prompt.textContent = '';
-      for (const character of text) {
-        if (runId !== promptTyping) return;
-        prompt.insertAdjacentText('beforeend', character);
-        await wait(36);
-      }
-    };
-    const resetPrompt = () => {
-      promptTyping++;
-      trigger?.classList.remove('has-selection');
-      if (prompt) prompt.textContent = placeholderText;
-    };
+    // ---- 事件 ------------------------------------------------------------
 
-    trigger?.addEventListener('click', openMenu);
-    menu?.addEventListener('click', (event) => {
-      const choice = (event.target as HTMLElement).closest<HTMLElement>('[data-dialogue-choice]');
-      if (!choice?.dataset.dialogueChoice) return;
-      selectedId = choice.dataset.dialogueChoice;
-      const selectedNode = tree.nodes[selectedId];
-      if (selectedNode) {
-        trigger?.classList.add('has-selection');
-        typePrompt(selectedNode.question);
-      }
+    /** 回放上次的聊天记录：消息直接落位，不再重播打字动画。 */
+    const restore = (saved: StoredSession) => {
+      Object.assign(state, saved.flags || {});
+      (saved.answered || []).forEach((entry) => {
+        answered.add(entry);
+        // 兼容旧存档：按已答节点重新应用效果，补上后来新增的解锁标记。
+        (tree.nodes[entry]?.effects || []).forEach((effect) => {
+          state[effect.flag] = effect.value;
+        });
+      });
+      Object.assign(sendCounts, saved.sends || {});
+      if (Array.isArray(saved.path) && saved.path.length) path = saved.path;
+      history = Array.isArray(saved.entries) ? saved.entries.slice(-STORAGE_ENTRY_LIMIT) : [];
+      history.forEach((entry) => {
+        const element = entry.kind === 'user'
+          ? el('hero-chat__message hero-chat__message--user', entry.text || '')
+          : entry.item ? buildMessageItem(entry.item) : null;
+        if (element) place(element, entry.kind === 'user' ? entry.nodeId : undefined);
+      });
+      messages?.scrollTo({ top: messages.scrollHeight });
+    };
+    /** 重开：清掉本次对话，但保留跨重置进度和访问次数。 */
+    const restart = () => {
+      runToken++;
+      busy = false;
+      window.clearTimeout(reopenTimer);
       closeMenu();
+      clearStored();
+      history = [];
+      Object.keys(state).forEach((flag) => delete state[flag]);
+      Object.keys(sendCounts).forEach((id) => delete sendCounts[id]);
+      answered.clear();
+      rootIds = [...(tree.initial || [])];
+      path = [{ parentId: null, ids: rootIds }];
+      messages?.replaceChildren(...introNodes.map((node) => node.cloneNode(true)));
+      const startCount = readProgress()?.starts ?? progress.starts;
+      progress.starts = startCount + 1;
+      progress.flags.hasRestarted = true;
+      progress.flags.frequentVisitor = progress.starts >= 3;
+      persistProgress();
+      root.classList.remove('hero-chat--busy');
+      renderOptions();
+    };
+    root.querySelector('[data-dialogue-reset]')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      restart();
     });
-    opener?.addEventListener('click', (event) => {
-      if (!selectedId) {
-        event.preventDefault();
-        openMenu();
+    trigger?.addEventListener('click', () => {
+      window.clearTimeout(reopenTimer);
+      if (busy) return;
+      openMenu();
+    });
+    menu?.addEventListener('click', (event) => {
+      // 列表会在下面被整体重建，元素随即脱离 DOM；
+      // 若让事件继续冒泡，文档级的「点菜单外就关闭」会把这次点击误判成外部点击。
+      // 菜单内部的点击一律不冒泡出去。
+      event.stopPropagation();
+      const target = event.target as HTMLElement | null;
+      const item = target?.closest<HTMLElement>('[data-dialogue-choice]');
+      const id = item?.dataset.dialogueChoice || '';
+      const node = id ? tree.nodes[id] : undefined;
+      if ((!node && id !== BACK_ID) || busy) return;
+      window.clearTimeout(reopenTimer);
+      if (id === BACK_ID) {
+        if (path.length > 1) path.pop();
+        persist();
+        renderOptions();
+        // 返回上一层只换菜单内容，不收起菜单，免得还要再点一次打开。
         return;
       }
-      const id = selectedId;
-      selectedId = '';
-      resetPrompt();
+      // 聊过的话题：滚回当时那条消息，并直接下钻到它那一层。
+      if (isAsked(id)) {
+        revealAsked(id);
+        const children = childIds(id);
+        if (children.length) path.push({ parentId: id, ids: children });
+        persist();
+        renderOptions();
+        // 回看话题同样保持菜单打开，内容就地刷新成它那一层。
+        return;
+      }
+      // 没聊过的：点一下就直接问，不用再点发送。
+      closeMenu();
       respond(id);
     });
+    opener?.addEventListener('click', (event) => {
+      if (busy) {
+        event.preventDefault();
+        return;
+      }
+      window.clearTimeout(reopenTimer);
+      event.preventDefault();
+      openMenu();
+    });
     document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
       if (!menu?.classList.contains('is-open')) return;
-      if (!target.closest('#hero-chat-menu') && !target.closest('#hero-chat-trigger') && !target.closest('[data-dialogue-open]')) closeMenu();
+      // 菜单项点击后会整体重建列表，事件冒泡到这里时 target 已经脱离 DOM，
+      // 用 closest 判断会误判成「点了菜单外面」而收起菜单。
+      // 改用事件路径判断点击是否发生在菜单/触发按钮内部。
+      const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+      const inside = path.some((node) => node === menu
+        || node === trigger
+        || (node instanceof Element && node.matches('[data-dialogue-open]')));
+      if (!inside) closeMenu();
     });
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') closeMenu();
     });
-    refreshChoices();
+    const savedProgress = readProgress();
+    if (savedProgress) {
+      progress.starts = savedProgress.starts;
+      Object.assign(progress.flags, savedProgress.flags);
+    } else {
+      // 首次进入算第 1 次；之后只有点击重开才累加。
+      progress.starts = 1;
+    }
+    progress.flags.frequentVisitor = progress.starts >= 3;
+    persistProgress();
+    const saved = readStored();
+    if (saved) restore(saved);
+    renderOptions();
   }
   bindHeroChat();
   document.addEventListener('astro:page-load', bindHeroChat);

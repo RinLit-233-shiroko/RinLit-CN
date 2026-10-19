@@ -1,0 +1,866 @@
+{
+  "id": "home-introduction",
+  "intro": {
+    "time": "现在",
+    "messages": [
+      "你好哇\\(@^0^@)/",
+      "欢迎来到我的个人小站！有什么想问我的吗 (^///^)"
+    ]
+  },
+  "initial": [
+    "greeting",
+    "returning"
+  ],
+  "nodes": {
+    "greeting": {
+      "id": "greeting",
+      "question": "你好？\n",
+      "repeatable": true,
+      "responses": [
+        [
+          "你好喵ヾ(≧▽≦*)o"
+        ],
+        [
+          "你好你好！幸会幸会~"
+        ],
+        [
+          "你好哇"
+        ],
+        [
+          "喵喵喵喵!"
+        ],
+        [
+          "你好你好你好！"
+        ]
+      ],
+      "responsesAt": [
+        {
+          "count": 2,
+          "responses": [
+            [
+              "诶，你又来啦？",
+              "你好你好，还是我（"
+            ]
+          ]
+        },
+        {
+          "count": 3,
+          "responses": [
+            [
+              "喵？你好像很喜欢点这个…",
+              "第 3 次了哦"
+            ]
+          ]
+        },
+        {
+          "count": 4,
+          "responses": [
+            [
+              "唔……你是不是在找什么东西（",
+              "我什么都没藏哦，真的（心虚"
+            ]
+          ]
+        },
+        {
+          "count": 5,
+          "responses": [
+            [
+              "好吧好吧，我看出来了",
+              "你是在戳彩蛋对吧？再点两下我就告诉你（"
+            ]
+          ]
+        },
+        {
+          "count": 6,
+          "responses": [
+            [
+              "快了快了……",
+              "再点一次，就一次（"
+            ]
+          ]
+        },
+        {
+          "count": 7,
+          "responses": [
+            [
+              "……好啦好啦，被你戳出来了",
+              "其实这个「你好？」是我特意做成可以一直点的。我就是想看看，会不会真的有人一路戳到底（",
+              "既然你都戳到这里了，那就送你一个我藏起来的问题吧——",
+              "我已经把它放进菜单里了，自己找找看（"
+            ]
+          ],
+          "effects": [
+            {
+              "flag": "greetingEgg",
+              "value": true
+            }
+          ]
+        },
+        {
+          "count": 8,
+          "responses": [
+            [
+              "……你还在点啊（",
+              "好啦好啦，我知道你喜欢我了（x"
+            ]
+          ]
+        },
+        {
+          "count": 9,
+          "responses": [
+            [
+              "喵喵喵！",
+              "再点下去我就要被你点秃了（"
+            ]
+          ]
+        },
+        {
+          "count": 10,
+          "responses": [
+            [
+              "彩蛋都给你了还戳（",
+              "不过……被这样一直点着，其实还挺开心的"
+            ]
+          ]
+        }
+      ],
+      "next": [
+        "about",
+        "website",
+        "projects",
+        "interests",
+        "greeting-egg",
+        "closing"
+      ]
+    },
+    "greeting-egg": {
+      "id": "greeting-egg",
+      "question": "咦，菜单里怎么多出来一个问题？",
+      "responses": [
+        [
+          "找到啦，这是留给「一直点你好？」的人的彩蛋~",
+          "这个网站里其实还埋了别的小东西，能戳到这里说明你挺有耐心的（",
+          "那……抱一个？ (^///^)"
+        ]
+      ],
+      "requires": [
+        {
+          "flag": "greetingEgg",
+          "equals": true
+        }
+      ]
+    },
+    "about": {
+      "id": "about",
+      "question": "你就是 RinLit 吗？",
+      "responses": [
+        [
+          "对，一般叫我 RinLit 、琳丽塔什么的就好 (●'◡'●)"
+        ]
+      ],
+      "next": [
+        "name-origin",
+        "name-other"
+      ]
+    },
+    "name-origin": {
+      "id": "name-origin",
+      "question": "RinLit 这个名字是怎么来的？",
+      "responses": [
+        [
+          "这个名字是慢慢演化来的：最早是小学时拼出来的 LinTu（我也不知道为什么会这么写（）），后来缩成 Lit，初二左右变成了现在的 RinLit。"
+        ]
+      ],
+      "next": [
+        "name-lit",
+        "name-rin"
+      ]
+    },
+    "name-lit": {
+      "id": "name-lit",
+      "question": "Lit233 里的 233 有什么特别意思吗？",
+      "responses": [
+        [
+          "没什么特别含义其实，Lit 是 LinTu 的简写，233 是后来随手接上的（）"
+        ]
+      ]
+    },
+    "name-rin": {
+      "id": "name-rin",
+      "question": "后来为什么在前面加了 Rin？",
+      "responses": [
+        [
+          "Rin 是后来加上的，主要是因为这是一个非常常见的日本名字，同时也是很常见昵称后缀，所以加上了觉得可爱、好玩些；Lit 则是从之前的昵称沿用下来的"
+        ]
+      ]
+    },
+    "name-other": {
+      "id": "name-other",
+      "question": "欸，琳丽塔这个名字是……怎么来的？",
+      "responses": [
+        [
+          "我记得有个群友发现直接用 Windows 的中文输入法里打 rinlit，候选词中刚好出现了“琳丽塔”这个看起来像是“RinLit”的三字名音译，觉得挺好玩，就被收编了（",
+          {
+            "type": "image",
+            "src": "/images/chat/wr-srf-caidan.png",
+            "alt": "例如这样"
+          },
+          "就像这样"
+        ]
+      ]
+    },
+    "website": {
+      "id": "website",
+      "question": "这个网站是你自己做的吗？",
+      "responses": [
+        [
+          "是我自己设计的（以及AI大人帮我实现）。一直想有个个人网站，也想把它做成不只是发文章或动态的地方（不过目前发文板块没做完了啦"
+        ]
+      ],
+      "next": [
+        "website-why",
+        "website-design",
+        "website-chat",
+        "website-hard"
+      ]
+    },
+    "website-why": {
+      "id": "website-why",
+      "question": "当初为什么想做个人网站？",
+      "responses": [
+        [
+          "从小一直觉得有自己的域名、自己搭一个网站很有成就感。对我来说，建站本身的象征意义比具体用途更大"
+        ]
+      ],
+      "next": [
+        "website-domain",
+        "website-purpose"
+      ]
+    },
+    "website-domain": {
+      "id": "website-domain",
+      "question": "有自己的域名是不是也挺有成就感？",
+      "responses": [
+        [
+          "是的喵，拥有自己的域名、把网站一点点建设起来，这件事本身就很有成就感"
+        ]
+      ]
+    },
+    "website-purpose": {
+      "id": "website-purpose",
+      "question": "你希望这个网站主要拿来做什么？",
+      "responses": [
+        [
+          "更类似于我的数字门户吧大概，主要是门面这一块（"
+        ]
+      ]
+    },
+    "website-design": {
+      "id": "website-design",
+      "question": "首页这个“平行世界的我”的板块是怎么设计的",
+      "responses": [
+        [
+          "因为我自己是有个习惯，在各个平台使用不同的头像。刚好官网就可以给他们全展示起来（）我一开始还想着是直接放大头像呢",
+          "然后后来想想想到我这个习惯，于是就看怎么排比较合适。直接平铺圆形头像不行，用圆角卡片更不行，太常见太容易搞成AI味了。",
+          "于是突然想到以 Apple Watch 的蜂窝排列为灵感这样排。之后就有了你现在看到的页面\n我可是花了一晚自习想出来的（）"
+        ]
+      ],
+      "next": [
+        "design-inspiration",
+        "avatar-reason"
+      ]
+    },
+    "design-inspiration": {
+      "id": "design-inspiration",
+      "question": "是参考了 Apple Watch 主屏幕的蜂窝布局排列吗？",
+      "responses": [
+        [
+          "因为都是圆形、然后也希望能体现类似无界的feeling嘛"
+        ]
+      ]
+    },
+    "avatar-reason": {
+      "id": "avatar-reason",
+      "question": "为啥有的平台头像跟昵称是不一样的啊",
+      "responses": [
+        [
+          "其实算是有意这么做的，主要是好玩。不过一般一个头像和昵称会用挺长时间，不会经常换。还有一些就是我很小的时候注册的账号了，现在也不好改（"
+        ]
+      ]
+    },
+    "website-chat": {
+      "id": "website-chat",
+      "question": "首页的这个雷霆聊天框是怎么想出来的（",
+      "responses": [
+        [
+          "哼哼没错就是我想到的新idea。毕竟现在是ai时代了嘛，我觉得整个“风味ai自己”来让用户认识我也是个不错的选择。整体类似于玩gal等等这些剧情游戏的对话框吧",
+          "只是做成了类似即时通讯的ui，实际上是预设好的脚本，然后你可以选择选项来查看我写好的介绍和引导"
+        ]
+      ],
+      "next": []
+    },
+    "website-hard": {
+      "id": "website-hard",
+      "question": "做这个网站最花时间的是哪部分？",
+      "responses": [
+        [
+          "难点主要都是在设计上了，技术上嘛现在AI感觉活几乎全揽齐了。也有越来越多人来弄个人网站了，主要是我想在这之中脱颖而出，给你带来“特别”的感觉叭"
+        ]
+      ]
+    },
+    "projects": {
+      "id": "projects",
+      "question": "你都做过哪些项目？",
+      "responses": [
+        [
+          "目前主要是 Class Widgets 和 RinUI，另外还有一些小项目和没做完的项目。要不在 GitHub 上找找（？",
+          {
+            "type": "link",
+            "label": "我的 GitHub 主页",
+            "href": "https://github.com/RinLit-233-shiroko"
+          }
+        ]
+      ],
+      "next": [
+        "project-list",
+        "project-cw",
+        "project-rinui",
+        "project-feedback"
+      ]
+    },
+    "project-list": {
+      "id": "project-list",
+      "question": "话说你目前总共有多少项目",
+      "responses": [
+        [
+          "目前主要精力放在 Class Widgets 和 RinUI 上。其他还有 Rin-Weather、PPT 触屏辅助、IconLib-RinUI 等小项目。",
+          "因为项目实在是很多，个人的效率实在是提不上来啊（\n很多小玩意只能干放着"
+        ]
+      ],
+      "next": [
+        "project-less"
+      ]
+    },
+    "project-cw": {
+      "id": "project-cw",
+      "question": "什么是 Class Widgets？",
+      "responses": [
+        [
+          "Class Widgets 是一个电子化课程表展示工具，可以用小组件的形式显示课程安排。",
+          "最初是想给班里的多媒体白板用的，然后往b站发的宣传小视频不小心火了😰后来项目慢慢做大了（）"
+        ]
+      ],
+      "next": [
+        "cw-start",
+        "cw-role",
+        "cw-video",
+        "cw-users"
+      ]
+    },
+    "cw-start": {
+      "id": "cw-start",
+      "question": "最开始是为了班里的白板做的吗？",
+      "responses": [
+        [
+          "是的，最初是想给班里的白板多媒体 “DIY” 下。其实还画过一整套设计和配套壁纸呢",
+          "我找找哈（\n你看看这个：",
+          {
+            "type": "image",
+            "src": "/images/chat/24-old-design.png",
+            "alt": "24OldDesign"
+          },
+          "壁纸我专门导出了，要看看吗",
+          {
+            "type": "image",
+            "src": "/images/chat/caidan-wp-for-win10-ltsc.png",
+            "alt": "彩蛋-Win10LTSC"
+          }
+        ]
+      ]
+    },
+    "cw-role": {
+      "id": "cw-role",
+      "question": "你在主要负责啥啊",
+      "responses": [
+        [
+          "我是项目的创建者和maintainer，设计开发两手抓说是"
+        ]
+      ]
+    },
+    "cw-video": {
+      "id": "cw-video",
+      "question": "什么叫不小心火了",
+      "responses": [
+        [
+          "反响比我预想的大很多，截至目前累计了有12w的播放量了。还是很惊奇的",
+          {
+            "type": "image",
+            "src": "/images/chat/cw1_video_cover.png",
+            "alt": "全新的桌面课程表 - Class Widgets | 快闪 | 希沃"
+          },
+          {
+            "type": "link",
+            "label": "在 哔哩哔哩 打开“全新的桌面课程表 - Class Widgets | 快闪 | 希沃”",
+            "href": "https://www.bilibili.com/video/BV1xwW9eyEGu/?share_source=copy_web&vd_source=dced78abfcc56acf34264fbf75e9d400"
+          }
+        ]
+      ]
+    },
+    "cw-users": {
+      "id": "cw-users",
+      "question": "看到真的有人在用，会是什么感觉？",
+      "responses": [
+        [
+          "看到用户发实际使用的照片、说这个软件真的能帮上忙，会觉得特别幸福，也会觉得做这个很值得 (^///^)"
+        ]
+      ]
+    },
+    "project-rinui": {
+      "id": "project-rinui",
+      "question": "RinUI 是什么？",
+      "responses": [
+        [
+          "RinUI 是一个面向PySide6（至少目前是）/ QML 的 Fluent Design 风格 UI 库，也在用的说 Class Widgets 2",
+          {
+            "type": "link",
+            "label": "RinUI 在 GitHub",
+            "href": "https://github.com/RinLit-233-shiroko/Rin-UI"
+          },
+          {
+            "type": "image",
+            "src": "/images/chat/rinui-gallery-shot.png",
+            "alt": "RinUI Gallery截图"
+          }
+        ]
+      ],
+      "next": [
+        "rinui-why",
+        "rinui-design"
+      ]
+    },
+    "rinui-why": {
+      "id": "rinui-why",
+      "question": "当时为什么决定自己做一个 UI 库？",
+      "responses": [
+        [
+          "Class Widgets 2 选择 QML 和 PySide6 后，我们想找合适的 Fluent UI 库，但现有选择不太符合需求，所以我决定自己做。"
+        ]
+      ],
+      "next": [
+        "rinui-cw"
+      ]
+    },
+    "rinui-cw": {
+      "id": "rinui-cw",
+      "question": "RinUI 一开始是为了 Class Widgets 2 做的吗？",
+      "responses": [
+        [
+          "对，最初是为 Class Widgets 2 找不到合适的 QML UI 库，才开始做 RinUI。后来它逐渐发展成了一个独立项目。"
+        ]
+      ]
+    },
+    "rinui-design": {
+      "id": "rinui-design",
+      "question": "你做 RinUI 时会特别注意哪些设计细节？",
+      "responses": [
+        [
+          "主要是尽量贴近 Fluent Design 的设计标准；指南没有规定的部分，也会尽量把细节设计好。并且也参照了例如 Community Toolkit Gallery 中的设计和实现作为参考"
+        ]
+      ]
+    },
+    "start-video": {
+      "id": "start-video",
+      "question": "做 B 站视频是你开始学代码的契机吗？",
+      "responses": [
+        [
+          "算是。最初是想做视频当 UP 主，还特地学了AE呢。然后整了三绝区零的视频（）发现好像还可以，后来想试着学代码做个项目发宣传视频，结果 Class Widgets 成了我正式入门的契机"
+        ]
+      ],
+      "next": [
+        "video-zzz",
+        "video-pta"
+      ]
+    },
+    "video-zzz": {
+      "id": "video-zzz",
+      "question": "最早做的是绝区零相关的视频？",
+      "responses": [
+        [
+          "对，刚开始做过几个绝区零的二创视频。刚好24年那时候绝区零是不是刚出没多久",
+          "之前为了剪视频还专门学下了ae（ After Effects），发现绝区零似乎可以成为我的素材之后，我就夸夸发了几个上去。作为新人up来说应该还不错叭",
+          {
+            "type": "image",
+            "src": "/images/chat/24-bili-zzz.png",
+            "alt": "我的ZZZ视频数据截图"
+          }
+        ]
+      ]
+    },
+    "video-pta": {
+      "id": "video-pta",
+      "question": "PPT 触屏辅助是你的第一个代码项目吗",
+      "responses": [
+        [
+          "它是我比较早期的项目之一。当时是想做个项目拍视频，做完后又继续开发了西大不丢（Class Widgets）"
+        ]
+      ]
+    },
+    "project-feedback": {
+      "id": "project-feedback",
+      "question": "有没有哪次用户反馈让你觉得做这个很值得？",
+      "responses": [
+        [
+          "这自然是有的，看到有用户发来实际使用照片并留言感谢。能知道自己做的东西真的被使用、帮到了别人，会很有感觉❤️"
+        ]
+      ]
+    },
+    "interests": {
+      "id": "interests",
+      "question": "有什么爱好嘛（）",
+      "responses": [
+        [
+          "平时也会玩游戏、听歌、刷b站什么的吧"
+        ]
+      ],
+      "next": [
+        "interest-games",
+        "interest-music",
+        "interest-video",
+        "interest-boxes"
+      ]
+    },
+    "interest-games": {
+      "id": "interest-games",
+      "question": "最近在玩什么游戏？",
+      "responses": [
+        [
+          "例如说 Cities: Skylines II、The Bus、GTA V、欧卡 2 和 Phigros 等等",
+          "既然说到游戏，那要加个 Steam 好友嘛（x",
+          {
+            "type": "image",
+            "src": "/images/chat/steam_profile.png",
+            "alt": "Steam 资料卡"
+          },
+          {
+            "type": "link",
+            "label": "我的 Steam 页面",
+            "href": "https://steamcommunity.com/id/114514homo233/"
+          }
+        ]
+      ],
+      "next": [
+        "games-phigros",
+        "csl"
+      ]
+    },
+    "games-phigros": {
+      "id": "games-phigros",
+      "question": "居然还是音游大🐍吗（",
+      "responses": [
+        [
+          "是的，Phigros 也玩喵",
+          "不过好久没玩了都，主要是我平板廉颇老矣了。我打算等换个板子之后继续爽完",
+          "我记得最后的RKS好像是 15.8x 吧（"
+        ]
+      ]
+    },
+    "interest-music": {
+      "id": "interest-music",
+      "question": "平时喜欢听什么类型的歌？",
+      "responses": [
+        [
+          "主要听流行、二次元和原声带，日语、纯音乐、英语都有，还有一些音游曲，也很喜欢 Vocaloid"
+        ]
+      ],
+      "next": [
+        "music-vocaloid"
+      ]
+    },
+    "music-vocaloid": {
+      "id": "music-vocaloid",
+      "question": "你也很喜欢 Vocaloid？",
+      "responses": [
+        [
+          "是的喵，喜欢 Vocaloid （）"
+        ]
+      ]
+    },
+    "interest-video": {
+      "id": "interest-video",
+      "question": "最近有在看什么番或视频吗？",
+      "responses": [
+        [
+          "最近看得比较少，一般来说这个习惯弱些些。完整追过的番里，印象比较深的是《群れなせ！シートン学園》"
+        ]
+      ]
+    },
+    "interest-boxes": {
+      "id": "interest-boxes",
+      "question": "有什么癖好吗（x",
+      "responses": [
+        [
+          "收集癖算有吧（）比如说我现在就摆着很多产品、硬件的包装盒，例如说手机的、cpu、主板、显卡、macmini、鼠标、摄像头等等大大小小的盒子。毕竟设计的挺好看的不舍得扔",
+          "话说萝莉控是不是癖好（xxx"
+        ]
+      ],
+      "next": [
+        "boxes-why"
+      ]
+    },
+    "boxes-why": {
+      "id": "boxes-why",
+      "question": "话说为什么啊（",
+      "responses": [
+        [
+          "主要觉得包装设计好看，买下产品的那段经历也让盒子有点纪念意义，所以不太舍得扔"
+        ]
+      ]
+    },
+    "closing": {
+      "id": "closing",
+      "question": "先聊到这里吧",
+      "responses": [
+        [
+          "谢谢你来玩我的网站，祝你天天开心ヾ(≧▽≦*)o"
+        ]
+      ]
+    },
+    "returning": {
+      "id": "returning",
+      "question": "哇，我们又见面啦",
+      "responses": [
+        [
+          "哇，又是你欸！欢迎回来 (￣▽￣)\""
+        ]
+      ],
+      "requires": [
+        {
+          "flag": "hasRestarted",
+          "equals": true
+        }
+      ],
+      "next": [
+        "early-work",
+        "advx",
+        "branding",
+        "gallery"
+      ]
+    },
+    "advx": {
+      "id": "advx",
+      "question": "AdventureX 是什么？",
+      "responses": [
+        [
+          "AdventureX 是个黑客松哦，我还拿了奖的"
+        ]
+      ],
+      "next": [
+        "advx-count",
+        "advx-award"
+      ]
+    },
+    "advx-count": {
+      "id": "advx-count",
+      "question": "你参加过几届？",
+      "responses": [
+        [
+          "我实际上参加了两届（）今年2026跟去年2025"
+        ]
+      ]
+    },
+    "advx-award": {
+      "id": "advx-award",
+      "question": "拿的是什么奖？",
+      "responses": [
+        [
+          "今年的话我与teammates的弄的项目是：“哔哩学派”",
+          {
+            "type": "link",
+            "label": "AdventureX 项目页",
+            "href": "https://gallery.adventure-x.cn/projects/cmryjsu9k000002jsvoyijixb?returnTo=%2Fprojects&browse=3638d2db-fd6c-46c7-b372-f417939b3485"
+          },
+          {
+            "type": "link",
+            "label": "在哔哩哔哩打开“我们用3天打通了你与知识区的最后一道阻碍 : 哔哩学派 / B-Mind AI | AdventureX 26”",
+            "href": "https://www.bilibili.com/video/BV12K3J6FETQ/?share_source=copy_web&vd_source=dced78abfcc56acf34264fbf75e9d400"
+          },
+          {
+            "type": "image",
+            "src": "/images/chat/b-mind-ai-cover.png",
+            "alt": "哔哩学派Cover"
+          },
+          "[制作成员 / Credit]\nWilson Wu: Creator / UI/UX Designer @Ariscall\nRinLit: Frontend Developer / Brand Designer @RinLit_233OuO（也就是我）\nLuorix: Frontend Developer @砂纸鸽\nLaoShui: Full Stack Developer / Idea Creator@老水观察"
+        ]
+      ]
+    },
+    "branding": {
+      "id": "branding",
+      "question": "你做了自己的一套品牌设计规范？",
+      "responses": [
+        [
+          "没错实际上我个人是弄了自己的品牌设计规范的，包括Logo、字体、颜色色系之类的。这个也发布到了 Figma Community 上了",
+          {
+            "type": "image",
+            "alt": "Figma社区网页截图",
+            "src": "/images/chat/figma-profile.png"
+          },
+          {
+            "type": "link",
+            "label": "在 Figma 社区打开“RinLit Visual Identity Guidelines”",
+            "href": "https://www.figma.com/community/file/1645722005476375867"
+          }
+        ]
+      ],
+      "next": []
+    },
+    "gallery": {
+      "id": "gallery",
+      "question": "Gallery 里的图都是从哪来的？",
+      "responses": [
+        [
+          "gallery的内容实际上更多的是我们群里面发生的大小事，不是字面上的“画廊”，只是因为聊天记录这种以截图的形式保存更方便而已",
+          "有些（也不能说有些，实际上占比大些，毕竟你猜猜为啥能上传到这里）就是带点nsfw属性的（）聊的比较开说是，还有一些自制的梗图。当然这个介意的话就不要看了啦（x"
+        ]
+      ]
+    },
+    "early-work": {
+      "id": "early-work",
+      "question": "话说你小的时候是怎么了解到计算机的呢",
+      "responses": [
+        [
+          "小学三年级那时候有了电脑课嘛，第一次真切玩到这个就呗震撼到了好久。于是后面央求这父母愣是从电脑城买了一台电脑了，也陪了我好久",
+          "之后的一段时间我偶然就了解到有编程猫这一个平台，于是就开始玩上编程猫（用Kitten这种图形化编辑器来“写代码”嘛）。",
+          "不过说实在这种积木编程真就没啥难度其实，后面当然也不局限于简简单单拼个简陋的作品了",
+          "后面一段时间那时候搞了个128Bit工作室（在编程猫社区里有这么一个机制），然后搞了不少我自认为效果还不错的开源作品（",
+          {
+            "type": "image",
+            "src": "/images/chat/bcm-profile-screenshot.png",
+            "alt": "我那时做的作品~"
+          },
+          "等一下下，然后近期的话我发现这个社区好像复活了",
+          "于是我加码上去补档了之前的作品",
+          "如果你想看的话，现在其实就可以哦（）",
+          {
+            "type": "image",
+            "src": "/images/chat/pickcat-profile.png",
+            "alt": "PICKCAT Profile"
+          },
+          {
+            "type": "link",
+            "label": "在 PICKCAT 查看“RinLit(LinTu233_QwQ)”",
+            "href": "https://pickcat.dao3.fun/profile/01a149de-3377-7f3b-9c05-602d9f0a35b6"
+          }
+        ]
+      ],
+      "next": [
+        "kitten-work",
+        "studio-128bit",
+        "start-video"
+      ]
+    },
+    "kitten-work": {
+      "id": "kitten-work",
+      "question": "话说 Kitten、Scratch 这种小玩具能做啥",
+      "responses": [
+        [
+          "做过不少仿系统和界面动画效果，例如说播放器歌词显示、全面屏应用的手势开闭动画、iPad上App资源库动画、可定制化的应用桌面（类似于手机、平板的桌面嘛）等等这些（当然有的是成员弄的嘛）"
+        ]
+      ]
+    },
+    "studio-128bit": {
+      "id": "studio-128bit",
+      "question": "128Bit 工作室现在还在吗（",
+      "responses": [
+        [
+          "固然算是在的吧（）而且编程猫这草台班子，社区突然自己就爆掉了。不过q群倒是还在。",
+          "而且而且呢，那个时候是用的 Framer 搭的网站哦。所以现在你甚至还能访问到这个官网，只不过内容不会更新了（大概吧）",
+          {
+            "type": "image",
+            "src": "/images/chat/128bit-official-website.png",
+            "alt": "当时的官网主页"
+          },
+          {
+            "type": "image",
+            "src": "/images/chat/128bit-projects.png",
+            "alt": "官网的项目页面"
+          },
+          {
+            "type": "link",
+            "label": "前往“128 Bit - 官方网站”",
+            "href": "https://128bitstudio.framer.website/"
+          }
+        ]
+      ],
+      "next": [
+        "studio-name"
+      ]
+    },
+    "studio-name": {
+      "id": "studio-name",
+      "question": "128Bit 这个名字怎么来的？",
+      "responses": [
+        [
+          "其实是有参考来源的\n当时是有个叫“7Bit”的工作室的，以此作为的取名灵感（\n上到128位元"
+        ]
+      ]
+    },
+    "csl": {
+      "id": "csl",
+      "question": "话说天际线2好玩嘛",
+      "responses": [
+        [
+          "对于造景来说是非常不错的选择（）上mod和资产之后非常有趣，能一下玩上几个小时~",
+          "要不看些照片（？\n稍等我发过来",
+          {
+            "type": "image",
+            "src": "/images/chat/csl2-qhn.png"
+          },
+          {
+            "type": "image",
+            "src": "/images/chat/csl-airport-gate.png"
+          },
+          {
+            "type": "image",
+            "src": "/images/chat/csl-qcu-et.png"
+          },
+          {
+            "type": "image",
+            "src": "/images/chat/csl-qnplaza-bus-stop.png"
+          },
+          {
+            "type": "image",
+            "src": "/images/chat/csl-t-intersection.png"
+          },
+          "嘶，我刚刚找到个比较奇怪的截图，要看吗（"
+        ]
+      ],
+      "next": [
+        "csl-lieqi"
+      ]
+    },
+    "csl-lieqi": {
+      "id": "csl-lieqi",
+      "question": "要！",
+      "responses": [
+        [
+          {
+            "type": "image",
+            "src": "/images/chat/csl-renshoubaoxian.png",
+            "alt": "还有人寿"
+          },
+          "我不行了这太猎奇了，很难想象我是在啥精神状态下发现这个的（"
+        ]
+      ]
+    },
+    "project-less": {
+      "id": "project-less",
+      "question": "感觉好少啊",
+      "responses": [
+        [
+          "没办法啊（）实在是没啥时间和精力",
+          "主要还是作为兴趣爱好吧可能"
+        ]
+      ]
+    }
+  }
+}

@@ -180,8 +180,7 @@
     .theme-icon--sun { display: none; }
     .theme-icon--moon { display: inline-flex; }
 
-    /* Footer — 暗色下翻转 */
-    --footer-bg: var(--color-neutral-800);
+    /*--footer-bg: var(--color-neutral-100);*/
 
     /* Pill / Button — 暗色下统一使用 neutral-500 @ 30% */
     --pill-bg: rgba(194, 191, 208, 0.3);

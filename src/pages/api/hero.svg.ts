@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { avatarDeckLayout, buildDeckRows } from '../../data/home/deck';
 import { homeDialogue, type HeroImageMessage } from '../../data/home/dialogue';
+import { heroAssets } from '../../data/home/hero-assets.generated';
 import { socialProfiles, type SocialProfile } from '../../data/home/socials';
 import { t } from '../../i18n/index';
 
@@ -9,8 +10,6 @@ export const prerender = false;
 const AVATAR_SIZE = 84;
 const AVATAR_GAP = 24;
 const INVERT_ICON_IDS = new Set(['github', 'apple', 'steam', 'x']);
-const ASSET_CACHE = new Map<string, Promise<string>>();
-const IMAGE_SIZE_CACHE = new Map<string, Promise<{ width: number; height: number }>>();
 const themes = {
   light: {
     card: '#ede9fc',
@@ -234,127 +233,6 @@ const escapeXml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-const mimeFor = (path: string) => {
-  const extension = path.split('.').pop()?.toLowerCase();
-  if (extension === 'svg') return 'image/svg+xml';
-  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
-  if (extension === 'webp') return 'image/webp';
-  if (extension === 'gif') return 'image/gif';
-  return 'image/png';
-};
-
-async function dataUri(path: string, origin: string) {
-  const cacheKey = `${origin}:${path}`;
-  const cached = ASSET_CACHE.get(cacheKey);
-  if (cached) return cached;
-
-  const pending = (async () => {
-    if (!path.startsWith('/')) return '';
-    const response = await fetch(new URL(path, origin));
-    if (!response.ok) return '';
-    const bytes = Buffer.from(await response.arrayBuffer());
-    return `data:${mimeFor(path)};base64,${bytes.toString('base64')}`;
-  })().catch(() => '');
-
-  ASSET_CACHE.set(cacheKey, pending);
-  return pending;
-}
-
-async function imageSize(path: string, origin: string) {
-  const cacheKey = `${origin}:${path}`;
-  const cached = IMAGE_SIZE_CACHE.get(cacheKey);
-  if (cached) return cached;
-
-  const pending = (async () => {
-    if (!path.startsWith('/')) return { width: 0, height: 0 };
-    try {
-      const response = await fetch(new URL(path, origin));
-      if (!response.ok) return { width: 0, height: 0 };
-      const bytes = Buffer.from(await response.arrayBuffer());
-      return readImageSize(bytes, path);
-    } catch {
-      return { width: 0, height: 0 };
-    }
-  })();
-  IMAGE_SIZE_CACHE.set(cacheKey, pending);
-  return pending;
-}
-
-function readImageSize(bytes: Buffer, path: string) {
-  const extension = path.split('.').pop()?.toLowerCase();
-  if (extension === 'png' && bytes.length >= 24) {
-    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
-  }
-  if (extension === 'gif' && bytes.length >= 10) {
-    return { width: bytes.readUInt16LE(6), height: bytes.readUInt16LE(8) };
-  }
-  if (extension === 'svg') {
-    const source = bytes.toString('utf8', 0, Math.min(bytes.length, 4096));
-    const viewBox = source.match(/\bviewBox=["']\s*[-\d.]+[ ,]+[-\d.]+[ ,]+([\d.]+)[ ,]+([\d.]+)/i);
-    const width = source.match(/\bwidth=["']([\d.]+)/i);
-    const height = source.match(/\bheight=["']([\d.]+)/i);
-    return {
-      width: Number(width?.[1] || viewBox?.[1]) || 0,
-      height: Number(height?.[1] || viewBox?.[2]) || 0,
-    };
-  }
-  if (extension === 'webp' && bytes.length >= 30) {
-    const kind = bytes.toString('ascii', 12, 16);
-    if (kind === 'VP8X') {
-      return {
-        width: 1 + bytes.readUIntLE(24, 3),
-        height: 1 + bytes.readUIntLE(27, 3),
-      };
-    }
-    if (kind === 'VP8 ' && bytes.length >= 30) {
-      return {
-        width: bytes.readUInt16LE(26) & 0x3fff,
-        height: bytes.readUInt16LE(28) & 0x3fff,
-      };
-    }
-    if (kind === 'VP8L' && bytes.length >= 25) {
-      const bits = bytes.readUInt32LE(21);
-      return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
-    }
-  }
-  if ((extension === 'jpg' || extension === 'jpeg') && bytes.length > 4) {
-    let offset = 2;
-    while (offset + 9 < bytes.length) {
-      if (bytes[offset] !== 0xff) break;
-      const marker = bytes[offset + 1];
-      const length = bytes.readUInt16BE(offset + 2);
-      if ([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker)) {
-        return { height: bytes.readUInt16BE(offset + 5), width: bytes.readUInt16BE(offset + 7) };
-      }
-      if (length < 2) break;
-      offset += length + 2;
-    }
-  }
-  return { width: 0, height: 0 };
-}
-
-async function inlineSvg(path: string, origin: string) {
-  if (!path.startsWith('/')) return '';
-  try {
-    const response = await fetch(new URL(path, origin));
-    if (!response.ok) return '';
-    return (await response.text())
-      .replace(/<\?xml[^>]*>/i, '')
-      .replace(/<!DOCTYPE[^>]*>/i, '')
-      .replace(/\s+xlink:href=/gi, ' href=')
-      .replace(/<svg\b([^>]*)>/i, (_, attrs: string) => {
-        const clean = attrs
-          .replace(/\s(?:width|height)=("[^"]*"|'[^']*')/gi, '')
-          .replace(/\s(?:x|y)=("[^"]*"|'[^']*')/gi, '')
-          .replace(/\s+xmlns(?::[\w.-]+)?=("[^"]*"|'[^']*')/gi, '');
-        return `<svg width="24" height="24"${clean}>`;
-      })
-      .replace(/\s([\w:.-]+)=([^"'\s][^\s>]*)/g, ' $1="$2"');
-  } catch {
-    return '';
-  }
-}
-
 function mulberry32(seed: number) {
   return () => {
     let value = seed += 0x6d2b79f5;
@@ -574,21 +452,20 @@ export const GET: APIRoute = async ({ request, url }) => {
   const random = mulberry32(seedFromDate(`${rawDate}:${lang}`));
   const rows = buildDeckRows(socialProfiles, avatarDeckLayout, random).slice(0, 3);
   const portraitIds = rows.flat();
-  const origin = new URL(request.url).origin;
   const shareAvatar = (path: string) =>
     `/images/hero/share/${path.split('/').pop()?.replace(/\.[^.]+$/, '')}.webp`;
-  const [logoData, ...portraitAssets] = await Promise.all([
-    dataUri(`/images/hero/share/rinlit-logo${rawTheme === 'dark' ? '-dark' : ''}.webp`, origin),
-    ...portraitIds.map(async (profile) => {
+  const logoData = heroAssets.avatars[
+    `/images/hero/share/rinlit-logo${rawTheme === 'dark' ? '-dark' : ''}.webp`
+  ] || '';
+  const portraitAssets = portraitIds.map((profile) => {
       const avatar = profile.avatar;
       return {
         ...profile,
         avatar,
-        avatarData: await dataUri(shareAvatar(avatar), origin),
-        iconMarkup: await inlineSvg(profile.icon, origin),
+        avatarData: heroAssets.avatars[shareAvatar(avatar)] || '',
+        iconMarkup: heroAssets.icons[profile.icon] || '',
       };
-    }),
-  ]);
+    });
   const visible = portraitAssets;
 
   const messages = resolveMessages(data.messages, scene).slice(0, 8);
@@ -596,10 +473,11 @@ export const GET: APIRoute = async ({ request, url }) => {
   const imagePaths = messages
     .filter((message): message is Extract<HeroImageMessage, { type: 'image' }> => message.type === 'image')
     .map((message) => message.src);
-  const [imageData, imageSizes] = await Promise.all([
-    Promise.all(imagePaths.map((path) => dataUri(path, origin))),
-    Promise.all(imagePaths.map((path) => imageSize(path, origin))),
-  ]);
+  const imageData = imagePaths.map((path) => heroAssets.images[path]?.dataUri || '');
+  const imageSizes = imagePaths.map((path) => ({
+    width: heroAssets.images[path]?.width || 0,
+    height: heroAssets.images[path]?.height || 0,
+  }));
   const imageByPath = new Map(imagePaths.map((path, index) => [path, imageData[index]]));
   const imageSizeByPath = new Map(imagePaths.map((path, index) => [path, imageSizes[index]]));
 
@@ -737,7 +615,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   return new Response(svg, {
     headers: {
       'content-type': 'image/svg+xml; charset=utf-8',
-      'cache-control': 'no-store',
+      'cache-control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
       'x-hero-card-date': rawDate,
       'x-hero-card-scene': scene || 'default',
       'x-hero-card-theme': rawTheme,

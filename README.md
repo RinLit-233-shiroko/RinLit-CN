@@ -1,5 +1,22 @@
 # RinLit
 
+<a href="https://rinlit.cn">
+  <picture>
+    <source
+      media="(max-width: 900px) and (prefers-color-scheme: dark)"
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark&layout=compact">
+    <source
+      media="(max-width: 900px)"
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light&layout=compact">
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark">
+    <img
+      src="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light"
+      alt="RinLit 的首页">
+  </picture>
+</a>
+
 个人网站：[rinlit.cn](https://rinlit.cn)
 
 ## 首页 Hero 图片接口

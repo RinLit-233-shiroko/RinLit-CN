@@ -7,6 +7,62 @@
       "欢迎来到我的个人小站！要聊点什么嘛 (^///^)"
     ]
   },
+  "heroImage": {
+    "zh-cn": {
+      "time": "现在",
+      "messages": [
+        {
+          "type": "text",
+          "content": "你好哇\\(@^0^@)/"
+        },
+        {
+          "type": "customize-msg",
+          "default": "欢迎来到我的个人小站！要聊点什么嘛 (^///^)",
+          "overrides": {
+            "github-readme": "欢迎从 GitHub 路过，要不进来看看我的小站（",
+            "portfolio": "欢迎来到我的个人小站！要聊点什么嘛 (^///^)"
+          }
+        },
+        {
+          "type": "image",
+          "src": "/images/chat/arona-yaohuang.gif",
+          "alt": "Arona.gif"
+        },
+        {
+          "type": "link",
+          "label": "前往“RinLit 的小站”了解更多",
+          "href": "https://rinlit.cn"
+        }
+      ]
+    },
+    "en": {
+      "time": "Now",
+      "messages": [
+        {
+          "type": "text",
+          "content": "Hellowa~ \\(@^0^@)/"
+        },
+        {
+          "type": "customize-msg",
+          "default": "Welcome to my little site of the internet. What would you like to explore?",
+          "overrides": {
+            "github-readme": "You found me through GitHub. Welcome in!",
+            "portfolio": "Welcome to my little site of the internet. What would you like to explore?"
+          }
+        },
+        {
+          "type": "image",
+          "src": "/images/chat/arona-yaohuang.gif",
+          "alt": "Arona.gif"
+        },
+        {
+          "type": "link",
+          "label": "Go to \"RinLit's site\"",
+          "href": "https://rinlit.cn"
+        }
+      ]
+    }
+  },
   "initial": [
     "greeting",
     "returning"

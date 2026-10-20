@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import ws from "ws";
 import type { Database } from "./database.types";
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
@@ -8,12 +9,17 @@ const supabaseServiceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY
 let client: SupabaseClient<Database> | null = null;
 let adminClient: SupabaseClient<Database> | null = null;
 
+const serverClientOptions = {
+    realtime: { transport: ws as any },
+};
+
 export function createServerClient(): SupabaseClient<Database> {
     if (client) return client;
 
     client = createClient<Database>(
         supabaseUrl,
-        supabasePublishableKey
+        supabasePublishableKey,
+        serverClientOptions
     );
 
     return client;
@@ -27,6 +33,7 @@ export function createAdminClient(): SupabaseClient<Database> | null {
         supabaseUrl,
         supabaseServiceRoleKey,
         {
+            ...serverClientOptions,
             auth: {
                 autoRefreshToken: false,
                 persistSession: false,

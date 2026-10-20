@@ -146,6 +146,14 @@ button:disabled { cursor: default; opacity: .45; }
 .message-editor__head select { flex: 1; min-height: 27px; padding: 3px 5px; background: #f3eee5; font-size: 10px; }
 .message-editor input, .message-editor textarea, .message-editor select { margin-top: 5px; font-size: 11px; }
 .message-editor textarea { min-height: 58px; }
+.hero-override-row { display: grid; grid-template-columns: 94px 1fr; gap: 5px; margin-top: 7px; padding: 7px; border: 1px solid #eadfd2; border-radius: 6px; background: #faf5ed; }
+.hero-override-row input { margin-top: 0; background: #f1e9dc; font-family: 'DM Mono', monospace; font-size: 10px; }
+.hero-override-row textarea { margin-top: 0; }
+.hero-override-row .text-button { grid-column: 2; justify-self: start; }
+.hero-preview-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.hero-preview-links a { padding: 7px 9px; border: 1px solid var(--studio-line); border-radius: 6px; background: #fffdf8; color: var(--studio-ink); font-size: 10px; font-weight: 700; text-decoration: none; }
+.hero-preview-links a:hover { border-color: #ce9d83; color: var(--studio-accent); }
+.inspector code { padding: 1px 3px; border-radius: 3px; background: #e9e2d7; font: 500 9px/1.4 'DM Mono', monospace; overflow-wrap: anywhere; }
 .message-editor input::placeholder, .message-editor textarea::placeholder, .field input::placeholder, .field textarea::placeholder, .search input::placeholder { color: #aca69b; }
 .text-button { border: 0; padding: 0; background: transparent; color: var(--studio-accent); font-size: 10px; }
 .text-button:disabled { color: var(--studio-muted); }

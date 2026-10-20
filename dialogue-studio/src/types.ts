@@ -20,6 +20,32 @@ export type DialogueMessage =
       label?: string;
     };
 
+export type HeroImageMessage =
+  | {
+      type: 'text';
+      content: string;
+    }
+  | {
+      type: 'image';
+      src: string;
+      alt?: string;
+    }
+  | {
+      type: 'link';
+      label: string;
+      href: string;
+    }
+  | {
+      type: 'customize-msg';
+      default: string;
+      overrides?: Record<string, string>;
+    };
+
+export type HeroImageDialogue = {
+  time?: string;
+  messages: HeroImageMessage[];
+};
+
 export type DialogueNode = {
   id: string;
   question: string;
@@ -42,6 +68,8 @@ export type DialogueTree = {
     time?: string;
     messages?: DialogueMessage[];
   };
+  /** Static content used by the shareable Hero image endpoint. */
+  heroImage?: Partial<Record<'zh-cn' | 'en', HeroImageDialogue>>;
   initial: string[];
   nodes: Record<string, DialogueNode>;
 };

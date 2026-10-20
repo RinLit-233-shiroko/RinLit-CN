@@ -25,6 +25,33 @@ export type DialogueMessage =
       label?: string;
     };
 
+export type HeroImageMessage =
+  | {
+      type: 'text';
+      content: string;
+    }
+  | {
+      type: 'image';
+      src: string;
+      alt?: string;
+    }
+  | {
+      type: 'link';
+      label: string;
+      href: string;
+    }
+  | {
+      type: 'customize-msg';
+      default: string;
+      /** Scene key -> replacement text. Unknown scenes use `default`. */
+      overrides?: Record<string, string>;
+    };
+
+export type HeroImageDialogue = {
+  time?: string;
+  messages: HeroImageMessage[];
+};
+
 export type DialogueNode = {
   id: string;
   question: string;
@@ -54,6 +81,8 @@ export type DialogueIntro = {
 export type DialogueTree = {
   id: string;
   intro?: DialogueIntro;
+  /** Static content used by the shareable Hero image endpoint. */
+  heroImage?: Partial<Record<'zh-cn' | 'en', HeroImageDialogue>>;
   /** 对话开始时提供的候选项。 */
   initial: string[];
   /** 当前层级里按条件追加的入口，例如重开后的 returning。 */

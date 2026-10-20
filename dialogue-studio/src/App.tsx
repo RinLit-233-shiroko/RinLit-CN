@@ -30,6 +30,8 @@ import type {
   DialogueMessage,
   DialogueNode,
   DialogueTree,
+  HeroImageDialogue,
+  HeroImageMessage,
 } from './types';
 
 type Selection = { kind: 'node' | 'start'; id: string } | null;
@@ -445,6 +447,173 @@ function MessageEditor({
   );
 }
 
+function HeroMessageEditor({
+  message,
+  onChange,
+  onRemove,
+}: {
+  message: HeroImageMessage;
+  onChange: (message: HeroImageMessage) => void;
+  onRemove: () => void;
+}) {
+  const changeType = (type: HeroImageMessage['type']) => {
+    if (type === 'text') onChange({ type, content: '' });
+    else if (type === 'image') onChange({ type, src: '', alt: '' });
+    else if (type === 'link') onChange({ type, label: '', href: '' });
+    else onChange({ type, default: '', overrides: {} });
+  };
+  const overrides = message.type === 'customize-msg' ? Object.entries(message.overrides || {}) : [];
+  const renameOverride = (previous: string, next: string) => {
+    if (message.type !== 'customize-msg' || !next.trim() || next === previous) return;
+    const entries = Object.entries(message.overrides || {});
+    if (entries.some(([key]) => key === next)) return;
+    onChange({
+      ...message,
+      overrides: Object.fromEntries(entries.map(([key, text]) => [key === previous ? next : key, text])),
+    });
+  };
+  return (
+    <div className="message-editor">
+      <div className="message-editor__head">
+        <select value={message.type} onChange={(event) => changeType(event.target.value as HeroImageMessage['type'])}>
+          <option value="text">文字</option>
+          <option value="customize-msg">可覆盖文案</option>
+          <option value="image">图片</option>
+          <option value="link">链接</option>
+        </select>
+        <button className="icon-button" type="button" onClick={onRemove} aria-label="删除这条图片消息">×</button>
+      </div>
+      {message.type === 'text' && (
+        <textarea
+          value={message.content}
+          onChange={(event) => onChange({ ...message, content: event.target.value })}
+          placeholder="消息内容"
+          rows={3}
+        />
+      )}
+      {message.type === 'image' && (
+        <>
+          <input value={message.src} onChange={(event) => onChange({ ...message, src: event.target.value })} placeholder="/images/..." />
+          <input value={message.alt || ''} onChange={(event) => onChange({ ...message, alt: event.target.value })} placeholder="图片描述" />
+        </>
+      )}
+      {message.type === 'link' && (
+        <>
+          <input value={message.label} onChange={(event) => onChange({ ...message, label: event.target.value })} placeholder="链接文字" />
+          <input value={message.href} onChange={(event) => onChange({ ...message, href: event.target.value })} placeholder="https://..." />
+        </>
+      )}
+      {message.type === 'customize-msg' && (
+        <>
+          <textarea
+            value={message.default}
+            onChange={(event) => onChange({ ...message, default: event.target.value })}
+            placeholder="默认文案"
+            rows={3}
+          />
+          <p className="field-help">场景没有覆盖时使用这段文案。</p>
+          {overrides.map(([scene, text]) => (
+            <div className="hero-override-row" key={scene}>
+              <input
+                value={scene}
+                aria-label="场景 key"
+                onChange={(event) => renameOverride(scene, event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+              />
+              <textarea
+                value={text}
+                onChange={(event) => onChange({
+                  ...message,
+                  overrides: { ...message.overrides, [scene]: event.target.value },
+                })}
+                placeholder="场景文案"
+                rows={2}
+              />
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => onChange({
+                  ...message,
+                  overrides: Object.fromEntries(Object.entries(message.overrides || {}).filter(([key]) => key !== scene)),
+                })}
+              >删除场景</button>
+            </div>
+          ))}
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              const nextScene = `scene-${overrides.length + 1}`;
+              onChange({ ...message, overrides: { ...message.overrides, [nextScene]: '' } });
+            }}
+          >+ 添加场景覆盖</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function HeroImageEditor({
+  tree,
+  onChange,
+}: {
+  tree: DialogueTree;
+  onChange: (heroImage: DialogueTree['heroImage']) => void;
+}) {
+  const updateLanguage = (lang: 'zh-cn' | 'en', next: HeroImageDialogue) => {
+    onChange({ ...(tree.heroImage || {}), [lang]: next });
+  };
+  const addMessage = (lang: 'zh-cn' | 'en', data: HeroImageDialogue) => {
+    updateLanguage(lang, { ...data, messages: [...data.messages, { type: 'text', content: '' }] });
+  };
+  const renderEditor = (lang: 'zh-cn' | 'en', label: string) => {
+    const data = tree.heroImage?.[lang] || { time: '', messages: [] };
+    return (
+      <section className="inspector__section">
+        <div className="section-head"><h3>{label}</h3><span>Hero SVG</span></div>
+        <TextField
+          label="时间戳"
+          value={data.time || ''}
+          placeholder={lang === 'en' ? 'Now' : '现在'}
+          onChange={(time) => updateLanguage(lang, { ...data, time })}
+        />
+        <div className="response-editor">
+          {data.messages.map((message, index) => (
+            <HeroMessageEditor
+              key={index}
+              message={message}
+              onChange={(next) => updateLanguage(lang, {
+                ...data,
+                messages: data.messages.map((item, itemIndex) => itemIndex === index ? next : item),
+              })}
+              onRemove={() => updateLanguage(lang, {
+                ...data,
+                messages: data.messages.filter((_, itemIndex) => itemIndex !== index),
+              })}
+            />
+          ))}
+          <button className="secondary-button" type="button" onClick={() => addMessage(lang, data)}>+ 添加图片消息</button>
+        </div>
+      </section>
+    );
+  };
+  return (
+    <>
+      <p className="field-help">这里只控制对外图片接口；不会改变首页聊天的交互内容。接口：<code>/api/hero.svg?lang=zh-cn&amp;scene=github-readme</code></p>
+      {renderEditor('zh-cn', '图片开场 · 中文')}
+      {renderEditor('en', '图片开场 · English')}
+      <section className="inspector__section">
+        <div className="section-head"><h3>预览</h3><span>新窗口打开</span></div>
+        <div className="hero-preview-links">
+          <a href="http://127.0.0.1:4321/api/hero.svg?lang=zh-cn" target="_blank" rel="noreferrer">中文</a>
+          <a href="http://127.0.0.1:4321/api/hero.svg?lang=en" target="_blank" rel="noreferrer">English</a>
+          <a href="http://127.0.0.1:4321/api/hero.svg?lang=zh-cn&amp;scene=github-readme" target="_blank" rel="noreferrer">GitHub 场景</a>
+        </div>
+        <p className="field-help">预览前请先运行 <code>npm run dev</code>。站点端口不是 4321 时，把链接里的端口改掉。</p>
+      </section>
+    </>
+  );
+}
+
 function ResponseEditor({
   responses,
   onChange,
@@ -754,6 +923,7 @@ function Inspector({
           <div className="section-head"><h3>开场入口</h3><span>菜单</span></div>
         <LinkList label="开场入口" values={tree.initial} options={entriesFor(tree)} onChange={(initial) => updateTree({ ...tree, initial })} />
         </section>
+        <HeroImageEditor tree={tree} onChange={(heroImage) => updateTree({ ...tree, heroImage })} />
         <div className="legend">
           <span><i className="legend__dot legend__dot--node" />问题节点</span>
           <span><i className="legend__line" />回答后的可选项</span>

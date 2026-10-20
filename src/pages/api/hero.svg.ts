@@ -8,6 +8,7 @@ export const prerender = false;
 
 const AVATAR_SIZE = 84;
 const AVATAR_GAP = 24;
+const INVERT_ICON_IDS = new Set(['github', 'apple', 'steam', 'x']);
 const ASSET_CACHE = new Map<string, Promise<string>>();
 const IMAGE_SIZE_CACHE = new Map<string, Promise<{ width: number; height: number }>>();
 const themes = {
@@ -26,9 +27,11 @@ const themes = {
     pillBackground: '#fbfaff',
     pillBackgroundOpacity: '.4',
     pillBorder: '#ffffff',
+    pillBorderOpacity: '1',
     pillIcon: '#101216',
     primaryPill: '#8c7ecd',
     primaryPillOpacity: '.6',
+    invertIcons: false,
   },
   dark: {
     card: '#181834',
@@ -45,9 +48,11 @@ const themes = {
     pillBackground: '#c2bfd0',
     pillBackgroundOpacity: '.3',
     pillBorder: '#ffffff',
+    pillBorderOpacity: '.22',
     pillIcon: '#ffffff',
     primaryPill: '#8c7ecd',
     primaryPillOpacity: '.48',
+    invertIcons: true,
   },
 } as const;
 
@@ -336,9 +341,12 @@ async function inlineSvg(path: string, origin: string) {
       .replace(/<svg\b([^>]*)>/i, (_, attrs: string) => {
         const clean = attrs
           .replace(/\s(?:width|height)=("[^"]*"|'[^']*')/gi, '')
-          .replace(/\s(?:x|y)=("[^"]*"|'[^']*')/gi, '');
-        return `<svg width="24" height="24" ${clean}>`;
-      });
+          .replace(/\s(?:x|y)=("[^"]*"|'[^']*')/gi, '')
+          .replace(/\s+xmlns(?::[\w.-]+)?=("[^"]*"|'[^']*')/gi, '');
+        return `<svg width="24" height="24"${clean}>`;
+      })
+      .replace(/\s([\w:.-]+)=([^"'\s][^\s>]*)/g, ' $1="$2"')
+      .replace(/\s+style="([^"]*)"/g, (_match, style: string) => ` style="${style.replace(/'/g, '&apos;')}"`);
   } catch {
     return '';
   }
@@ -445,7 +453,7 @@ function drawAvatar(
       />
       <circle cx="${badgeX + badge / 2}" cy="${badgeY + badge / 2}" r="${badge / 2}" fill="${theme.avatarBadge}" stroke="${theme.avatarBadge}" stroke-width="${ring}" />
       ${profile.iconMarkup
-        ? `<g transform="translate(${badgeX + badge * 0.15625} ${badgeY + badge * 0.15625}) scale(${badge * 0.6875 / 24})">${profile.iconMarkup}</g>`
+        ? `<g transform="translate(${badgeX + badge * 0.15625} ${badgeY + badge * 0.15625}) scale(${badge * 0.6875 / 24})"${theme.invertIcons && INVERT_ICON_IDS.has(profile.id) ? ' filter="url(#icon-invert)"' : ''}>${profile.iconMarkup}</g>`
         : ''}
     </g>`;
 }
@@ -648,14 +656,17 @@ export const GET: APIRoute = async ({ request, url }) => {
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${geometry.viewWidth}" height="${geometry.viewHeight}" viewBox="0 0 ${geometry.viewWidth} ${geometry.viewHeight}" role="img" aria-label="RinLit hero">
   <defs>
-    <linearGradient id="pill-border" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0" stop-color="#ffffff" />
-      <stop offset=".4567" stop-color="#ffffff" stop-opacity="0" />
-      <stop offset=".5721" stop-color="#ffffff" stop-opacity="0" />
-      <stop offset="1" stop-color="#ffffff" />
+    <linearGradient id="pill-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0" stop-color="${theme.pillBorder}" stop-opacity="${theme.pillBorderOpacity}" />
+      <stop offset=".46" stop-color="${theme.pillBorder}" stop-opacity="0" />
+      <stop offset=".56" stop-color="${theme.pillBorder}" stop-opacity="0" />
+      <stop offset="1" stop-color="${theme.pillBorder}" stop-opacity="${theme.pillBorderOpacity}" />
     </linearGradient>
     <filter id="pill-shadow" x="-20%" y="-30%" width="140%" height="180%" color-interpolation-filters="sRGB">
       <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity=".08" />
+    </filter>
+    <filter id="icon-invert" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0" />
     </filter>
     <clipPath id="card-clip"><rect width="${geometry.cardWidth}" height="${geometry.cardHeight}" rx="${geometry.cardRadius}" /></clipPath>
     <clipPath id="chat-clip"><rect x="${geometry.chatX}" y="${geometry.chatY}" width="${geometry.chatWidth}" height="${geometry.chatHeight}" rx="${geometry.chatRadius}" /></clipPath>

@@ -737,7 +737,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   return new Response(svg, {
     headers: {
       'content-type': 'image/svg+xml; charset=utf-8',
-      'cache-control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800',
+      'cache-control': 'no-store',
       'x-hero-card-date': rawDate,
       'x-hero-card-scene': scene || 'default',
       'x-hero-card-theme': rawTheme,

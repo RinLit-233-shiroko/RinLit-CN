@@ -6,43 +6,40 @@
 
 `/api/hero.svg` 会把首页 Hero 的个人卡片和聊天界面输出为一张透明背景的 SVG。画布尺寸为 `1288 × 600`，包含卡片本身，不包含页面外部背景，适合放进 GitHub README、个人主页或其他支持外链图片的 Markdown 文档。
 
-### 基础用法
+### 完整用法
+
+下面同时适配移动端、亮暗色主题，并让整张图片链接到网站：
 
 ```md
-![RinLit 的首页](https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme)
+<a href="https://rinlit.cn">
+  <picture>
+    <source
+      media="(max-width: 900px) and (prefers-color-scheme: dark)"
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark&layout=compact">
+    <source
+      media="(max-width: 900px)"
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light&layout=compact">
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark">
+    <img
+      src="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light"
+      alt="RinLit 的首页">
+  </picture>
+</a>
 ```
 
-点击整张图片进入网站：
+如果目标平台不支持 `<picture>` 或宽度媒体查询，会回退到最后一张 `<img>`，仍然显示完整的宽版浅色图片。
+
+### 简单用法
+
+不处理主题和响应式时，可以直接使用：
 
 ```md
 [![RinLit 的首页](https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme)](https://rinlit.cn)
 ```
 
-英文版本：
-
-```md
-[![RinLit's homepage](https://rinlit.cn/api/hero.svg?lang=en&scene=github-readme)](https://rinlit.cn)
-```
-
-跟随 GitHub 的亮暗色主题显示不同版本：
-
-<!--
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark">
-  <img src="http://localhost:4321/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light" alt="RinLit 的首页">
-</picture>
-
--->
-
-```md
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark">
-  <img src="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light" alt="RinLit 的首页">
-</picture>
-```
-
-GitHub 不允许在 README Markdown 中直接执行脚本或提供图片内的局部链接，所以交互只发生在点击整张外链图片时。图片本身是一个静态 SVG 快照，不包含可操作的聊天功能。
+英文版本把 `lang=zh-cn` 改为 `lang=en` 即可。
 
 ### 查询参数
 
@@ -51,12 +48,14 @@ GitHub 不允许在 README Markdown 中直接执行脚本或提供图片内的�
 | `lang` | 否 | `zh-cn`、`en` | 界面语言，默认 `zh-cn`。除 `en` 外的值都会回退到中文。 |
 | `scene` | 否 | 小写字母、数字、连字符 | 场景标识，最多 48 个字符，用于选择 `customize-msg` 的场景覆盖文案。不传时使用默认文案。 |
 | `theme` | 否 | `light`、`dark` | 颜色主题，默认 `light`。其他值返回 `400`。 |
+| `layout` | 否 | `wide`、`compact` | 布局，默认 `wide`。`compact` 为移动端单列布局，画布尺寸 `600 × 1052`，对应首页 `900px` 以下断点。 |
 | `date` | 否 | `YYYY-MM-DD` | 头像排列的日期种子。相同日期和语言会得到相同排列；省略时使用上海时区的当天日期。 |
 
 示例：
 
 ```text
 https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark&date=2026-10-20
+https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light&layout=compact
 https://rinlit.cn/api/hero.svg?lang=en&scene=portfolio&theme=light
 https://rinlit.cn/api/hero.svg
 ```
@@ -161,6 +160,7 @@ http://localhost:4321/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark
 - `x-hero-card-date`：本次使用的日期种子。
 - `x-hero-card-scene`：本次使用的场景，未传时为 `default`。
 - `x-hero-card-theme`：本次使用的主题，`light` 或 `dark`。
+- `x-hero-card-layout`：本次使用的布局，`wide` 或 `compact`。
 - `cache-control`：浏览器和 CDN 缓存一天，并允许之后在后台重新验证。
 
 修改配置后如果仍看到旧图片，可以换一个 `date` 参数绕过 URL 缓存，或在部署平台清理缓存。GitHub 的图片代理也可能继续使用旧缓存，通常需要等待其缓存过期。

@@ -6,20 +6,6 @@ import { t } from '../../i18n/index';
 
 export const prerender = false;
 
-const CARD_WIDTH = 400;
-const CHAT_WIDTH = 856;
-const CARD_HEIGHT = 600;
-const GAP = 32;
-const VIEWBOX_WIDTH = CARD_WIDTH + GAP + CHAT_WIDTH;
-const CHAT_X = CARD_WIDTH + GAP;
-const CHAT_INSET = 24;
-const CHAT_CONTENT_WIDTH = 640;
-const CHAT_CONTENT_X = CHAT_X + (CHAT_WIDTH - CHAT_CONTENT_WIDTH) / 2 + 16;
-const CHAT_MESSAGE_MAX_WIDTH = 500;
-const CHAT_IMAGE_MAX_WIDTH = 385;
-const CHAT_MESSAGES_TOP = 108;
-const CHAT_MESSAGES_BOTTOM = 508;
-const MESSAGE_GAP = 10;
 const AVATAR_SIZE = 84;
 const AVATAR_GAP = 24;
 const ASSET_CACHE = new Map<string, Promise<string>>();
@@ -64,6 +50,173 @@ const themes = {
     primaryPillOpacity: '.48',
   },
 } as const;
+
+type Theme = typeof themes.light | typeof themes.dark;
+type LayoutName = 'wide' | 'compact';
+
+interface HeroGeometry {
+  viewWidth: number;
+  viewHeight: number;
+  cardWidth: number;
+  cardHeight: number;
+  cardRadius: number;
+  chatX: number;
+  chatY: number;
+  chatWidth: number;
+  chatHeight: number;
+  chatRadius: number;
+  chatInset: number;
+  chatContentWidth: number;
+  chatContentX: number;
+  chatMessageMaxWidth: number;
+  chatImageMaxWidth: number;
+  chatMessagesTop: number;
+  chatMessagesBottom: number;
+  messageTop: number;
+  messageGap: number;
+  messageFontSize: number;
+  messageLineHeight: number;
+  messageTextUnits: number;
+  messagePaddingLeft: number;
+  messagePaddingRight: number;
+  composerWidth: number;
+  composerBottom: number;
+  composerGap: number;
+  sendSize: number;
+  avatarSize: number;
+  avatarGap: number;
+  avatarRowStep: number;
+  avatarStartY: number;
+  avatarSideInset: number;
+  avatarRowOffsetX: number;
+  deckTop: number;
+  deckHeight: number;
+  deckLabelY: number;
+  logoWidth: number;
+  logoHeight: number;
+  logoY: number;
+  greetingY: number;
+  greetingFontSize: number;
+}
+
+function geometryFor(layout: LayoutName): HeroGeometry {
+  if (layout === 'compact') {
+    const cardWidth = 600;
+    const cardHeight = 360;
+    const chatHeight = 640;
+    const cardGap = 30;
+    const introHeight = 220;
+    const deckHeight = 140;
+    const gridScale = 0.88;
+    const gridOffsetY = -84;
+    const avatarBaseGap = 24;
+    const avatarBaseStep = 100;
+    const cardRadius = 26;
+    const chatY = cardHeight + cardGap;
+    const chatInset = 24;
+    const chatContentWidth = cardWidth - chatInset * 2;
+    const composerWidth = 480;
+    const composerBottom = 24;
+    const avatarGap = avatarBaseGap * gridScale;
+    const avatarRowStep = avatarBaseStep * gridScale;
+    return {
+      viewWidth: cardWidth,
+      viewHeight: chatY + chatHeight,
+      cardWidth,
+      cardHeight,
+      cardRadius,
+      chatX: 0,
+      chatY,
+      chatWidth: cardWidth,
+      chatHeight,
+      chatRadius: 24,
+      chatInset,
+      chatContentWidth,
+      chatContentX: chatInset + 4,
+      chatMessageMaxWidth: chatContentWidth,
+      chatImageMaxWidth: 260,
+      chatMessagesTop: 108,
+      chatMessagesBottom: chatHeight - composerBottom - 40 - 22,
+      messageTop: 122,
+      messageGap: 10,
+      messageFontSize: 14,
+      messageLineHeight: 19,
+      messageTextUnits: 36,
+      messagePaddingLeft: 16,
+      messagePaddingRight: 16,
+      composerWidth,
+      composerBottom,
+      composerGap: 10,
+      sendSize: 40,
+      avatarSize: 84,
+      avatarGap,
+      avatarRowStep,
+      avatarStartY: introHeight + gridOffsetY * gridScale,
+      avatarSideInset: 0,
+      avatarRowOffsetX: 0,
+      deckTop: introHeight,
+      deckHeight,
+      deckLabelY: introHeight + 23,
+      logoWidth: 130,
+      logoHeight: 48,
+      logoY: 32,
+      greetingY: 198,
+      greetingFontSize: 80.64,
+    };
+  }
+
+  const cardWidth = 400;
+  const chatWidth = 856;
+  const cardHeight = 600;
+  const gap = 32;
+  const chatX = cardWidth + gap;
+  const chatInset = 24;
+  const chatContentWidth = 640;
+  return {
+    viewWidth: cardWidth + gap + chatWidth,
+    viewHeight: cardHeight,
+    cardWidth,
+    cardHeight,
+    cardRadius: 26,
+    chatX,
+    chatY: 0,
+    chatWidth,
+    chatHeight: cardHeight,
+    chatRadius: 24,
+    chatInset,
+    chatContentWidth,
+    chatContentX: (chatWidth - chatContentWidth) / 2 + 16,
+    chatMessageMaxWidth: 500,
+    chatImageMaxWidth: 385,
+    chatMessagesTop: 108,
+    chatMessagesBottom: 508,
+    messageTop: 122,
+    messageGap: 10,
+    messageFontSize: 16,
+    messageLineHeight: 22,
+    messageTextUnits: 30,
+    messagePaddingLeft: 16,
+    messagePaddingRight: 16,
+    composerWidth: 480,
+    composerBottom: 24,
+    composerGap: 10,
+    sendSize: 40,
+    avatarSize: AVATAR_SIZE,
+    avatarGap: AVATAR_GAP,
+    avatarRowStep: 100,
+    avatarStartY: 322,
+    avatarSideInset: 58,
+    avatarRowOffsetX: 0,
+    deckTop: 380,
+    deckHeight: 220,
+    deckLabelY: 403,
+    logoWidth: 130,
+    logoHeight: 48,
+    logoY: 32,
+    greetingY: 246,
+    greetingFontSize: 128,
+  };
+}
 
 const escapeXml = (value: unknown) =>
   String(value ?? '')
@@ -263,26 +416,36 @@ function resolveMessages(messages: HeroImageMessage[], scene: string) {
   });
 }
 
-function drawAvatar(profile: SocialProfile, x: number, y: number, count: number, theme: typeof themes.light | typeof themes.dark) {
-  const ring = 4;
-  const badge = 32;
-  const badgeX = x + AVATAR_SIZE - badge + 5;
-  const badgeY = y + AVATAR_SIZE - badge + 3;
+function drawAvatar(
+  profile: SocialProfile,
+  x: number,
+  y: number,
+  count: number,
+  theme: Theme,
+  geometry: HeroGeometry,
+) {
+  const avatarSize = geometry.avatarSize;
+  const compact = avatarSize < 80;
+  const ring = compact ? 2.64 : 4;
+  const badge = compact ? 25.52 : 32;
+  const inset = compact ? 4.4 : 5;
+  const badgeX = x + avatarSize - badge + inset;
+  const badgeY = y + avatarSize - badge + (compact ? 2.64 : 3);
   return `
     <g>
       <clipPath id="avatar-clip-${escapeXml(profile.id)}-${count}">
-        <circle cx="${x + AVATAR_SIZE / 2}" cy="${y + AVATAR_SIZE / 2}" r="${AVATAR_SIZE / 2}" />
+        <circle cx="${x + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" />
       </clipPath>
-      <circle cx="${x + AVATAR_SIZE / 2}" cy="${y + AVATAR_SIZE / 2}" r="${AVATAR_SIZE / 2}" fill="${theme.avatarPlaceholder}" />
+      <circle cx="${x + avatarSize / 2}" cy="${y + avatarSize / 2}" r="${avatarSize / 2}" fill="${theme.avatarPlaceholder}" />
       <image
         href="${profile.avatarData}"
-        x="${x}" y="${y}" width="${AVATAR_SIZE}" height="${AVATAR_SIZE}"
+        x="${x}" y="${y}" width="${avatarSize}" height="${avatarSize}"
         clip-path="url(#avatar-clip-${escapeXml(profile.id)}-${count})"
         preserveAspectRatio="xMidYMid slice"
       />
       <circle cx="${badgeX + badge / 2}" cy="${badgeY + badge / 2}" r="${badge / 2}" fill="${theme.avatarBadge}" stroke="${theme.avatarBadge}" stroke-width="${ring}" />
       ${profile.iconMarkup
-        ? `<g transform="translate(${badgeX + 5} ${badgeY + 5}) scale(${(badge - 10) / 24})">${profile.iconMarkup}</g>`
+        ? `<g transform="translate(${badgeX + badge * 0.15625} ${badgeY + badge * 0.15625}) scale(${badge * 0.6875 / 24})">${profile.iconMarkup}</g>`
         : ''}
     </g>`;
 }
@@ -295,21 +458,29 @@ function drawMessage(
   sourceSize: { width: number; height: number },
   imageScale: number,
   isLastText: boolean,
-  theme: typeof themes.light | typeof themes.dark,
+  theme: Theme,
+  geometry: HeroGeometry,
+  fadeImage: boolean,
 ) {
-  const left = CHAT_CONTENT_X;
+  const left = geometry.chatX + geometry.chatContentX;
   if (message.type === 'text') {
-    const lines = wrapText(message.content, 30, 4);
-    const width = Math.min(CHAT_MESSAGE_MAX_WIDTH, Math.max(96, Math.max(...lines.map((line) => Array.from(line).length)) * 16 + 32));
-    const height = lines.length * 22 + 16;
+    const lines = wrapText(message.content, geometry.messageTextUnits, 4);
+    const textWidth = Math.max(...lines.map((line) => Array.from(line).length)) * geometry.messageFontSize;
+    const padding = geometry.messagePaddingLeft + geometry.messagePaddingRight;
+    const width = Math.min(
+      geometry.chatMessageMaxWidth,
+      geometry.chatContentWidth,
+      Math.max(96, textWidth + padding),
+    );
+    const height = lines.length * geometry.messageLineHeight + 16;
     const bottomLeftRadius = isLastText ? 8 : 18;
     return {
       height,
       markup: `
         <path d="M${left + 18} ${y} H${left + width - 18} Q${left + width} ${y} ${left + width} ${y + 18} V${y + height - 18} Q${left + width} ${y + height} ${left + width - 18} ${y + height} H${left + bottomLeftRadius} Q${left} ${y + height} ${left} ${y + height - bottomLeftRadius} V${y + 18} Q${left} ${y} ${left + 18} ${y} Z" fill="${theme.chatMessage}" />
         ${lines.map((line, lineIndex) => `
-          <text x="${left + 16}" y="${y + 25 + lineIndex * 22}" fill="${theme.chatText}"
-            font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="16" font-weight="600">${escapeXml(line)}</text>
+          <text x="${left + geometry.messagePaddingLeft}" y="${y + 9 + geometry.messageFontSize + lineIndex * geometry.messageLineHeight}" fill="${theme.chatText}"
+            font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="${geometry.messageFontSize}" font-weight="600">${escapeXml(line)}</text>
         `).join('')}
       `,
     };
@@ -317,7 +488,7 @@ function drawMessage(
 
   if (message.type === 'image') {
     const ratio = sourceSize.width > 0 && sourceSize.height > 0
-      ? Math.min(CHAT_IMAGE_MAX_WIDTH / sourceSize.width, 1) * imageScale
+      ? Math.min(geometry.chatImageMaxWidth / sourceSize.width, 1) * imageScale
       : 0;
     const width = Math.max(1, Math.round(sourceSize.width * ratio));
     const height = Math.max(1, Math.round(sourceSize.height * ratio));
@@ -325,13 +496,14 @@ function drawMessage(
       height: height + 4,
       markup: imageData
         ? `<clipPath id="message-image-clip-${index}"><rect x="${left}" y="${y}" width="${width}" height="${height}" rx="18" /></clipPath>
-           <image href="${imageData}" x="${left}" y="${y}" width="${width}" height="${height}" clip-path="url(#message-image-clip-${index})" preserveAspectRatio="xMidYMid meet" />`
+           <image href="${imageData}" x="${left}" y="${y}" width="${width}" height="${height}" clip-path="url(#message-image-clip-${index})" preserveAspectRatio="xMidYMid meet" />
+           ${fadeImage ? `<rect x="${left}" y="${y + Math.max(0, height - 64)}" width="${width}" height="${Math.min(64, height)}" fill="url(#message-image-fade)" />` : ''}`
         : '',
     };
   }
 
   const label = wrapText(message.label || message.href, 36, 1)[0];
-  const width = Math.min(CHAT_CONTENT_WIDTH, Math.max(120, Array.from(label).length * 16 + 40));
+  const width = Math.min(geometry.chatContentWidth, Math.max(120, Array.from(label).length * 16 + 40));
   const buttonX = left;
   return {
     height: 46,
@@ -355,6 +527,12 @@ export const GET: APIRoute = async ({ request, url }) => {
     return new Response('Invalid theme. Expected light or dark.', { status: 400 });
   }
   const theme = themes[rawTheme];
+  const rawLayout = url.searchParams.get('layout') || 'wide';
+  if (rawLayout !== 'wide' && rawLayout !== 'compact') {
+    return new Response('Invalid layout. Expected wide or compact.', { status: 400 });
+  }
+  const layout = rawLayout;
+  const geometry = geometryFor(layout);
   const rawDate = url.searchParams.get('date') || shanghaiDate();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDate) || Number.isNaN(Date.parse(rawDate))) {
     return new Response('Invalid date. Expected YYYY-MM-DD.', { status: 400 });
@@ -399,27 +577,34 @@ export const GET: APIRoute = async ({ request, url }) => {
   const imageByPath = new Map(imagePaths.map((path, index) => [path, imageData[index]]));
   const imageSizeByPath = new Map(imagePaths.map((path, index) => [path, imageSizes[index]]));
 
-  const messageTop = 122;
+  const messageTop = geometry.messageTop;
   const imageMessages = messages.filter(
     (message): message is Extract<HeroImageMessage, { type: 'image' }> => message.type === 'image',
   );
-  const fixedMessageHeight = messages.reduce((height, message) => {
-    if (message.type === 'text') return height + wrapText(message.content, 30, 4).length * 22 + 16;
-    return height + (message.type === 'image' ? 0 : 46);
-  }, 0);
-  const availableImageHeight = Math.max(
-    1,
-    CHAT_MESSAGES_BOTTOM - messageTop - fixedMessageHeight - Math.max(0, messages.length - 1) * MESSAGE_GAP,
-  );
+  const availableImageHeight = Math.max(1, geometry.chatMessagesBottom - messageTop);
   const naturalImageHeight = imageMessages.reduce((height, message) => {
     const size = imageSizeByPath.get(message.src) || { width: 0, height: 0 };
     if (!size.width || !size.height) return height;
-    return height + size.height * Math.min(CHAT_IMAGE_MAX_WIDTH / size.width, 1);
+    return height + size.height * Math.min(geometry.chatImageMaxWidth / size.width, 1);
   }, 0);
   const imageScale = naturalImageHeight > availableImageHeight
     ? availableImageHeight / naturalImageHeight
     : 1;
-  let messageY = messageTop;
+  const imageClipBottom = geometry.chatMessagesBottom;
+  const imageNeedsScroll = messages.some((message, index) => {
+    if (message.type !== 'image') return false;
+    const size = imageSizeByPath.get(message.src) || { width: 0, height: 0 };
+    if (!size.width || !size.height) return false;
+    const imageHeight = size.height * Math.min(geometry.chatImageMaxWidth / size.width, 1);
+    const priorHeight = messages.slice(0, index).reduce((height, prior) => {
+      if (prior.type === 'text') {
+        return height + wrapText(prior.content, geometry.messageTextUnits, 4).length * geometry.messageLineHeight + 16;
+      }
+      return height + (prior.type === 'image' ? 0 : 46);
+    }, 0);
+    return messageTop + priorHeight + imageHeight + geometry.messageGap > imageClipBottom;
+  });
+  let messageY = geometry.chatY + messageTop;
   let messageIndex = 0;
   const messageMarkup = messages.map((message) => {
     const rendered = drawMessage(
@@ -431,8 +616,10 @@ export const GET: APIRoute = async ({ request, url }) => {
       imageScale,
       message.type === 'text' && messageIndex - 1 === lastTextIndex,
       theme,
+      geometry,
+      imageNeedsScroll && message.type === 'image',
     );
-    messageY += rendered.height + MESSAGE_GAP;
+    messageY += rendered.height + geometry.messageGap;
     return rendered.markup;
   }).join('');
 
@@ -440,26 +627,26 @@ export const GET: APIRoute = async ({ request, url }) => {
   let avatarIndex = 0;
   rows.forEach((row, rowIndex) => {
     const count = row.length;
-    const sideInset = rowIndex === 0 ? 58 : 0;
-    const rowWidth = count * AVATAR_SIZE + (count - 1) * AVATAR_GAP + sideInset * 2;
-    let x = (CARD_WIDTH - rowWidth) / 2 + sideInset;
-    const y = 322 + rowIndex * 100;
+    const sideInset = rowIndex === 0 ? geometry.avatarSideInset : 0;
+    const rowWidth = count * geometry.avatarSize + (count - 1) * geometry.avatarGap + sideInset * 2;
+    let x = (geometry.cardWidth - rowWidth) / 2 + geometry.avatarRowOffsetX + sideInset;
+    const y = geometry.avatarStartY + rowIndex * geometry.avatarRowStep;
     for (let index = 0; index < count; index += 1) {
       const profile = visible[avatarIndex++];
-      if (profile) avatarMarkup.push(drawAvatar(profile, x, y, avatarIndex, theme));
-      x += AVATAR_SIZE + AVATAR_GAP;
+      if (profile) avatarMarkup.push(drawAvatar(profile, x, y, avatarIndex, theme, geometry));
+      x += geometry.avatarSize + geometry.avatarGap;
     }
   });
 
   const deckLabel = t(lang, 'social.deckLabel');
   const prompt = lang === 'en' ? "Visit 'rinlit.cn' to learn more about me" : "在 'rinlit.cn' 与我了解更多";
-  const composerWidth = 480;
-  const composerX = CHAT_X + (CHAT_WIDTH - composerWidth) / 2;
-  const promptWidth = composerWidth - 50;
-  const composerTop = CARD_HEIGHT - CHAT_INSET - 40;
-  const sendCenterX = composerX + promptWidth + 30;
+  const composerX = geometry.chatX + (geometry.chatWidth - geometry.composerWidth) / 2;
+  const promptWidth = geometry.composerWidth - geometry.sendSize - geometry.composerGap;
+  const composerTop = geometry.chatY + geometry.chatHeight - geometry.composerBottom - geometry.sendSize;
+  const sendCenterX = composerX + promptWidth + geometry.composerGap + geometry.sendSize / 2;
+  const sendRadius = geometry.sendSize / 2;
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${VIEWBOX_WIDTH}" height="${CARD_HEIGHT}" viewBox="0 0 ${VIEWBOX_WIDTH} ${CARD_HEIGHT}" role="img" aria-label="RinLit hero">
+<svg xmlns="http://www.w3.org/2000/svg" width="${geometry.viewWidth}" height="${geometry.viewHeight}" viewBox="0 0 ${geometry.viewWidth} ${geometry.viewHeight}" role="img" aria-label="RinLit hero">
   <defs>
     <linearGradient id="pill-border" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0" stop-color="#ffffff" />
@@ -470,36 +657,40 @@ export const GET: APIRoute = async ({ request, url }) => {
     <filter id="pill-shadow" x="-20%" y="-30%" width="140%" height="180%" color-interpolation-filters="sRGB">
       <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity=".08" />
     </filter>
-    <clipPath id="card-clip"><rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="26" /></clipPath>
-    <clipPath id="chat-clip"><rect x="${CHAT_X}" width="${CHAT_WIDTH}" height="${CARD_HEIGHT}" rx="24" /></clipPath>
-    <clipPath id="chat-messages-clip"><rect x="${CHAT_X}" y="${CHAT_MESSAGES_TOP}" width="${CHAT_WIDTH}" height="${CHAT_MESSAGES_BOTTOM - CHAT_MESSAGES_TOP}" /></clipPath>
-    <clipPath id="social-deck-clip"><rect x="0" y="380" width="${CARD_WIDTH}" height="220" /></clipPath>
+    <clipPath id="card-clip"><rect width="${geometry.cardWidth}" height="${geometry.cardHeight}" rx="${geometry.cardRadius}" /></clipPath>
+    <clipPath id="chat-clip"><rect x="${geometry.chatX}" y="${geometry.chatY}" width="${geometry.chatWidth}" height="${geometry.chatHeight}" rx="${geometry.chatRadius}" /></clipPath>
+    <clipPath id="chat-messages-clip"><rect x="${geometry.chatX}" y="${geometry.chatY + geometry.chatMessagesTop}" width="${geometry.chatWidth}" height="${geometry.chatMessagesBottom - geometry.chatMessagesTop}" /></clipPath>
+    <clipPath id="social-deck-clip"><rect x="0" y="${geometry.deckTop}" width="${geometry.cardWidth}" height="${geometry.deckHeight}" /></clipPath>
     <linearGradient id="deck-fade" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${theme.card}" />
       <stop offset=".72" stop-color="${theme.card}" stop-opacity=".72" />
       <stop offset="1" stop-color="${theme.card}" stop-opacity="0" />
     </linearGradient>
+    <linearGradient id="message-image-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${theme.chat}" stop-opacity="0" />
+      <stop offset="1" stop-color="${theme.chat}" />
+    </linearGradient>
   </defs>
 
-  <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="26" fill="${theme.card}" />
+  <rect width="${geometry.cardWidth}" height="${geometry.cardHeight}" rx="${geometry.cardRadius}" fill="${theme.card}" />
   <g clip-path="url(#card-clip)">
-    ${logoData ? `<image href="${logoData}" x="${(CARD_WIDTH - 130) / 2}" y="32" width="130" height="48" preserveAspectRatio="xMidYMid meet" />` : ''}
-    <text x="${CARD_WIDTH / 2}" y="246" text-anchor="middle" fill="${theme.cardText}"
-      font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="128" font-weight="700">${lang === 'en' ? 'Hello' : '你好'}</text>
+    ${logoData ? `<image href="${logoData}" x="${(geometry.cardWidth - geometry.logoWidth) / 2}" y="${geometry.logoY}" width="${geometry.logoWidth}" height="${geometry.logoHeight}" preserveAspectRatio="xMidYMid meet" />` : ''}
+    <text x="${geometry.cardWidth / 2}" y="${geometry.greetingY}" text-anchor="middle" fill="${theme.cardText}"
+      font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="${geometry.greetingFontSize}" font-weight="700">${lang === 'en' ? 'Hello' : '你好'}</text>
     <g clip-path="url(#social-deck-clip)">
       ${avatarMarkup.join('')}
-      <rect x="0" y="380" width="${CARD_WIDTH}" height="66" fill="url(#deck-fade)" />
-      <text x="${CARD_WIDTH / 2}" y="403" text-anchor="middle" fill="${theme.deckText}" stroke="${theme.card}" stroke-width="5" paint-order="stroke"
+      <rect x="0" y="${geometry.deckTop}" width="${geometry.cardWidth}" height="66" fill="url(#deck-fade)" />
+      <text x="${geometry.cardWidth / 2}" y="${geometry.deckLabelY}" text-anchor="middle" fill="${theme.deckText}" stroke="${theme.card}" stroke-width="5" paint-order="stroke"
         font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="16" font-weight="600">${escapeXml(deckLabel)}</text>
     </g>
   </g>
 
-  <rect x="${CHAT_X}" width="${CHAT_WIDTH}" height="${CARD_HEIGHT}" rx="24" fill="${theme.chat}" />
+  <rect x="${geometry.chatX}" y="${geometry.chatY}" width="${geometry.chatWidth}" height="${geometry.chatHeight}" rx="${geometry.chatRadius}" fill="${theme.chat}" />
   <g clip-path="url(#chat-clip)">
-    <rect x="${CHAT_X + CHAT_INSET}" y="24" width="${CHAT_WIDTH - CHAT_INSET * 2}" height="42" rx="18" fill="${theme.chatHeader}" />
-    <text x="${CHAT_X + CHAT_WIDTH / 2}" y="51" text-anchor="middle" fill="${theme.chatText}"
+    <rect x="${geometry.chatX + geometry.chatInset}" y="${geometry.chatY + 24}" width="${geometry.chatWidth - geometry.chatInset * 2}" height="42" rx="18" fill="${theme.chatHeader}" />
+    <text x="${geometry.chatX + geometry.chatWidth / 2}" y="${geometry.chatY + 51}" text-anchor="middle" fill="${theme.chatText}"
       font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="17" font-weight="700">Chat with RinLit</text>
-    <text x="${CHAT_X + CHAT_WIDTH / 2}" y="95" text-anchor="middle" fill="${theme.chatMuted}"
+    <text x="${geometry.chatX + geometry.chatWidth / 2}" y="${geometry.chatY + 95}" text-anchor="middle" fill="${theme.chatMuted}"
       font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="14" font-weight="600">${escapeXml(data.time || (lang === 'en' ? 'Now' : '现在'))}</text>
     <g clip-path="url(#chat-messages-clip)">${messageMarkup}</g>
     <g filter="url(#pill-shadow)">
@@ -508,7 +699,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         font-family="Sarasa SC, Geist, sans-serif" font-size="15" font-weight="700">${escapeXml(prompt)}</text>
     </g>
     <g filter="url(#pill-shadow)">
-      <circle cx="${sendCenterX}" cy="${composerTop + 20}" r="20" fill="${theme.primaryPill}" fill-opacity="${theme.primaryPillOpacity}" stroke="url(#pill-border)" stroke-width="1.5" />
+      <circle cx="${sendCenterX}" cy="${composerTop + sendRadius}" r="${sendRadius}" fill="${theme.primaryPill}" fill-opacity="${theme.primaryPillOpacity}" stroke="url(#pill-border)" stroke-width="1.5" />
       <path d="M${sendCenterX} ${composerTop + 12} L${sendCenterX} ${composerTop + 28} M${sendCenterX - 5} ${composerTop + 17} L${sendCenterX} ${composerTop + 12} L${sendCenterX + 5} ${composerTop + 17}"
         fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </g>
@@ -522,6 +713,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       'x-hero-card-date': rawDate,
       'x-hero-card-scene': scene || 'default',
       'x-hero-card-theme': rawTheme,
+      'x-hero-card-layout': layout,
     },
   });
 };

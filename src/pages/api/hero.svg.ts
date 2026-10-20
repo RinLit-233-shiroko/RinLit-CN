@@ -75,6 +75,7 @@ interface HeroGeometry {
   chatContentX: number;
   chatMessageMaxWidth: number;
   chatImageMaxWidth: number;
+  chatImageMaxHeight: number;
   chatMessagesTop: number;
   chatMessagesBottom: number;
   messageTop: number;
@@ -108,7 +109,7 @@ function geometryFor(layout: LayoutName): HeroGeometry {
   if (layout === 'compact') {
     const cardWidth = 600;
     const cardHeight = 360;
-    const chatHeight = 640;
+    const chatHeight = 600;
     const cardGap = 30;
     const introHeight = 220;
     const deckHeight = 140;
@@ -140,6 +141,7 @@ function geometryFor(layout: LayoutName): HeroGeometry {
       chatContentX: chatInset + 4,
       chatMessageMaxWidth: chatContentWidth,
       chatImageMaxWidth: 260,
+      chatImageMaxHeight: 200,
       chatMessagesTop: 108,
       chatMessagesBottom: chatHeight - composerBottom - 40 - 22,
       messageTop: 122,
@@ -193,6 +195,7 @@ function geometryFor(layout: LayoutName): HeroGeometry {
     chatContentX: (chatWidth - chatContentWidth) / 2 + 16,
     chatMessageMaxWidth: 500,
     chatImageMaxWidth: 385,
+    chatImageMaxHeight: 200,
     chatMessagesTop: 108,
     chatMessagesBottom: 508,
     messageTop: 122,
@@ -338,6 +341,7 @@ async function inlineSvg(path: string, origin: string) {
     return (await response.text())
       .replace(/<\?xml[^>]*>/i, '')
       .replace(/<!DOCTYPE[^>]*>/i, '')
+      .replace(/\s+xlink:href=/gi, ' href=')
       .replace(/<svg\b([^>]*)>/i, (_, attrs: string) => {
         const clean = attrs
           .replace(/\s(?:width|height)=("[^"]*"|'[^']*')/gi, '')
@@ -345,8 +349,7 @@ async function inlineSvg(path: string, origin: string) {
           .replace(/\s+xmlns(?::[\w.-]+)?=("[^"]*"|'[^']*')/gi, '');
         return `<svg width="24" height="24"${clean}>`;
       })
-      .replace(/\s([\w:.-]+)=([^"'\s][^\s>]*)/g, ' $1="$2"')
-      .replace(/\s+style="([^"]*)"/g, (_match, style: string) => ` style="${style.replace(/'/g, '&apos;')}"`);
+      .replace(/\s([\w:.-]+)=([^"'\s][^\s>]*)/g, ' $1="$2"');
   } catch {
     return '';
   }
@@ -458,6 +461,25 @@ function drawAvatar(
     </g>`;
 }
 
+function imageDisplaySize(
+  sourceSize: { width: number; height: number },
+  geometry: HeroGeometry,
+  scale = 1,
+) {
+  if (sourceSize.width <= 0 || sourceSize.height <= 0) {
+    return { width: 1, height: 1 };
+  }
+  const ratio = Math.min(
+    geometry.chatImageMaxWidth / sourceSize.width,
+    geometry.chatImageMaxHeight / sourceSize.height,
+    1,
+  ) * scale;
+  return {
+    width: Math.max(1, Math.round(sourceSize.width * ratio)),
+    height: Math.max(1, Math.round(sourceSize.height * ratio)),
+  };
+}
+
 function drawMessage(
   message: Exclude<HeroImageMessage, { type: 'customize-msg' }>,
   index: number,
@@ -495,11 +517,7 @@ function drawMessage(
   }
 
   if (message.type === 'image') {
-    const ratio = sourceSize.width > 0 && sourceSize.height > 0
-      ? Math.min(geometry.chatImageMaxWidth / sourceSize.width, 1) * imageScale
-      : 0;
-    const width = Math.max(1, Math.round(sourceSize.width * ratio));
-    const height = Math.max(1, Math.round(sourceSize.height * ratio));
+    const { width, height } = imageDisplaySize(sourceSize, geometry, imageScale);
     return {
       height: height + 4,
       markup: imageData
@@ -592,8 +610,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   const availableImageHeight = Math.max(1, geometry.chatMessagesBottom - messageTop);
   const naturalImageHeight = imageMessages.reduce((height, message) => {
     const size = imageSizeByPath.get(message.src) || { width: 0, height: 0 };
-    if (!size.width || !size.height) return height;
-    return height + size.height * Math.min(geometry.chatImageMaxWidth / size.width, 1);
+    return height + imageDisplaySize(size, geometry).height;
   }, 0);
   const imageScale = naturalImageHeight > availableImageHeight
     ? availableImageHeight / naturalImageHeight
@@ -603,7 +620,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (message.type !== 'image') return false;
     const size = imageSizeByPath.get(message.src) || { width: 0, height: 0 };
     if (!size.width || !size.height) return false;
-    const imageHeight = size.height * Math.min(geometry.chatImageMaxWidth / size.width, 1);
+    const imageHeight = imageDisplaySize(size, geometry).height;
     const priorHeight = messages.slice(0, index).reduce((height, prior) => {
       if (prior.type === 'text') {
         return height + wrapText(prior.content, geometry.messageTextUnits, 4).length * geometry.messageLineHeight + 16;

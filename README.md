@@ -4,15 +4,15 @@
   <picture>
     <source
       media="(max-width: 900px) and (prefers-color-scheme: dark)"
-      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark&layout=compact">
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark&layout=compact&ts=2">
     <source
       media="(max-width: 900px)"
-      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light&layout=compact">
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light&layout=compact&ts=2">
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark">
+      srcset="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark&ts=2">
     <img
-      src="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light"
+      src="https://rinlit.cn/api/hero.svg?lang=zh-cn&scene=github-readme&theme=light&ts=2"
       alt="RinLit 的首页">
   </picture>
 </a>

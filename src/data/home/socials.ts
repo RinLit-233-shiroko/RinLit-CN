@@ -31,7 +31,7 @@ export const socialProfiles: SocialProfile[] = [
   // 权重分级（越大越常出现在第二排）：8 = 主力账号，6 = 常用账号，
   // 4 = 常用平台，3 = 作品与展示，2 = 次要平台，1 = 偶尔露面。
   { id: 'bilibili', weight: 8, platform: '哔哩哔哩', nickname: 'RinLit_233OuO', accountLabel: 'UID', account: '569522843', href: 'https://space.bilibili.com/569522843', avatar: avatar('avatar-01.png'), icon: icon('bilibili.svg'), accent: '#fb7299' },
-  { id: 'qq', weight: 8, platform: 'QQ', nickname: '砂狼シロコ', accountLabel: 'QQ 号', account: '3295014118', previewImage: preview('qq-qrc.jpg'), avatar: avatar('avatar-01.png'), icon: icon('qq.svg'), accent: '#12b7f5' },
+  { id: 'qq', weight: 8, platform: 'QQ', nickname: '砂狼シロコ', accountLabel: 'QQ 号', account: '3295014118', href:"https://qm.qq.com/q/RipQXWEjOs", previewImage: preview('qq-qrc.jpg'), avatar: avatar('avatar-01.png'), icon: icon('qq.svg'), accent: '#12b7f5' },
   { id: 'wechat', weight: 6, platform: '微信', nickname: '小鳥遊ホシノ', accountLabel: '微信号', account: 'LTlintu233-9', previewImage: preview('wechat-qrc.jpg'), avatar: avatar('wechat-avatar.jpeg'), icon: icon('wechat.svg'), accent: '#07c160' },
   { id: 'alipay', weight: 4, platform: '支付宝', nickname: '小涂真纪', accountLabel: '支付宝账号', account: '183****6145', previewImage: preview('alipay-qrc.jpg'), avatar: avatar('alipay-avatar.png'), icon: icon('alipay.svg'), accent: '#1677ff' },
   { id: 'google', weight: 4, platform: 'Google', nickname: 'Rin Lit', accountLabel: '账号', account: 'rinlit233@gmail.com', href: 'https://google.com/', avatar: avatar('google-avatar.jpg'), icon: icon('google.svg'), accent: '#4285f4' },
@@ -45,6 +45,6 @@ export const socialProfiles: SocialProfile[] = [
   { id: 'figma', weight: 1, platform: 'Figma', nickname: 'RinLit', accountLabel: '账号', account: 'RinLit', href: 'https://www.figma.com/@litrin', avatar: avatar('google-avatar.jpg'), icon: icon('figma.svg'), accent: '#f24e1e' },
   { id: 'steam', weight: 6, platform: 'Steam', nickname: '1145LIT', accountLabel: 'Steam ID', account: '114514homo233', href: 'https://steamcommunity.com/id/114514homo233/', avatar: avatar('steam-avatar.jpg'), icon: icon('steam.svg'), accent: '#1b2838' },
   { id: 'minecraft', weight: 1, platform: 'Minecraft', nickname: 'RinLit', accountLabel: '游戏 ID', account: 'RinLit', avatar: avatar('mc-avatar.png'), previewImage: preview('mc-body.png'), icon: icon('minecraft.svg'), accent: '#62a744' },
-  { id: 'microsoft', weight: 1, platform: 'Microsoft', nickname: 'Rin Lit', accountLabel: 'Microsoft 账号', href: 'https://microsoft.com/', avatar: avatar('microsoft-avatar.png'), icon: icon('microsoft.svg'), accent: '#00a4ef' },
+  { id: 'microsoft', weight: 1, platform: 'Microsoft', nickname: 'Rin Lit', accountLabel: 'Microsoft 账号', avatar: avatar('microsoft-avatar.png'), icon: icon('microsoft.svg'), accent: '#00a4ef' },
   { id: 'xiaohongshu', weight: 3, platform: '小红书', nickname: '砂狼シロコ', accountLabel: '小红书号', account: '42971565756', previewImage: preview('xhs-qrc.jpg'), href: "https://www.xiaohongshu.com/user/profile/6786bdd1000000000803e92e", avatar: avatar('xhs-avatar.webp'), icon: icon('xiaohongshu.svg'), accent: '#ff2442' },
 ];

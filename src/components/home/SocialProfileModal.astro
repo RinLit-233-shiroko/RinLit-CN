@@ -1,5 +1,6 @@
 ---
 import Modal from '../Modal.astro';
+import Button from '../Button.astro';
 import type { SocialProfile } from '../../data/home/socials';
 import { t } from '../../i18n/index';
 
@@ -10,37 +11,74 @@ interface Props {
 
 const { profiles, lang } = Astro.props;
 const __ = (key: string) => t(lang, key);
+const openLinkTemplate = __('social.openLink');
+const [openLinkPrefix, openLinkSuffix] = openLinkTemplate.split('{platform}');
+
+function truncateMiddle(value: string, maxLength = 16) {
+  const chars = Array.from(value);
+  if (chars.length <= maxLength) return value;
+
+  const remaining = maxLength - 3;
+  const headLength = Math.ceil(remaining * 0.65);
+  return `${chars.slice(0, headLength).join('')}...${chars.slice(-(remaining - headLength)).join('')}`;
+}
 ---
 
-<Modal id="social-profile-modal" title={__('social.modalTitle')} class="social-profile-modal__card" ariaLabel={__('social.modalAria')}>
+<Modal
+  id="social-profile-modal"
+  title={__('social.modalTitle')}
+  class="social-profile-modal__card"
+  ariaLabel={__('social.modalAria')}
+>
+  <!-- The link lives in the modal top bar, while its target is swapped per profile. -->
+  <div class="social-profile__open-wrap" data-social-open-wrap slot="topbar-start" hidden>
+    <Button
+      class="social-profile__open"
+      href="#"
+      icon="external-link"
+      target="_blank"
+      rel="noreferrer"
+      flat
+    >
+      <span data-social-open-label>{openLinkPrefix}{openLinkSuffix}</span>
+    </Button>
+  </div>
+
   <div class="social-profile-modal" data-social-profile-content>
     {profiles.map((profile) => (
-      <article class="social-profile" data-social-profile={profile.id} data-platform={profile.platform} hidden>
-        <div class="social-profile__hero" style={`--profile-accent: ${profile.accent}`}>
-          <img class="social-profile__portrait" src={profile.avatar} alt="" />
-          <span class="social-profile__badge social-badge" aria-hidden="true">
-            <img class="social-badge__icon" src={profile.icon} alt="" />
-          </span>
-        </div>
-        <p class="social-profile__nickname">{profile.nickname}</p>
-        <dl class="social-profile__details">
+      <article
+        class:list={['social-profile', { 'social-profile--with-preview': Boolean(profile.previewImage) }]}
+        data-social-profile={profile.id}
+        data-platform={profile.platform}
+        data-href={profile.href}
+        data-open-label={__('social.openLink').replace('{platform}', truncateMiddle(profile.platform))}
+        hidden
+      >
+        <div class="social-profile__content">
+          <div class="social-profile__hero" style={`--profile-accent: ${profile.accent}`}>
+            <img class="social-profile__portrait" src={profile.avatar} alt="" />
+            <span class="social-profile__badge social-badge" aria-hidden="true">
+              <img class="social-badge__icon" src={profile.icon} alt="" />
+            </span>
+          </div>
+          <p class="social-profile__nickname">{profile.nickname}</p>
           {profile.accountLabel && profile.account && (
-            <div>
-              <dt>{profile.accountLabel}</dt>
-              <dd>{profile.account}</dd>
-            </div>
+            <dl class="social-profile__details">
+              <div>
+                <dt>{profile.accountLabel}</dt>
+                <dd>{profile.account}</dd>
+              </div>
+            </dl>
           )}
-          {profile.href && (
-            <div>
-              <dt>{__('social.link')}</dt>
-              <dd><a href={profile.href} target="_blank" rel="noreferrer">{__('social.openLink').replace('{platform}', profile.platform)}</a></dd>
-            </div>
-          )}
-        </dl>
-        {profile.previewImage ? (
-          <img class="social-profile__preview" src={profile.previewImage} alt={__('social.previewAlt').replace('{platform}', profile.platform)} />
-        ) : !profile.href && (
-          <p class="social-profile__notice">{__('social.previewNotice')}</p>
+        </div>
+        {profile.previewImage && (
+          <figure class="social-profile__preview-frame">
+            <img
+              class="social-profile__preview"
+              src={profile.previewImage}
+              alt={__('social.previewAlt').replace('{platform}', profile.platform)}
+            />
+          </figure>
         )}
       </article>
     ))}
@@ -48,29 +86,170 @@ const __ = (key: string) => t(lang, key);
 </Modal>
 
 <style>
-  :global(.social-profile-modal__card) { width: min(440px, calc(100vw - 36px)); }
+  :global(.social-profile-modal__card) {
+    width: min(440px, calc(100vw - 36px));
+    transition: width 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 
-  .social-profile { padding: 6px 0 4px; text-align: center; }
+  :global(.social-profile-modal__card.social-profile-modal__card--preview) {
+    width: min(720px, calc(100vw - 48px));
+  }
+
+  /* With a direct link, the open button already names the platform. Hide the
+     duplicate centered title only in that state; profiles without a link keep it. */
+  :global(.social-profile-modal__card.social-profile-modal__card--external .modal__topbar-title) {
+    display: none;
+  }
+
+  :global(.social-profile-modal__card .modal__topbar-start) {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 64px);
+  }
+
+  .social-profile__open-wrap {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .social-profile__open-wrap[hidden] {
+    display: none;
+  }
+
+  :global(.social-profile__open) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  :global(.social-profile__open .btn) {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .social-profile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 6px 0 4px;
+    text-align: center;
+  }
+
+  .social-profile[hidden] {
+    display: none;
+  }
+
+  .social-profile__content {
+    min-width: 0;
+  }
+
   .social-profile__hero {
     position: relative;
     width: 120px;
     height: 120px;
     margin: 4px auto 16px;
   }
+
   .social-profile__portrait {
-    width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
-    //box-shadow: 0 14px 28px color-mix(in srgb, var(--profile-accent) 28%, transparent);
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
   }
+
   /* 徽标本体样式来自 global.css 的 .social-badge，这里只给尺寸与定位 */
-  .social-profile__badge { --social-badge-size: 38px; right: -4px; bottom: 2px; }
-  .social-profile__nickname { margin: 0 0 14px; color: var(--text-strong); font: 800 24px/1.2 'Plus Jakarta Sans', 'Sarasa SC', sans-serif; overflow-wrap: anywhere; }
-  .social-profile__details { display: grid; gap: 10px; margin: 0; text-align: left; }
-  .social-profile__details div { padding: 13px 16px; border-radius: 18px; background: var(--bg-muted); }
-  .social-profile__details dt { margin-bottom: 5px; color: var(--text-muted); font-size: 13px; }
-  .social-profile__details dd { margin: 0; color: var(--text-strong); font-size: 16px; overflow-wrap: anywhere; }
-  .social-profile__details a { color: var(--color-primary); text-decoration: none; }
-  .social-profile__preview { display: block; width: min(240px, 100%); margin: 16px auto 0; border-radius: 18px; }
-  .social-profile__notice { margin: 16px 0 0; color: var(--text-muted); font-size: 14px; }
+  .social-profile__badge {
+    --social-badge-size: 38px;
+    right: -4px;
+    bottom: 2px;
+  }
+
+  .social-profile__nickname {
+    margin: 0 0 14px;
+    color: var(--text-strong);
+    font: 800 24px/1.2 'Plus Jakarta Sans', 'Sarasa SC', sans-serif;
+    overflow-wrap: anywhere;
+  }
+
+  .social-profile__details {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    text-align: left;
+  }
+
+  .social-profile__details div {
+    padding: 13px 16px;
+    border-radius: 18px;
+    background: var(--social-profile-field-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .social-profile__details dt {
+    margin-bottom: 5px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .social-profile__details dd {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .social-profile__preview-frame {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  .social-profile__preview {
+    display: block;
+    width: min(240px, 100%);
+    max-height: 280px;
+    border-radius: 18px;
+    object-fit: cover;
+  }
+
+  @media (min-width: 680px) {
+    .social-profile--with-preview {
+      grid-template-columns: minmax(0, 1fr) minmax(230px, 278px);
+      align-items: center;
+      gap: 32px;
+      padding: 10px 0 8px;
+      text-align: left;
+    }
+
+    .social-profile--with-preview .social-profile__hero {
+      margin-inline: 0;
+    }
+
+    .social-profile__preview-frame {
+      min-height: 326px;
+    }
+
+    .social-profile__preview {
+      width: 100%;
+      max-height: 310px;
+    }
+  }
+
+  @media (max-width: 679px) {
+    .social-profile__preview-frame {
+      margin-inline: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.social-profile-modal__card) {
+      transition: none;
+    }
+  }
 </style>
 
 <script>
@@ -79,12 +258,31 @@ const __ = (key: string) => t(lang, key);
     if (!modal) return;
     const profile = modal.querySelector(`[data-social-profile="${profileId}"]`) as HTMLElement | null;
     if (!profile) return;
+
     modal.querySelectorAll<HTMLElement>('[data-social-profile]').forEach((item) => {
       item.hidden = item !== profile;
     });
+
     const title = modal.querySelector('.modal__topbar-title');
-    const platform = profile.dataset.platform;
+    const platform = profile.dataset.platform || '';
     if (title && platform) title.textContent = platform;
+
+    const card = modal.querySelector<HTMLElement>('.modal__card');
+    card?.classList.toggle('social-profile-modal__card--preview', profile.classList.contains('social-profile--with-preview'));
+
+    const openWrap = modal.querySelector<HTMLElement>('[data-social-open-wrap]');
+    const openLink = openWrap?.querySelector<HTMLAnchorElement>('a');
+    const openLabel = openWrap?.querySelector<HTMLElement>('[data-social-open-label]');
+    const href = profile.dataset.href?.trim() || '';
+
+    card?.classList.toggle('social-profile-modal__card--external', Boolean(href));
+    if (openWrap) openWrap.hidden = !href;
+    if (openLink && href) {
+      openLink.href = href;
+      openLink.target = '_blank';
+      openLink.rel = 'noreferrer';
+    }
+    if (openLabel) openLabel.textContent = profile.dataset.openLabel || platform;
   }
 
   function bindSocialProfiles() {

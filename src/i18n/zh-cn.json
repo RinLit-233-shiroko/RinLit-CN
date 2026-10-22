@@ -32,10 +32,9 @@
   "social.modalTitle": "平行世界的我",
   "social.modalAria": "社交账号详情",
   "social.link": "直达链接",
-  "social.openLink": "打开 {platform}",
+  "social.openLink": "在“{platform}”打开",
   "social.viewAria": "查看 {platform} 账号信息",
   "social.previewAlt": "{platform} 预览",
-  "social.previewNotice": "可在配置中添加二维码或图片预览。",
 
   "fields.title": "探索我的领域",
 

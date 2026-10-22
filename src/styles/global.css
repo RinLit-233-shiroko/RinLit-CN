@@ -81,6 +81,7 @@
     --bg-elevated: rgba(251, 250, 255, 0.9);
     --bg-muted: #f1f0f5;
     --bg-pill: rgba(251, 250, 255, 1);
+    --social-profile-field-bg: rgba(207, 197, 230, 0.24);
     --text: #2b2a33;
     --text-strong: #1d1c22;
     --text-muted: #6b687d;
@@ -157,6 +158,7 @@
     --bg-elevated: rgba(64, 65, 70, 0.5);
     --bg-muted: #25213e;
     --bg-pill: rgba(31, 24, 98, 0.18);
+    --social-profile-field-bg: rgba(94, 91, 119, 0.24);
     --glow: rgba(255, 255, 255, 0.58);
     --text: #e7e6f0;
     --text-strong: #ffffff;

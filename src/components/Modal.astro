@@ -41,6 +41,9 @@ const { id = 'modal', title = '', class: cardClass = '', ariaLabel = '' } = Astr
   <div class={`modal__card ${cardClass}`}>
     <!-- 顶栏 — sticky -->
     <div class="modal__topbar">
+      <div class="modal__topbar-start">
+        <slot name="topbar-start" />
+      </div>
       <div class="modal__back-wrap" data-action="modal:back" hidden>
         <Button icon="chevron-left" flat class="modal__back-btn" aria-label="Back" />
       </div>
@@ -177,6 +180,17 @@ const { id = 'modal', title = '', class: cardClass = '', ariaLabel = '' } = Astr
     color: var(--text-strong);
     white-space: nowrap;
     pointer-events: none;
+  }
+
+  /* 顶栏左侧操作位 — 社交资料等页面可以把主要动作放在窗口左上角 */
+  .modal__topbar-start {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .modal__topbar-start:empty {
+    display: none;
   }
 
   /* 返回按钮容器 — 左对齐 */

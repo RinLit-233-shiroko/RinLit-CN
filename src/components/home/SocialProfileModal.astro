@@ -86,12 +86,15 @@ function truncateMiddle(value: string, maxLength = 16) {
 </Modal>
 
 <style>
-  :global(.social-profile-modal__card) {
+  /* Modal.astro's scoped .modal__card[data-astro-cid-*] rule has a higher
+     specificity than a single global class. Include the modal id so this
+     component's width wins regardless of stylesheet extraction order. */
+  :global(#social-profile-modal .social-profile-modal__card) {
     width: min(440px, calc(100vw - 36px));
     transition: width 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  :global(.social-profile-modal__card.social-profile-modal__card--preview) {
+  :global(#social-profile-modal .social-profile-modal__card.social-profile-modal__card--preview) {
     width: min(720px, calc(100vw - 48px));
   }
 
@@ -246,7 +249,7 @@ function truncateMiddle(value: string, maxLength = 16) {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :global(.social-profile-modal__card) {
+    :global(#social-profile-modal .social-profile-modal__card) {
       transition: none;
     }
   }

@@ -174,11 +174,15 @@ http://localhost:4321/api/hero.svg?lang=zh-cn&scene=github-readme&theme=dark
 
 实际开发端口以终端输出为准。接口返回 `image/svg+xml`，响应包含：
 
+- `animate`：可选，默认 `1`；传 `0` 可输出无入场动画的静态 SVG。
 - `x-hero-card-date`：本次使用的日期种子。
 - `x-hero-card-scene`：本次使用的场景，未传时为 `default`。
 - `x-hero-card-theme`：本次使用的主题，`light` 或 `dark`。
 - `x-hero-card-layout`：本次使用的布局，`wide` 或 `compact`。
+- `x-hero-card-animate`：本次是否启用动画，`1` 或 `0`。
 - `cache-control`：浏览器和 CDN 缓存一天，并允许之后在后台重新验证。
+
+启用动画时，卡片与聊天面板依次入场，聊天消息按顺序逐条出现，底部输入栏跟随聊天面板主体同步淡入。系统开启“减少动态效果”时，SVG 会跳过入场动画并直接显示最终状态。
 
 修改配置后如果仍看到旧图片，可以换一个 `date` 参数绕过 URL 缓存，或在部署平台清理缓存。GitHub 的图片代理也可能继续使用旧缓存，通常需要等待其缓存过期。
 

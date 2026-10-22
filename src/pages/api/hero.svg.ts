@@ -10,6 +10,8 @@ export const prerender = false;
 const AVATAR_SIZE = 84;
 const AVATAR_GAP = 24;
 const INVERT_ICON_IDS = new Set(['github', 'apple', 'steam', 'x']);
+const MESSAGE_REVEAL_START = 640;
+const MESSAGE_REVEAL_STEP = 520;
 const themes = {
   light: {
     card: '#ede9fc',
@@ -445,6 +447,11 @@ export const GET: APIRoute = async ({ request, url }) => {
   if (scene && !/^[a-z0-9-]+$/.test(scene)) {
     return new Response('Invalid scene. Use lowercase letters, digits, and hyphens.', { status: 400 });
   }
+  const rawAnimate = url.searchParams.get('animate') || '1';
+  if (rawAnimate !== '0' && rawAnimate !== '1') {
+    return new Response('Invalid animate. Expected 0 or 1.', { status: 400 });
+  }
+  const animated = rawAnimate === '1';
 
   const data = homeDialogue.heroImage?.[lang];
   if (!data) return new Response('Hero image content is not configured.', { status: 404 });
@@ -509,7 +516,8 @@ export const GET: APIRoute = async ({ request, url }) => {
   });
   let messageY = geometry.chatY + messageTop;
   let messageIndex = 0;
-  const messageMarkup = messages.map((message) => {
+  const messageMarkup = messages.map((message, index) => {
+    const revealDelay = MESSAGE_REVEAL_START + index * MESSAGE_REVEAL_STEP;
     const rendered = drawMessage(
       message,
       messageIndex++,
@@ -523,7 +531,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       imageNeedsScroll && message.type === 'image',
     );
     messageY += rendered.height + geometry.messageGap;
-    return rendered.markup;
+    return `<g class="hero-anim hero-anim--message" style="animation-delay:${revealDelay}ms">${rendered.markup}</g>`;
   }).join('');
 
   const avatarMarkup: string[] = [];
@@ -548,6 +556,55 @@ export const GET: APIRoute = async ({ request, url }) => {
   const composerTop = geometry.chatY + geometry.chatHeight - geometry.composerBottom - geometry.sendSize;
   const sendCenterX = composerX + promptWidth + geometry.composerGap + geometry.sendSize / 2;
   const sendRadius = geometry.sendSize / 2;
+  const animationStyles = animated ? `
+  <style>
+    .hero-anim {
+      animation-duration: 560ms;
+      animation-timing-function: cubic-bezier(.2,.8,.2,1);
+      animation-fill-mode: both;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .hero-anim--card {
+      animation-name: hero-card-in;
+      animation-delay: 80ms;
+    }
+    .hero-anim--panel {
+      animation-name: hero-fade-in;
+      animation-delay: 180ms;
+    }
+    .hero-anim--panel-content {
+      animation-name: hero-content-in;
+      animation-delay: 280ms;
+    }
+    .hero-anim--message {
+      animation-name: hero-message-in;
+      animation-duration: 420ms;
+    }
+    @keyframes hero-card-in {
+      from { opacity: 0; transform: translate(0, 18px); }
+      to { opacity: 1; transform: translate(0, 0); }
+    }
+    @keyframes hero-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes hero-content-in {
+      from { opacity: 0; transform: translate(0, 10px); }
+      to { opacity: 1; transform: translate(0, 0); }
+    }
+    @keyframes hero-message-in {
+      from { opacity: 0; transform: translate(0, 8px); }
+      to { opacity: 1; transform: translate(0, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-anim {
+        animation: none !important;
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>` : '';
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${geometry.viewWidth}" height="${geometry.viewHeight}" viewBox="0 0 ${geometry.viewWidth} ${geometry.viewHeight}" role="img" aria-label="RinLit hero">
   <defs>
@@ -577,37 +634,44 @@ export const GET: APIRoute = async ({ request, url }) => {
       <stop offset="1" stop-color="${theme.chat}" />
     </linearGradient>
   </defs>
+  ${animationStyles}
 
-  <rect width="${geometry.cardWidth}" height="${geometry.cardHeight}" rx="${geometry.cardRadius}" fill="${theme.card}" />
-  <g clip-path="url(#card-clip)">
-    ${logoData ? `<image href="${logoData}" x="${(geometry.cardWidth - geometry.logoWidth) / 2}" y="${geometry.logoY}" width="${geometry.logoWidth}" height="${geometry.logoHeight}" preserveAspectRatio="xMidYMid meet" />` : ''}
-    <text x="${geometry.cardWidth / 2}" y="${geometry.greetingY}" text-anchor="middle" fill="${theme.cardText}"
-      font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="${geometry.greetingFontSize}" font-weight="700">${lang === 'en' ? 'Hello' : '你好'}</text>
-    <g clip-path="url(#social-deck-clip)">
-      ${avatarMarkup.join('')}
-      <rect x="0" y="${geometry.deckTop}" width="${geometry.cardWidth}" height="66" fill="url(#deck-fade)" />
-      <text x="${geometry.cardWidth / 2}" y="${geometry.deckLabelY}" text-anchor="middle" fill="${theme.deckText}" stroke="${theme.card}" stroke-width="5" paint-order="stroke"
-        font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="16" font-weight="600">${escapeXml(deckLabel)}</text>
+  <g class="hero-anim hero-anim--card">
+    <rect width="${geometry.cardWidth}" height="${geometry.cardHeight}" rx="${geometry.cardRadius}" fill="${theme.card}" />
+    <g clip-path="url(#card-clip)">
+      ${logoData ? `<image href="${logoData}" x="${(geometry.cardWidth - geometry.logoWidth) / 2}" y="${geometry.logoY}" width="${geometry.logoWidth}" height="${geometry.logoHeight}" preserveAspectRatio="xMidYMid meet" />` : ''}
+      <text x="${geometry.cardWidth / 2}" y="${geometry.greetingY}" text-anchor="middle" fill="${theme.cardText}"
+        font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="${geometry.greetingFontSize}" font-weight="700">${lang === 'en' ? 'Hello' : '你好'}</text>
+      <g clip-path="url(#social-deck-clip)">
+        ${avatarMarkup.join('')}
+        <rect x="0" y="${geometry.deckTop}" width="${geometry.cardWidth}" height="66" fill="url(#deck-fade)" />
+        <text x="${geometry.cardWidth / 2}" y="${geometry.deckLabelY}" text-anchor="middle" fill="${theme.deckText}" stroke="${theme.card}" stroke-width="5" paint-order="stroke"
+          font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="16" font-weight="600">${escapeXml(deckLabel)}</text>
+      </g>
     </g>
   </g>
 
-  <rect x="${geometry.chatX}" y="${geometry.chatY}" width="${geometry.chatWidth}" height="${geometry.chatHeight}" rx="${geometry.chatRadius}" fill="${theme.chat}" />
+  <rect class="hero-anim hero-anim--panel" x="${geometry.chatX}" y="${geometry.chatY}" width="${geometry.chatWidth}" height="${geometry.chatHeight}" rx="${geometry.chatRadius}" fill="${theme.chat}" />
   <g clip-path="url(#chat-clip)">
-    <rect x="${geometry.chatX + geometry.chatInset}" y="${geometry.chatY + 24}" width="${geometry.chatWidth - geometry.chatInset * 2}" height="42" rx="18" fill="${theme.chatHeader}" />
-    <text x="${geometry.chatX + geometry.chatWidth / 2}" y="${geometry.chatY + 51}" text-anchor="middle" fill="${theme.chatText}"
-      font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="17" font-weight="700">Chat with RinLit</text>
-    <text x="${geometry.chatX + geometry.chatWidth / 2}" y="${geometry.chatY + 95}" text-anchor="middle" fill="${theme.chatMuted}"
-      font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="14" font-weight="600">${escapeXml(data.time || (lang === 'en' ? 'Now' : '现在'))}</text>
-    <g clip-path="url(#chat-messages-clip)">${messageMarkup}</g>
-    <g filter="url(#pill-shadow)">
-      <rect x="${composerX}" y="${composerTop}" width="${promptWidth}" height="40" rx="20" fill="${theme.pillBackground}" fill-opacity="${theme.pillBackgroundOpacity}" stroke="url(#pill-border)" stroke-width="2" />
-      <text x="${composerX + 20}" y="${composerTop + 27}" fill="${theme.composerText}" fill-opacity=".62"
-        font-family="Sarasa SC, Geist, sans-serif" font-size="15" font-weight="700">${escapeXml(prompt)}</text>
+    <g class="hero-anim hero-anim--panel-content">
+      <rect x="${geometry.chatX + geometry.chatInset}" y="${geometry.chatY + 24}" width="${geometry.chatWidth - geometry.chatInset * 2}" height="42" rx="18" fill="${theme.chatHeader}" />
+      <text x="${geometry.chatX + geometry.chatWidth / 2}" y="${geometry.chatY + 51}" text-anchor="middle" fill="${theme.chatText}"
+        font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="17" font-weight="700">Chat with RinLit</text>
+      <text x="${geometry.chatX + geometry.chatWidth / 2}" y="${geometry.chatY + 95}" text-anchor="middle" fill="${theme.chatMuted}"
+        font-family="Plus Jakarta Sans, Sarasa SC, sans-serif" font-size="14" font-weight="600">${escapeXml(data.time || (lang === 'en' ? 'Now' : '现在'))}</text>
     </g>
-    <g filter="url(#pill-shadow)">
-      <circle cx="${sendCenterX}" cy="${composerTop + sendRadius}" r="${sendRadius}" fill="${theme.primaryPill}" fill-opacity="${theme.primaryPillOpacity}" stroke="url(#pill-border)" stroke-width="1.5" />
-      <path d="M${sendCenterX} ${composerTop + 12} L${sendCenterX} ${composerTop + 28} M${sendCenterX - 5} ${composerTop + 17} L${sendCenterX} ${composerTop + 12} L${sendCenterX + 5} ${composerTop + 17}"
-        fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <g clip-path="url(#chat-messages-clip)">${messageMarkup}</g>
+    <g class="hero-anim hero-anim--panel-content">
+      <g filter="url(#pill-shadow)">
+        <rect x="${composerX}" y="${composerTop}" width="${promptWidth}" height="40" rx="20" fill="${theme.pillBackground}" fill-opacity="${theme.pillBackgroundOpacity}" stroke="url(#pill-border)" stroke-width="2" />
+        <text x="${composerX + 20}" y="${composerTop + 27}" fill="${theme.composerText}" fill-opacity=".62"
+          font-family="Sarasa SC, Geist, sans-serif" font-size="15" font-weight="700">${escapeXml(prompt)}</text>
+      </g>
+      <g filter="url(#pill-shadow)">
+        <circle cx="${sendCenterX}" cy="${composerTop + sendRadius}" r="${sendRadius}" fill="${theme.primaryPill}" fill-opacity="${theme.primaryPillOpacity}" stroke="url(#pill-border)" stroke-width="1.5" />
+        <path d="M${sendCenterX} ${composerTop + 12} L${sendCenterX} ${composerTop + 28} M${sendCenterX - 5} ${composerTop + 17} L${sendCenterX} ${composerTop + 12} L${sendCenterX + 5} ${composerTop + 17}"
+          fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </g>
     </g>
   </g>
 </svg>`;
@@ -620,6 +684,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       'x-hero-card-scene': scene || 'default',
       'x-hero-card-theme': rawTheme,
       'x-hero-card-layout': layout,
+      'x-hero-card-animate': rawAnimate,
     },
   });
 };

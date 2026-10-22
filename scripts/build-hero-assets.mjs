@@ -138,7 +138,11 @@ async function main() {
 
   const icons = {};
   for (const path of assetPaths.icons) {
-    icons[path] = inlineSvg(await readFile(join(ROOT, 'public', path.replace(/^\//, '')), 'utf8'));
+    const source = join(ROOT, 'public', path.replace(/^\//, ''));
+    const bytes = await readFile(source);
+    icons[path] = path.toLowerCase().endsWith('.svg')
+      ? inlineSvg(bytes.toString('utf8'))
+      : `<image href="data:${mimeFor(path)};base64,${bytes.toString('base64')}" width="24" height="24" preserveAspectRatio="xMidYMid meet" />`;
   }
 
   const dialogue = JSON.parse(await readFile(DIALOGUE_JSON, 'utf8'));

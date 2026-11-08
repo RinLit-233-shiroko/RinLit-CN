@@ -130,7 +130,16 @@ const skeletonItems = [178, 132, 206, 154, 190, 142, 170, 218, 196, 168, 224, 18
       const { data, error } = await fetchPublishedGalleryItems(SAMPLE_POOL);
       if (error) throw error;
 
-      const items = ((data || []).filter((item) => item.image_url));
+      const items = (data || []).filter((item) => {
+        if (!item.image_url) return false;
+
+        const tags = (item.gallery_item_tags || []).flatMap((relation) => {
+          const relationTags = relation.gallery_tags;
+          return Array.isArray(relationTags) ? relationTags : relationTags ? [relationTags] : [];
+        });
+
+        return !tags.some((tag) => tag.name === '涩涩');
+      });
       if (!items.length) {
         preview.hidden = true;
         return;

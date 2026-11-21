@@ -56,6 +56,22 @@ const navItems = [
           >
             琼ICP备2026014960号-1
           </a>
+          <a
+            class="footer-filing footer-filing--gongan"
+            href="https://beian.mps.gov.cn/#/query/webSearch?code=46010002002491"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              class="footer-filing-icon"
+              src="/images/icons/gongan-beian.png"
+              width="62"
+              height="67"
+              alt=""
+              aria-hidden="true"
+            />
+            <span>琼公网安备46010002002491号</span>
+          </a>
         </div>
         <!--<p class="footer-note">{__('footer.note')}</p>-->
       </div>
@@ -177,6 +193,30 @@ const navItems = [
     text-decoration: underline;
   }
 
+  .footer-filing--gongan {
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .footer-filing--gongan:hover {
+    text-decoration: none;
+  }
+
+  .footer-filing--gongan:hover span {
+    text-decoration: underline;
+  }
+
+  .footer-filing-icon {
+    display: block;
+    width: 18px;
+    height: 20px;
+    flex: none;
+    object-fit: contain;
+  }
+
   .footer-filing:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--color-primary) 70%, transparent);
     outline-offset: 3px;
@@ -207,15 +247,19 @@ const navItems = [
     }
 
     .footer-bottom {
+      justify-content: center;
       gap: 6px;
       padding-top: 14px;
     }
 
     .footer-legal {
+      width: 100%;
       flex-direction: row;
       flex-wrap: wrap;
+      justify-content: center;
       column-gap: 8px;
       row-gap: 4px;
+      text-align: center;
     }
   }
 
